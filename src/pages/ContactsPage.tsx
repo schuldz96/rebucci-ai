@@ -2,7 +2,7 @@ import { useState } from "react";
 import { mockContacts, type Contact } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, X, Filter } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone, stripPhone } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success",
