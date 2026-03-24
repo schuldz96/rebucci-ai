@@ -7,7 +7,13 @@
       "Bash(git remote:*)",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npm install:*)",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/urrbpxrtdzurfdsucukb/auth/users\" -H \"Authorization: Bearer sbp_67580cdab12a315bb80cc3590285d5e931d2fba5\" -H \"Content-Type: application/json\" -d '{:*)",
+      "Bash(curl -s \"https://api.supabase.com/v1/projects/urrbpxrtdzurfdsucukb\" -H \"Authorization: Bearer sbp_67580cdab12a315bb80cc3590285d5e931d2fba5\")",
+      "Bash(curl -s \"https://api.supabase.com/v1/projects/urrbpxrtdzurfdsucukb/api-keys\" -H \"Authorization: Bearer sbp_67580cdab12a315bb80cc3590285d5e931d2fba5\")",
+      "Bash(SERVICE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVycmJweHJ0ZHp1cmZkc3VjdWtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM4Nzg3NSwiZXhwIjoyMDg5OTYzODc1fQ.cygbRECDzUrJ0fUDGiGqC_FSZDb6QupoZ7g8N3RcyfM\")",
+      "Bash(__NEW_LINE_af2c1716b785495f__ curl -s -X POST \"https://urrbpxrtdzurfdsucukb.supabase.co/auth/v1/admin/users\" -H \"Authorization: Bearer $SERVICE_KEY\" -H \"apikey: $SERVICE_KEY\" -H \"Content-Type: application/json\" -d '{:*)"
     ]
   }
 }
