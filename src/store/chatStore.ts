@@ -43,13 +43,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
     set({ loading: true });
     try {
-      const raw = await evolutionApi.fetchInstances();
-      const instances: Instance[] = raw.map((r) => ({
-        id: r.instance.instanceName,
-        name: r.instance.profileName ?? r.instance.instanceName,
-        phone: r.instance.owner ?? "",
-        status: r.instance.status === "open" ? "online" : "offline",
-      }));
+      const { supabase } = await import("@/lib/supabase");
+      const [raw, { data: webhookRows }] = await Promise.all([
+        evolutionApi.fetchInstances(),
+        supabase.from("instance_webhooks").select("instance_name, display_name"),
+      ]);
+      const displayNames: Record<string, string> = {};
+      (webhookRows ?? []).forEach((r: { instance_name: string; display_name: string | null }) => {
+        if (r.display_name) displayNames[r.instance_name] = r.display_name;
+      });
+
+      const instances: Instance[] = raw.map((r) => {
+        const iName = r.instance.instanceName;
+        const owner = (r.instance.owner ?? "").replace(/@s\.whatsapp\.net|@g\.us/g, "");
+        return {
+          id: iName,
+          name: displayNames[iName] ?? r.instance.profileName ?? iName,
+          phone: owner,
+          status: r.instance.status === "open" ? "online" : "offline",
+        };
+      });
       set({ instances, loading: false });
       // Auto-select first online instance
       const first = instances.find((i) => i.status === "online") ?? instances[0];

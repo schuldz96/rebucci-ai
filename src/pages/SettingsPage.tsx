@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
-  Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2,
+  Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2, Pencil, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -42,6 +42,9 @@ const SettingsPage = () => {
   const [webhooks, setWebhooks] = useState<Record<string, string>>({});
   const [loadingInstances, setLoadingInstances] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null); // instanceName sendo editado
+  const [editNameValue, setEditNameValue] = useState("");
+  const [displayNames, setDisplayNames] = useState<Record<string, string>>({}); // instanceName → nome customizado
 
   // RAG state
   const [ragInstance, setRagInstance] = useState("");
@@ -118,25 +121,37 @@ const SettingsPage = () => {
       setInstances(raw);
       if (raw.length > 0 && !ragInstance) setRagInstance(raw[0].instance.instanceName);
 
-      // Garantir webhook imutável para cada instância
+      // Garantir webhook imutável para cada instância + carregar nomes customizados
       const newWebhooks: Record<string, string> = {};
+      const newDisplayNames: Record<string, string> = {};
       for (const inst of raw) {
         const name = inst.instance.instanceName;
-        const { data: existing } = await supabase.from("instance_webhooks").select("webhook_token").eq("instance_name", name).single();
+        const { data: existing } = await supabase.from("instance_webhooks").select("webhook_token, display_name").eq("instance_name", name).single();
         if (existing) {
           newWebhooks[name] = `${SUPABASE_URL}/functions/v1/whatsapp-webhook?token=${existing.webhook_token}`;
+          if (existing.display_name) newDisplayNames[name] = existing.display_name;
         } else {
-          const { data: created } = await supabase.from("instance_webhooks").insert({ instance_name: name }).select("webhook_token").single();
+          const { data: created } = await supabase.from("instance_webhooks").insert({ instance_name: name }).select("webhook_token, display_name").single();
           if (created) newWebhooks[name] = `${SUPABASE_URL}/functions/v1/whatsapp-webhook?token=${created.webhook_token}`;
         }
       }
       setWebhooks(newWebhooks);
+      setDisplayNames(newDisplayNames);
     } catch {
       /* silencioso */
     }
     setLoadingInstances(false);
   };
 
+
+  const saveDisplayName = async (instanceName: string) => {
+    const name = editNameValue.trim();
+    await supabase.from("instance_webhooks")
+      .update({ display_name: name || null })
+      .eq("instance_name", instanceName);
+    setDisplayNames((prev) => ({ ...prev, [instanceName]: name }));
+    setEditingName(null);
+  };
 
   const copyWebhook = (instanceName: string) => {
     const url = webhooks[instanceName];
@@ -343,13 +358,41 @@ const SettingsPage = () => {
                           </div>
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-semibold text-foreground">{name}</span>
+                              {editingName === name ? (
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    autoFocus
+                                    value={editNameValue}
+                                    onChange={(e) => setEditNameValue(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === "Enter") saveDisplayName(name); if (e.key === "Escape") setEditingName(null); }}
+                                    className="text-sm font-semibold bg-secondary border border-primary rounded-lg px-2 py-0.5 text-foreground outline-none w-40"
+                                    placeholder={name}
+                                  />
+                                  <button onClick={() => saveDisplayName(name)} className="text-emerald-500 hover:text-emerald-400"><Check className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => setEditingName(null)} className="text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm font-semibold text-foreground">{displayNames[name] || name}</span>
+                                  <button
+                                    onClick={() => { setEditingName(name); setEditNameValue(displayNames[name] || ""); }}
+                                    className="text-muted-foreground hover:text-primary transition-colors"
+                                    title="Editar nome da caixa de entrada"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
                               <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", isOnline ? "bg-emerald-500/20 text-emerald-500" : "bg-muted text-muted-foreground")}>
                                 {isOnline ? "Conectado" : "Desconectado"}
                               </span>
                               <span className="text-[10px] text-muted-foreground font-mono">WHATSAPP-BAILEYS</span>
                             </div>
-                            {inst.instance.owner && <p className="text-xs text-muted-foreground">{inst.instance.owner}</p>}
+                            {inst.instance.owner && (
+                              <p className="text-xs text-muted-foreground">
+                                {inst.instance.owner.replace(/@s\.whatsapp\.net|@g\.us/g, "")}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-6 text-center">
