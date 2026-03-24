@@ -28,22 +28,33 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route element={<ProtectedRoutes />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/whatsapp" element={<WhatsAppPage />} />
-            <Route path="/contacts" element={<ContactsPage />} />
-            <Route path="/deals" element={<DealsPage />} />
-            <Route path="/ai-rag" element={<AIRagPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+const AppRoutes = () => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+      />
+      <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
+      <Route element={<ProtectedRoutes />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/whatsapp" element={<WhatsAppPage />} />
+        <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/deals" element={<DealsPage />} />
+        <Route path="/ai-rag" element={<AIRagPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 export default App;
