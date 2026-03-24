@@ -2,7 +2,7 @@ import { useState } from "react";
 import { mockContacts, type Contact } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, X, Filter } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone, stripPhone } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success",
@@ -39,12 +39,14 @@ const ContactsPage = () => {
     if (!newContact.name) { setCreateError("Nome é obrigatório"); return; }
     if (!newContact.email) { setCreateError("Email é obrigatório"); return; }
     if (!newContact.phone) { setCreateError("Telefone é obrigatório"); return; }
+    const phoneDigits = stripPhone(newContact.phone);
     if (contacts.some((c) => c.email.toLowerCase() === newContact.email.toLowerCase())) { setCreateError("Já existe um contato com este email"); return; }
-    if (contacts.some((c) => c.phone === newContact.phone)) { setCreateError("Já existe um contato com este telefone"); return; }
+    if (contacts.some((c) => c.phone === phoneDigits)) { setCreateError("Já existe um contato com este telefone"); return; }
     setContacts([
       ...contacts,
       {
         ...newContact,
+        phone: phoneDigits,
         id: `ct-${Date.now()}`,
         createdAt: new Date().toISOString().split("T")[0],
       },
@@ -126,7 +128,7 @@ const ContactsPage = () => {
                 >
                   <td className="px-5 py-3.5 text-sm font-medium text-foreground">{c.name}</td>
                   <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.email}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.phone}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{formatPhone(c.phone)}</td>
                   <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.company}</td>
                   <td className="px-5 py-3.5">
                     <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium", statusColors[c.status])}>

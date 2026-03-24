@@ -120,14 +120,14 @@ export const mockMessages: ChatMessage[] = [
 ];
 
 export const mockContacts: Contact[] = [
-  { id: "ct-1", name: "Ana Silva", email: "ana@empresa.com", phone: "+55 11 98765-4321", company: "TechCorp", status: "active", createdAt: "2025-03-01", activationDate: "2025-03-05", lastFeedback: "2026-03-10", nextFeedback: "2026-04-10" },
-  { id: "ct-2", name: "Carlos Mendes", email: "carlos@startup.io", phone: "+55 21 97654-3210", company: "StartupIO", status: "active", createdAt: "2025-02-28", activationDate: "2025-03-01", lastFeedback: "2026-03-15", nextFeedback: "2026-04-15" },
-  { id: "ct-3", name: "Juliana Costa", email: "juliana@digital.com", phone: "+55 31 96543-2109", company: "Digital Solutions", status: "lead", createdAt: "2025-03-10" },
-  { id: "ct-4", name: "Roberto Alves", email: "roberto@corp.com.br", phone: "+55 41 95432-1098", company: "Corp Brasil", status: "active", createdAt: "2025-01-15", activationDate: "2025-01-20", endDate: "2026-01-20", lastFeedback: "2026-02-01", nextFeedback: "2026-05-01" },
-  { id: "ct-5", name: "Fernanda Lima", email: "fernanda@agencia.com", phone: "+55 51 94321-0987", company: "Agência Criativa", status: "inactive", createdAt: "2024-12-20", activationDate: "2025-01-01", endDate: "2025-06-01" },
-  { id: "ct-6", name: "Pedro Santos", email: "pedro@tech.dev", phone: "+55 61 93210-9876", company: "DevTech", status: "lead", createdAt: "2025-03-15" },
-  { id: "ct-7", name: "Mariana Oliveira", email: "mariana@consulting.com", phone: "+55 71 92109-8765", company: "MO Consulting", status: "active", createdAt: "2025-02-01", activationDate: "2025-02-10", lastFeedback: "2026-03-20", nextFeedback: "2026-04-20" },
-  { id: "ct-8", name: "Lucas Ferreira", email: "lucas@ecommerce.com", phone: "+55 81 91098-7654", company: "E-Shop", status: "lead", createdAt: "2025-03-20" },
+  { id: "ct-1", name: "Ana Silva", email: "ana@empresa.com", phone: "5511987654321", company: "TechCorp", status: "active", createdAt: "2025-03-01", activationDate: "2025-03-05", lastFeedback: "2026-03-10", nextFeedback: "2026-04-10" },
+  { id: "ct-2", name: "Carlos Mendes", email: "carlos@startup.io", phone: "5521976543210", company: "StartupIO", status: "active", createdAt: "2025-02-28", activationDate: "2025-03-01", lastFeedback: "2026-03-15", nextFeedback: "2026-04-15" },
+  { id: "ct-3", name: "Juliana Costa", email: "juliana@digital.com", phone: "5531965432109", company: "Digital Solutions", status: "lead", createdAt: "2025-03-10" },
+  { id: "ct-4", name: "Roberto Alves", email: "roberto@corp.com.br", phone: "5541954321098", company: "Corp Brasil", status: "active", createdAt: "2025-01-15", activationDate: "2025-01-20", endDate: "2026-01-20", lastFeedback: "2026-02-01", nextFeedback: "2026-05-01" },
+  { id: "ct-5", name: "Fernanda Lima", email: "fernanda@agencia.com", phone: "5551943210987", company: "Agência Criativa", status: "inactive", createdAt: "2024-12-20", activationDate: "2025-01-01", endDate: "2025-06-01" },
+  { id: "ct-6", name: "Pedro Santos", email: "pedro@tech.dev", phone: "5561932109876", company: "DevTech", status: "lead", createdAt: "2025-03-15" },
+  { id: "ct-7", name: "Mariana Oliveira", email: "mariana@consulting.com", phone: "5571921098765", company: "MO Consulting", status: "active", createdAt: "2025-02-01", activationDate: "2025-02-10", lastFeedback: "2026-03-20", nextFeedback: "2026-04-20" },
+  { id: "ct-8", name: "Lucas Ferreira", email: "lucas@ecommerce.com", phone: "5581910987654", company: "E-Shop", status: "lead", createdAt: "2025-03-20" },
 ];
 
 export const mockDeals: Deal[] = [

@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { type Deal, mockContacts, mockDealMessages } from "@/data/mockData";
 import { X, ChevronLeft, Send, Sparkles, Plus, UserPlus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone, stripPhone } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
-
-type DetailTab = "principal" | "estatisticas" | "midia" | "products" | "cta";
 
 interface Props {
   deal: Deal;
@@ -15,7 +13,6 @@ interface Props {
 }
 
 const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
-  const [activeTab, setActiveTab] = useState<DetailTab>("principal");
   const [chatInput, setChatInput] = useState("");
   const [showLinkContact, setShowLinkContact] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
@@ -26,20 +23,16 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
 
   const messages = mockDealMessages.filter((m) => m.conversationId === deal.id);
 
-  const filteredContacts = mockContacts.filter(
-    (c) =>
-      !contactSearch ||
-      c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
-      c.phone.includes(contactSearch)
-  );
-
-  const tabs: { id: DetailTab; label: string }[] = [
-    { id: "principal", label: "Principal" },
-    { id: "estatisticas", label: "Estatísticas" },
-    { id: "midia", label: "Mídia" },
-    { id: "products", label: "Products" },
-    { id: "cta", label: "CTA" },
-  ];
+  const filteredContacts = mockContacts.filter((c) => {
+    if (!contactSearch) return true;
+    const q = contactSearch.toLowerCase();
+    const phoneDigits = stripPhone(contactSearch);
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      (phoneDigits && c.phone.includes(phoneDigits))
+    );
+  });
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -72,118 +65,93 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
             </div>
           </div>
 
-          <div className="flex border-b border-border shrink-0 overflow-x-auto">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={cn(
-                  "px-3 py-2.5 text-xs whitespace-nowrap transition-colors border-b-2 -mb-px",
-                  activeTab === t.id ? "text-foreground border-primary font-medium" : "text-muted-foreground border-transparent hover:text-foreground"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {activeTab === "principal" && (
-              <>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contato vinculado</label>
-                  {linkedContact ? (
-                    <div className="p-3 rounded-xl bg-secondary border border-border">
-                      <p className="text-sm font-medium text-foreground">{linkedContact.name}</p>
-                      <p className="text-xs text-muted-foreground">{linkedContact.email}</p>
-                      <p className="text-xs text-muted-foreground">{linkedContact.phone}</p>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowLinkContact(true)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-full border-2 border-dashed border-border flex items-center justify-center">
-                        <Plus className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm">Adicionar contato</span>
-                    </button>
-                  )}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contato vinculado</label>
+              {linkedContact ? (
+                <div className="p-3 rounded-xl bg-secondary border border-border">
+                  <p className="text-sm font-medium text-foreground">{linkedContact.name}</p>
+                  <p className="text-xs text-muted-foreground">{linkedContact.email}</p>
+                  <p className="text-xs text-muted-foreground">{formatPhone(linkedContact.phone)}</p>
                 </div>
-
-                {showLinkContact && (
-                  <div className="p-3 rounded-xl bg-secondary border border-border space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-foreground">Vincular contato existente</p>
-                      <button onClick={() => setShowLinkContact(false)} className="text-muted-foreground hover:text-foreground">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <input
-                      value={contactSearch}
-                      onChange={(e) => setContactSearch(e.target.value)}
-                      placeholder="Buscar por nome ou telefone..."
-                      className={inputCls}
-                    />
-                    <div className="max-h-[150px] overflow-y-auto space-y-1">
-                      {filteredContacts.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            onLinkContact(deal.id, c.id);
-                            setShowLinkContact(false);
-                          }}
-                          className="w-full flex items-center gap-2 p-2 rounded-lg text-left hover:bg-secondary/80 transition-colors"
-                        >
-                          <UserPlus className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-foreground truncate">{c.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{c.phone}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+              ) : (
+                <button
+                  onClick={() => setShowLinkContact(true)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full border-2 border-dashed border-border flex items-center justify-center">
+                    <Plus className="w-4 h-4" />
                   </div>
-                )}
+                  <span className="text-sm">Adicionar contato</span>
+                </button>
+              )}
+            </div>
 
-                <div className="space-y-3">
-                  {[
-                    { label: "Usuário responsável", value: deal.responsibleUser || "..." },
-                    { label: "Venda", value: formatCurrency(deal.value) },
-                    { label: "Telefone", value: deal.phone || "..." },
-                    { label: "Grupo", value: deal.group || "..." },
-                    { label: "Prioridade", value: deal.priority === "high" ? "Alta" : deal.priority === "medium" ? "Média" : "Baixa" },
-                  ].map((field) => (
-                    <div key={field.label} className="flex items-center justify-between py-1.5 border-b border-border/50">
-                      <span className="text-xs text-muted-foreground">{field.label}</span>
-                      <span className="text-xs text-foreground font-medium">{field.value}</span>
-                    </div>
+            {showLinkContact && (
+              <div className="p-3 rounded-xl bg-secondary border border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-foreground">Vincular contato existente</p>
+                  <button onClick={() => setShowLinkContact(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <input
+                  value={contactSearch}
+                  onChange={(e) => setContactSearch(e.target.value)}
+                  placeholder="Buscar por nome, email ou telefone..."
+                  className={inputCls}
+                />
+                <div className="max-h-[150px] overflow-y-auto space-y-1">
+                  {filteredContacts.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        onLinkContact(deal.id, c.id);
+                        setShowLinkContact(false);
+                      }}
+                      className="w-full flex items-center gap-2 p-2 rounded-lg text-left hover:bg-secondary/80 transition-colors"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">{c.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{formatPhone(c.phone)}</p>
+                      </div>
+                    </button>
                   ))}
                 </div>
-
-                {linkedContact && (
-                  <div className="space-y-3 pt-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados do contato</p>
-                    {[
-                      { label: "Empresa", value: linkedContact.company },
-                      { label: "Data Ativação", value: linkedContact.activationDate || "..." },
-                      { label: "Data Término", value: linkedContact.endDate || "..." },
-                      { label: "Último Feedback", value: linkedContact.lastFeedback || "..." },
-                      { label: "Próximo Feedback", value: linkedContact.nextFeedback || "..." },
-                    ].map((field) => (
-                      <div key={field.label} className="flex items-center justify-between py-1.5 border-b border-border/50">
-                        <span className="text-xs text-muted-foreground">{field.label}</span>
-                        <span className="text-xs text-foreground font-medium">{field.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
+              </div>
             )}
 
-            {activeTab !== "principal" && (
-              <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-                Em breve
+            <div className="space-y-3">
+              {[
+                { label: "Usuário responsável", value: deal.responsibleUser || "..." },
+                { label: "Venda", value: formatCurrency(deal.value) },
+                { label: "Telefone", value: deal.phone ? formatPhone(deal.phone) : "..." },
+                { label: "Grupo", value: deal.group || "..." },
+                { label: "Prioridade", value: deal.priority === "high" ? "Alta" : deal.priority === "medium" ? "Média" : "Baixa" },
+              ].map((field) => (
+                <div key={field.label} className="flex items-center justify-between py-1.5 border-b border-border/50">
+                  <span className="text-xs text-muted-foreground">{field.label}</span>
+                  <span className="text-xs text-foreground font-medium">{field.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {linkedContact && (
+              <div className="space-y-3 pt-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados do contato</p>
+                {[
+                  { label: "Empresa", value: linkedContact.company },
+                  { label: "Data Ativação", value: linkedContact.activationDate || "..." },
+                  { label: "Data Término", value: linkedContact.endDate || "..." },
+                  { label: "Último Feedback", value: linkedContact.lastFeedback || "..." },
+                  { label: "Próximo Feedback", value: linkedContact.nextFeedback || "..." },
+                ].map((field) => (
+                  <div key={field.label} className="flex items-center justify-between py-1.5 border-b border-border/50">
+                    <span className="text-xs text-muted-foreground">{field.label}</span>
+                    <span className="text-xs text-foreground font-medium">{field.value}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -194,7 +162,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
           <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
             <div>
               <p className="text-sm font-semibold text-foreground">{deal.contactName}</p>
-              <p className="text-xs text-muted-foreground">{deal.phone || "Sem telefone"}</p>
+              <p className="text-xs text-muted-foreground">{deal.phone ? formatPhone(deal.phone) : "Sem telefone"}</p>
             </div>
             <div className="flex items-center gap-2">
               <button className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors flex items-center gap-1.5">
