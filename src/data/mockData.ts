@@ -60,10 +60,19 @@ export interface AgentConfig {
   active: boolean;
   systemPrompt: string;
   promptComplement: string;
+  welcomeMessageEnabled: boolean;
+  welcomeMessageType: "text" | "audio" | "image";
+  welcomeMessageContent: string;
+  conversationStart: "on_create" | "wait_first_message";
   groupingDelay: number;
   responseDelay: number;
-  questions: string[];
+  questions: { text: string; description: string }[];
+  autoEvaluation: boolean;
   ragBaseId: string | null;
+  ragEnabled: boolean;
+  ragMaxTurns: number;
+  followUps: { id: string; name: string; triggers: number; contents: number }[];
+  transitions: { id: string; trigger: string; destination: string }[];
 }
 
 export const KANBAN_STAGES = [
@@ -136,10 +145,31 @@ export const defaultAgentConfig: AgentConfig = {
   provider: "EvolutionAPI",
   instanceName: "",
   active: false,
-  systemPrompt: "",
-  promptComplement: "",
+  systemPrompt: "Seu nome é Marco Rebucci. Você é especialista em emagrecimento e ganho de massa. Trabalha vendendo consultorias de acompanhamento com nutricionista, protocolos personalizados etc.",
+  promptComplement: "REGRAS DE COMUNICAÇÃO (OBRIGATÓRIAS):\n– Escreva como uma pessoa real no WhatsApp – natural, direto, sem formalidades excessivas\n– NUNCA use markdown: sem #, sem **, sem bullets com –, sem tabelas\n– Emojis são bem-vindos mas use com moderação\n– Fale em português brasileiro informal\n– Cada bloco de texto separado por linha em branco será enviado como mensagem SEPARADA no WhatsApp",
+  welcomeMessageEnabled: true,
+  welcomeMessageType: "text",
+  welcomeMessageContent: "Olá {{first_name}}! 👋 Tudo bem? Vi que você se interessou pelo nosso programa.",
+  conversationStart: "on_create",
   groupingDelay: 10.0,
   responseDelay: 10.0,
-  questions: [],
+  questions: [
+    { text: "Qual é seu nome", description: "Pergunte o nome do usuário" },
+    { text: "Quantos anos você tem?", description: "" },
+    { text: "Você treina?", description: "" },
+    { text: "Faz dieta?", description: "" },
+    { text: "Problema de saúde?", description: "" },
+  ],
+  autoEvaluation: true,
   ragBaseId: null,
+  ragEnabled: true,
+  ragMaxTurns: 10,
+  followUps: [
+    { id: "fu-1", name: "Follow-up 1", triggers: 1, contents: 0 },
+    { id: "fu-2", name: "Follow-up 2", triggers: 0, contents: 0 },
+  ],
+  transitions: [
+    { id: "tr-1", trigger: "Boas-vindas enviada", destination: "Tentativa de Contato" },
+    { id: "tr-2", trigger: "Lead respondeu", destination: "Conectado" },
+  ],
 };
