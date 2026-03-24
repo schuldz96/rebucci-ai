@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { supabase } from "@/lib/supabase";
 
 interface User {
   id: string;
@@ -13,48 +14,50 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  restoreSession: () => Promise<void>;
 }
-
-// Mock bcrypt-like hash comparison
-const mockHashCompare = (input: string, storedHash: string): boolean => {
-  // In production, this would use bcrypt.compare()
-  // Simple mock: hash the input and compare
-  const hash = `$2b$10$mock_${btoa(input)}`;
-  return hash === storedHash;
-};
-
-// Pre-compute the mock hash for the default password
-const DEFAULT_PASSWORD_HASH = `$2b$10$mock_${btoa("Violeiro12")}`;
-
-const MOCK_USERS = [
-  {
-    id: "usr-1",
-    email: "marcos.schuldz@gmail.com",
-    passwordHash: DEFAULT_PASSWORD_HASH,
-    name: "Marcos Schuldz",
-    role: "Supervisor",
-  },
-];
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
+
   login: async (email: string, password: string) => {
-    // Simulate API call delay
-    await new Promise((r) => setTimeout(r, 800));
-    const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPassword = password.trim();
-    const found = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === normalizedEmail && mockHashCompare(normalizedPassword, u.passwordHash)
-    );
-    if (found) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return false;
+
+    const u = data.user;
+    set({
+      user: {
+        id: u.id,
+        email: u.email ?? "",
+        name: u.user_metadata?.name ?? u.email?.split("@")[0] ?? "Usuário",
+        role: u.user_metadata?.role ?? "Usuário",
+        avatar: u.user_metadata?.avatar_url,
+      },
+      isAuthenticated: true,
+    });
+    return true;
+  },
+
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ user: null, isAuthenticated: false });
+  },
+
+  restoreSession: async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user) {
+      const u = data.session.user;
       set({
-        user: { id: found.id, email: found.email, name: found.name, role: found.role },
+        user: {
+          id: u.id,
+          email: u.email ?? "",
+          name: u.user_metadata?.name ?? u.email?.split("@")[0] ?? "Usuário",
+          role: u.user_metadata?.role ?? "Usuário",
+          avatar: u.user_metadata?.avatar_url,
+        },
         isAuthenticated: true,
       });
-      return true;
     }
-    return false;
   },
-  logout: () => set({ user: null, isAuthenticated: false }),
 }));
