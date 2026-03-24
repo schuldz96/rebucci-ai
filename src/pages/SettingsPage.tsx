@@ -42,9 +42,11 @@ const SettingsPage = () => {
   const [webhooks, setWebhooks] = useState<Record<string, string>>({});
   const [loadingInstances, setLoadingInstances] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState<string | null>(null); // instanceName sendo editado
+  const [editingName, setEditingName] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
-  const [displayNames, setDisplayNames] = useState<Record<string, string>>({}); // instanceName → nome customizado
+  const [displayNames, setDisplayNames] = useState<Record<string, string>>({});
+  const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
+  const [pairingCodes, setPairingCodes] = useState<Record<string, string>>({});
 
   // RAG state
   const [ragInstance, setRagInstance] = useState("");
@@ -151,6 +153,19 @@ const SettingsPage = () => {
       .eq("instance_name", instanceName);
     setDisplayNames((prev) => ({ ...prev, [instanceName]: name }));
     setEditingName(null);
+  };
+
+  const handleConnect = async (instanceName: string) => {
+    setConnectingInstance(instanceName);
+    const result = await evolutionApi.connectInstance(instanceName);
+    if (result?.pairingCode) {
+      setPairingCodes((prev) => ({ ...prev, [instanceName]: result.pairingCode! }));
+    } else if (result?.code) {
+      setPairingCodes((prev) => ({ ...prev, [instanceName]: `QR Code gerado — use o app WhatsApp para escanear` }));
+    } else {
+      setPairingCodes((prev) => ({ ...prev, [instanceName]: "Erro ao conectar. Verifique a instância." }));
+    }
+    setConnectingInstance(null);
   };
 
   const copyWebhook = (instanceName: string) => {
@@ -399,9 +414,21 @@ const SettingsPage = () => {
                           {inst.contacts != null && <div><p className="text-sm font-bold text-foreground">{inst.contacts.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">contatos</p></div>}
                           {inst.messages != null && <div><p className="text-sm font-bold text-foreground">{inst.messages.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">msgs</p></div>}
                           {inst.chats != null && <div><p className="text-sm font-bold text-foreground">{inst.chats}</p><p className="text-[10px] text-muted-foreground">chats</p></div>}
-                          <div className={cn("flex items-center gap-1.5", isOnline ? "text-emerald-500" : "text-muted-foreground")}>
+                          <div className={cn("flex items-center gap-2", isOnline ? "text-emerald-500" : "text-muted-foreground")}>
                             <div className={cn("w-2 h-2 rounded-full", isOnline ? "bg-emerald-500" : "bg-muted-foreground")} />
                             <span className="text-xs font-medium">{isOnline ? "Online" : "Offline"}</span>
+                            {!isOnline && (
+                              <button
+                                onClick={() => handleConnect(name)}
+                                disabled={connectingInstance === name}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                              >
+                                {connectingInstance === name
+                                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                                  : <Zap className="w-3 h-3" />}
+                                Reconectar
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -427,6 +454,15 @@ const SettingsPage = () => {
                           <p className="text-[10px] text-amber-500/80">⚠ Esta URL é permanente e não será alterada.</p>
                         </div>
                       </div>
+
+                      {/* Pairing code */}
+                      {pairingCodes[name] && (
+                        <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-1">
+                          <p className="text-xs font-semibold text-primary">Código de emparelhamento</p>
+                          <p className="text-sm font-mono font-bold text-foreground tracking-widest">{pairingCodes[name]}</p>
+                          <p className="text-[10px] text-muted-foreground">No WhatsApp: Dispositivos conectados → Conectar com número de telefone</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

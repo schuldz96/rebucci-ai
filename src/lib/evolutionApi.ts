@@ -134,16 +134,38 @@ class EvolutionAPIService {
   }
 
   async fetchChats(instanceName: string): Promise<EvoChat[]> {
-    try {
-      const data = await this.request<unknown>(`/chat/findChats/${instanceName}`);
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray((data as Record<string, unknown>)?.chats)
-          ? ((data as Record<string, unknown>).chats as unknown[])
-          : [];
-      return arr as EvoChat[];
-    } catch {
+    // Evolution API v2 usa POST para findChats
+    const tryRequest = async (method: string, body?: string) => {
+      const data = await this.request<unknown>(`/chat/findChats/${instanceName}`, {
+        method,
+        ...(body ? { body } : {}),
+      });
+      // Normaliza: array direto ou { chats: [...] }
+      if (Array.isArray(data)) return data as EvoChat[];
+      const d = data as Record<string, unknown>;
+      if (Array.isArray(d.chats)) return d.chats as EvoChat[];
+      if (Array.isArray(d.data)) return d.data as EvoChat[];
       return [];
+    };
+
+    try {
+      return await tryRequest("POST", JSON.stringify({}));
+    } catch {
+      try {
+        return await tryRequest("GET");
+      } catch {
+        return [];
+      }
+    }
+  }
+
+  async connectInstance(instanceName: string): Promise<{ pairingCode?: string; code?: string } | null> {
+    try {
+      return await this.request<{ pairingCode?: string; code?: string }>(
+        `/instance/connect/${instanceName}`
+      );
+    } catch {
+      return null;
     }
   }
 
