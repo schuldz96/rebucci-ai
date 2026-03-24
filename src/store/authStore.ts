@@ -30,7 +30,7 @@ const MOCK_USERS = [
   {
     id: "usr-1",
     email: "marcos.schuldz@gmail.com",
-    passwordHash: "$2b$10$mockHashForVioleiro12",
+    passwordHash: DEFAULT_PASSWORD_HASH,
     name: "Marcos Schuldz",
     role: "Supervisor",
   },
