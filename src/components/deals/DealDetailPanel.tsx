@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { type Deal, mockContacts, mockDealMessages } from "@/data/mockData";
 import { X, ChevronLeft, Send, Sparkles, Plus, UserPlus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone, stripPhone } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
-
-type DetailTab = "principal" | "estatisticas" | "midia" | "products" | "cta";
 
 interface Props {
   deal: Deal;
