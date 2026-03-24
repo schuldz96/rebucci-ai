@@ -16,13 +16,15 @@ interface AuthState {
 }
 
 // Mock bcrypt-like hash comparison
-const mockHashCompare = (input: string, hash: string): boolean => {
+const mockHashCompare = (input: string, storedHash: string): boolean => {
   // In production, this would use bcrypt.compare()
-  const mockHashes: Record<string, string> = {
-    Violeiro12: "$2b$10$mockHashForVioleiro12",
-  };
-  return mockHashes[input] === hash;
+  // Simple mock: hash the input and compare
+  const hash = `$2b$10$mock_${btoa(input)}`;
+  return hash === storedHash;
 };
+
+// Pre-compute the mock hash for the default password
+const DEFAULT_PASSWORD_HASH = `$2b$10$mock_${btoa("Violeiro12")}`;
 
 const MOCK_USERS = [
   {
