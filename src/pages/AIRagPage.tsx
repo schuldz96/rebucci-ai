@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { mockRAGBases, mockInstances } from "@/data/mockData";
 import { motion } from "framer-motion";
-import { Brain, Database, Search, Plus, Send, Bot } from "lucide-react";
+import { Database, Plus, Send, Bot } from "lucide-react";
 
 const AIRagPage = () => {
   const [testQuestion, setTestQuestion] = useState("");

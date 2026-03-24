@@ -13,6 +13,7 @@ import {
   Plus,
   QrCode,
   Phone,
+  MessageSquare,
 } from "lucide-react";
 
 type ConvFilter = "all" | "pending" | "unanswered" | "answered";

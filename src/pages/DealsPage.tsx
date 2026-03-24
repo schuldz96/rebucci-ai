@@ -16,7 +16,7 @@ const DealsPage = () => {
   const { deals, stages, moveDeal, addDeal } = useDealStore();
   const [aiModalStage, setAiModalStage] = useState<string | null>(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
-  const [newDeal, setNewDeal] = useState({ title: "", contactName: "", value: 0, priority: "medium" as const, stage: "" });
+  const [newDeal, setNewDeal] = useState<{ title: string; contactName: string; value: number; priority: "low" | "medium" | "high"; stage: string }>({ title: "", contactName: "", value: 0, priority: "medium", stage: "" });
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
