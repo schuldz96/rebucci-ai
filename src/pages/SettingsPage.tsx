@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { mockInstances } from "@/data/mockData";
 import { motion } from "framer-motion";
-import { MessageSquare, Wifi, Brain, Save, Zap, RefreshCw, Eye, EyeOff, Copy, Search, Users, Building, Link2 } from "lucide-react";
+import { MessageSquare, Wifi, Brain, Save, Zap, RefreshCw, Eye, EyeOff, Search, Users, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
