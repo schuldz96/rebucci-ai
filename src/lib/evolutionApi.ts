@@ -38,30 +38,50 @@ export interface EvoMessage {
 // Normaliza qualquer estrutura retornada pela Evolution API para EvoInstance
 function normalizeInstance(item: Record<string, unknown>): EvoInstance | null {
   try {
-    // Estrutura v2 nested: { instance: { instanceName, status, ... }, chats, contacts, messages }
-    if (item.instance && typeof item.instance === "object") {
-      const inst = item.instance as Record<string, unknown>;
+    // ── Evolution API v2 real (resposta flat) ──────────────────────────────
+    // { id, name, connectionStatus, ownerJid, profileName, _count: { Message, Contact, Chat } }
+    if (item.name && item.connectionStatus !== undefined) {
+      const count = (item._count ?? {}) as Record<string, number>;
+      const owner = ((item.ownerJid ?? item.number ?? "") as string)
+        .replace(/@s\.whatsapp\.net|@g\.us/g, "");
       return {
         instance: {
-          instanceName: (inst.instanceName ?? inst.name ?? "") as string,
-          owner: (inst.owner ?? inst.ownerJid ?? "") as string,
-          profileName: (inst.profileName ?? inst.name ?? inst.instanceName ?? "") as string,
-          status: normalizeStatus(inst.status ?? inst.state),
+          instanceName: item.name as string,
+          owner,
+          profileName: (item.profileName as string | null) ?? (item.name as string),
+          status: (item.connectionStatus as string) === "open" ? "open" : "close",
         },
-        chats: (item.chats ?? inst.chats) as number | undefined,
-        contacts: (item.contacts ?? inst.contacts) as number | undefined,
-        messages: (item.messages ?? inst.messages) as number | undefined,
+        chats: count.Chat,
+        contacts: count.Contact,
+        messages: count.Message,
       };
     }
 
-    // Estrutura v1 flat: { instanceName, status/state, owner, ... }
-    if (item.instanceName || item.name) {
+    // ── Estrutura nested legada: { instance: { instanceName, status, ... } } ──
+    if (item.instance && typeof item.instance === "object") {
+      const inst = item.instance as Record<string, unknown>;
+      const count = (item._count ?? {}) as Record<string, number>;
       return {
         instance: {
-          instanceName: (item.instanceName ?? item.name ?? "") as string,
-          owner: (item.owner ?? item.ownerJid ?? "") as string,
-          profileName: (item.profileName ?? item.instanceName ?? item.name ?? "") as string,
-          status: normalizeStatus(item.status ?? item.state),
+          instanceName: (inst.instanceName ?? inst.name ?? "") as string,
+          owner: ((inst.owner ?? inst.ownerJid ?? "") as string).replace(/@s\.whatsapp\.net|@g\.us/g, ""),
+          profileName: (inst.profileName ?? inst.name ?? inst.instanceName ?? "") as string,
+          status: normalizeStatus(inst.connectionStatus ?? inst.status ?? inst.state),
+        },
+        chats: (item.chats ?? count.Chat) as number | undefined,
+        contacts: (item.contacts ?? count.Contact) as number | undefined,
+        messages: (item.messages ?? count.Message) as number | undefined,
+      };
+    }
+
+    // ── Estrutura flat legada: { instanceName, status/state, ... } ──────────
+    if (item.instanceName) {
+      return {
+        instance: {
+          instanceName: item.instanceName as string,
+          owner: ((item.owner ?? item.ownerJid ?? "") as string).replace(/@s\.whatsapp\.net|@g\.us/g, ""),
+          profileName: (item.profileName ?? item.instanceName ?? "") as string,
+          status: normalizeStatus(item.connectionStatus ?? item.status ?? item.state),
         },
         chats: item.chats as number | undefined,
         contacts: item.contacts as number | undefined,
