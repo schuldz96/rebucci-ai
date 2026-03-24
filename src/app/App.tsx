@@ -4,14 +4,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/store/authStore";
-import LoginPage from "./pages/LoginPage";
-import AppLayout from "./components/layout/AppLayout";
-import DashboardPage from "./pages/DashboardPage";
-import WhatsAppPage from "./pages/WhatsAppPage";
-import ContactsPage from "./pages/ContactsPage";
-import DealsPage from "./pages/DealsPage";
-import SettingsPage from "./pages/SettingsPage";
-import NotFound from "./pages/NotFound.tsx";
+import LoginPage from "@/pages/LoginPage";
+import AppLayout from "@/components/layout/AppLayout";
+import DashboardPage from "@/pages/DashboardPage";
+import WhatsAppPage from "@/pages/WhatsAppPage";
+import ContactsPage from "@/pages/ContactsPage";
+import DealsPage from "@/pages/DealsPage";
+import SettingsPage from "@/pages/SettingsPage";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
