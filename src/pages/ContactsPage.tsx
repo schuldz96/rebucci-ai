@@ -57,8 +57,9 @@ const ContactsPage = () => {
   };
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-7xl">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 lg:px-8 pt-6 pb-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Contatos</h1>
           <p className="text-muted-foreground mt-1">{contacts.length} contatos cadastrados</p>
@@ -72,7 +73,7 @@ const ContactsPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 px-6 lg:px-8 pb-4 shrink-0">
         <div className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -99,22 +100,22 @@ const ContactsPage = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="surface-elevated overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Table — scrollable area */}
+      <div className="flex-1 overflow-hidden px-6 lg:px-8 pb-6">
+        <div className="surface-elevated h-full overflow-auto">
           <table className="w-full">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Telefone</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Empresa</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Criado em</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ativação</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Término</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Últ. Feedback</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Próx. Feedback</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Nome</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Email</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Telefone</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Empresa</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Status</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Criado em</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Ativação</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Término</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Últ. Feedback</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Próx. Feedback</th>
               </tr>
             </thead>
             <tbody>
@@ -126,20 +127,20 @@ const ContactsPage = () => {
                   transition={{ delay: i * 0.03 }}
                   className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
                 >
-                  <td className="px-5 py-3.5 text-sm font-medium text-foreground">{c.name}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.email}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{formatPhone(c.phone)}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.company}</td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-5 py-3.5 text-sm font-medium text-foreground whitespace-nowrap">{c.name}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.email}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{formatPhone(c.phone)}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.company}</td>
+                  <td className="px-5 py-3.5 whitespace-nowrap">
                     <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium", statusColors[c.status])}>
                       {statusLabels[c.status]}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.createdAt}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.activationDate || "—"}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.endDate || "—"}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.lastFeedback || "—"}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.nextFeedback || "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.createdAt}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.activationDate || "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.endDate || "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.lastFeedback || "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.nextFeedback || "—"}</td>
                 </motion.tr>
               ))}
             </tbody>
