@@ -22,6 +22,7 @@ const ContactsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showModal, setShowModal] = useState(false);
   const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", company: "", status: "lead" as Contact["status"] });
+  const [createError, setCreateError] = useState("");
 
   const filtered = contacts
     .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter))
@@ -34,7 +35,12 @@ const ContactsPage = () => {
     );
 
   const handleCreate = () => {
-    if (!newContact.name) return;
+    setCreateError("");
+    if (!newContact.name) { setCreateError("Nome é obrigatório"); return; }
+    if (!newContact.email) { setCreateError("Email é obrigatório"); return; }
+    if (!newContact.phone) { setCreateError("Telefone é obrigatório"); return; }
+    if (contacts.some((c) => c.email.toLowerCase() === newContact.email.toLowerCase())) { setCreateError("Já existe um contato com este email"); return; }
+    if (contacts.some((c) => c.phone === newContact.phone)) { setCreateError("Já existe um contato com este telefone"); return; }
     setContacts([
       ...contacts,
       {
@@ -44,6 +50,7 @@ const ContactsPage = () => {
       },
     ]);
     setNewContact({ name: "", email: "", phone: "", company: "", status: "lead" });
+    setCreateError("");
     setShowModal(false);
   };
 
@@ -102,6 +109,10 @@ const ContactsPage = () => {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Empresa</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Criado em</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ativação</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Término</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Últ. Feedback</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Próx. Feedback</th>
               </tr>
             </thead>
             <tbody>
@@ -123,6 +134,10 @@ const ContactsPage = () => {
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.createdAt}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.activationDate || "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.endDate || "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.lastFeedback || "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.nextFeedback || "—"}</td>
                 </motion.tr>
               ))}
             </tbody>
@@ -170,6 +185,9 @@ const ContactsPage = () => {
                   <option value="active">Ativo</option>
                   <option value="inactive">Inativo</option>
                 </select>
+                {createError && (
+                  <p className="text-xs text-destructive">{createError}</p>
+                )}
                 <button
                   onClick={handleCreate}
                   className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"

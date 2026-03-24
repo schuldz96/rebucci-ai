@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AIAgentModal from "@/components/deals/AIAgentModal";
+import DealDetailPanel from "@/components/deals/DealDetailPanel";
+import { type Deal } from "@/data/mockData";
 
 const priorityColors: Record<string, string> = {
   high: "bg-destructive/20 text-destructive border-destructive/30",
@@ -33,10 +35,11 @@ const agentNames: Record<string, string> = {
 };
 
 const DealsPage = () => {
-  const { deals, stages, moveDeal, addDeal } = useDealStore();
+  const { deals, stages, moveDeal, addDeal, updateDeal } = useDealStore();
   const [aiModalStage, setAiModalStage] = useState<string | null>(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [newDeal, setNewDeal] = useState<{ title: string; contactName: string; value: number; priority: "low" | "medium" | "high"; stage: string }>({ title: "", contactName: "", value: 0, priority: "medium", stage: "" });
 
   const onDragEnd = (result: DropResult) => {
@@ -121,7 +124,7 @@ const DealsPage = () => {
                       {stageDeals.map((deal, idx) => (
                         <Draggable key={deal.id} draggableId={deal.id} index={idx}>
                           {(prov, snap) => (
-                            <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps} className={cn("p-3 rounded-xl border border-border bg-card transition-shadow cursor-pointer hover:border-primary/30", snap.isDragging && "shadow-lg")}>
+                            <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps} onClick={() => setSelectedDeal(deal)} className={cn("p-3 rounded-xl border border-border bg-card transition-shadow cursor-pointer hover:border-primary/30", snap.isDragging && "shadow-lg")}>
                               <div className="flex items-start justify-between">
                                 <p className="text-sm font-semibold text-primary truncate">{deal.title}</p>
                                 <Star className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -155,6 +158,20 @@ const DealsPage = () => {
 
       <AnimatePresence>
         {aiModalStage && <AIAgentModal stage={aiModalStage} onClose={() => setAiModalStage(null)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedDeal && (
+          <DealDetailPanel
+            deal={selectedDeal}
+            onClose={() => setSelectedDeal(null)}
+            onLinkContact={(dealId, contactId) => {
+              updateDeal(dealId, { contactId });
+              const updated = deals.find((d) => d.id === dealId);
+              if (updated) setSelectedDeal({ ...updated, contactId });
+            }}
+          />
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
