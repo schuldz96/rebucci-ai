@@ -10,7 +10,6 @@ import DashboardPage from "./pages/DashboardPage";
 import WhatsAppPage from "./pages/WhatsAppPage";
 import ContactsPage from "./pages/ContactsPage";
 import DealsPage from "./pages/DealsPage";
-import AIRagPage from "./pages/AIRagPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -49,7 +48,6 @@ const AppRoutes = () => {
         <Route path="/whatsapp" element={<WhatsAppPage />} />
         <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/deals" element={<DealsPage />} />
-        <Route path="/ai-rag" element={<AIRagPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />

@@ -5,7 +5,6 @@ import {
   MessageSquare,
   Users,
   Kanban,
-  Brain,
   Settings,
   LogOut,
   Bot,
@@ -19,7 +18,6 @@ const navItems = [
   { label: "WhatsApp", icon: MessageSquare, path: "/whatsapp" },
   { label: "Contatos", icon: Users, path: "/contacts" },
   { label: "Negócios", icon: Kanban, path: "/deals" },
-  { label: "IA / RAG", icon: Brain, path: "/ai-rag" },
   { label: "Configurações", icon: Settings, path: "/settings" },
 ];
 
