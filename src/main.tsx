@@ -3,6 +3,8 @@ import App from "./app/App.tsx";
 import "./styles/index.css";
 import { useAuthStore } from "./store/authStore";
 
-useAuthStore.getState().restoreSession().then(() => {
-  createRoot(document.getElementById("root")!).render(<App />);
+const root = createRoot(document.getElementById("root")!);
+
+useAuthStore.getState().restoreSession().finally(() => {
+  root.render(<App />);
 });
