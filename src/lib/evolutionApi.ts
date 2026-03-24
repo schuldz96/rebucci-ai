@@ -24,17 +24,27 @@ export interface EvoChat {
 // Normaliza qualquer estrutura de chat da Evolution API para EvoChat
 export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
   try {
-    // JID: pode ser remoteJid, id, ou key.remoteJid
-    const jid = (raw.remoteJid ?? raw.id ?? "") as string;
-    if (!jid || (!jid.includes("@") && !jid.includes("-"))) return null;
+    // JID: vários campos possíveis dependendo da versão da API
+    const jid = (
+      raw.remoteJid ??
+      raw.id ??
+      raw.chatId ??
+      (raw.key && typeof raw.key === "object" ? (raw.key as Record<string, unknown>).remoteJid : undefined) ??
+      ""
+    ) as string;
+
+    if (!jid || typeof jid !== "string") return null;
+    // Aceita JIDs WhatsApp individuais (@s.whatsapp.net), grupos (@g.us), e qualquer formato com @
+    if (!jid.includes("@") && !jid.includes("-") && !/^\d{7,}$/.test(jid)) return null;
 
     // Nome do contato
-    const name = ((raw.pushName ?? raw.name ?? jid.split("@")[0] ?? "") as string).trim();
+    const name = ((raw.pushName ?? raw.name ?? raw.contactName ?? jid.split("@")[0] ?? "") as string).trim();
 
     // Timestamp da última mensagem — vários campos possíveis
     let ts = 0;
-    if (typeof raw.lastMsgTimestamp === "number") ts = raw.lastMsgTimestamp;
-    else if (typeof raw.lastMessageTimestamp === "number") ts = raw.lastMessageTimestamp;
+    const tsRaw = raw.lastMsgTimestamp ?? raw.lastMessageTimestamp ?? raw.updatedAt ?? raw.timestamp;
+    if (typeof tsRaw === "number") ts = tsRaw;
+    else if (typeof tsRaw === "string" && tsRaw) ts = Math.floor(new Date(tsRaw).getTime() / 1000);
     else if (raw.lastMessage && typeof raw.lastMessage === "object") {
       const lm = raw.lastMessage as Record<string, unknown>;
       const innerTs = lm.messageTimestamp ?? lm.timestamp;
@@ -45,6 +55,8 @@ export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
     let lastText = "";
     if (typeof raw.lastMessage === "string") {
       lastText = raw.lastMessage;
+    } else if (typeof raw.text === "string") {
+      lastText = raw.text;
     } else if (raw.lastMessage && typeof raw.lastMessage === "object") {
       const lm = raw.lastMessage as Record<string, unknown>;
       const msg = lm.message as Record<string, unknown> | undefined;
@@ -56,7 +68,7 @@ export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
     }
 
     // Unread
-    const unread = ((raw.unreadCount ?? raw.unreadMessages ?? 0) as number);
+    const unread = ((raw.unreadCount ?? raw.unreadMessages ?? raw.unread ?? 0) as number);
 
     return { remoteJid: jid, name, lastMessage: lastText, lastMessageTimestamp: ts, unreadCount: unread };
   } catch {
@@ -195,33 +207,34 @@ class EvolutionAPIService {
   }
 
   async fetchChats(instanceName: string): Promise<EvoChat[]> {
-    // Evolution API v2 usa POST para findChats
-    const tryRequest = async (method: string, body?: string) => {
-      const data = await this.request<unknown>(`/chat/findChats/${instanceName}`, {
-        method,
-        ...(body ? { body } : {}),
-      });
-      // Normaliza: array direto ou { chats: [...] }
-      if (Array.isArray(data)) return data as EvoChat[];
+    const extractArray = (data: unknown): unknown[] => {
+      if (Array.isArray(data)) return data;
       const d = data as Record<string, unknown>;
-      if (Array.isArray(d.chats)) return d.chats as EvoChat[];
-      if (Array.isArray(d.data)) return d.data as EvoChat[];
+      if (Array.isArray(d.chats)) return d.chats;
+      if (Array.isArray(d.data)) return d.data;
+      if (Array.isArray(d.records)) return d.records;
       return [];
     };
 
-    let raw: unknown[] = [];
-    try {
-      raw = await tryRequest("POST", JSON.stringify({}));
-    } catch {
+    // Tenta múltiplos formatos que a Evolution API v2 pode aceitar
+    const attempts: Array<() => Promise<unknown>> = [
+      () => this.request(`/chat/findChats/${instanceName}`, { method: "POST", body: JSON.stringify({ where: {} }) }),
+      () => this.request(`/chat/findChats/${instanceName}`, { method: "POST", body: JSON.stringify({}) }),
+      () => this.request(`/chat/findChats/${instanceName}`, { method: "GET" }),
+    ];
+
+    for (const attempt of attempts) {
       try {
-        raw = await tryRequest("GET");
-      } catch {
-        return [];
-      }
+        const data = await attempt();
+        const raw = extractArray(data);
+        if (raw.length > 0) {
+          return raw
+            .map((item) => normalizeChat(item as Record<string, unknown>))
+            .filter((c): c is EvoChat => c !== null);
+        }
+      } catch { /* tenta próximo */ }
     }
-    return raw
-      .map((item) => normalizeChat(item as Record<string, unknown>))
-      .filter((c): c is EvoChat => c !== null);
+    return [];
   }
 
   async connectInstance(instanceName: string): Promise<{ pairingCode?: string; code?: string } | null> {
