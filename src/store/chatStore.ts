@@ -30,7 +30,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
   loadingMessages: false,
 
   loadInstances: async () => {
-    if (!evolutionApi.isConfigured()) return;
+    // Tenta carregar config do Supabase se ainda não configurado
+    if (!evolutionApi.isConfigured()) {
+      try {
+        const { supabase } = await import("@/lib/supabase");
+        const { data } = await supabase.from("evolution_config").select("*").order("created_at", { ascending: false }).limit(1).single();
+        if (data) evolutionApi.configure(data.api_url, data.api_token);
+        else return;
+      } catch {
+        return;
+      }
+    }
     set({ loading: true });
     try {
       const raw = await evolutionApi.fetchInstances();

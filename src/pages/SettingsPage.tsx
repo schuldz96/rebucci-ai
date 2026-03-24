@@ -75,9 +75,13 @@ const SettingsPage = () => {
     if (data) setRagJobs(data);
   }, []);
 
+  // Carregar instâncias ao mudar para aba que precisar delas
   useEffect(() => {
+    if ((evoTab === "instances" || evoTab === "rag") && isConfigured && instances.length === 0) {
+      loadInstances();
+    }
     if (evoTab === "rag") loadRagJobs();
-  }, [evoTab, loadRagJobs]);
+  }, [evoTab, isConfigured]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaveConfig = async () => {
     if (!apiUrl || !apiKey) return;
@@ -133,9 +137,6 @@ const SettingsPage = () => {
     setLoadingInstances(false);
   };
 
-  useEffect(() => {
-    if (evoTab === "instances" && isConfigured && instances.length === 0) loadInstances();
-  }, [evoTab, isConfigured]);
 
   const copyWebhook = (instanceName: string) => {
     const url = webhooks[instanceName];

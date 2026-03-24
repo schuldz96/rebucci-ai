@@ -1,4 +1,5 @@
 // Serviço para comunicação com a Evolution API
+// Suporta estrutura nested ({ instance: {...} }) e flat ({ instanceName: ... })
 
 export interface EvoInstance {
   instance: {
@@ -32,6 +33,53 @@ export interface EvoMessage {
     imageMessage?: { caption?: string };
     audioMessage?: Record<string, unknown>;
   };
+}
+
+// Normaliza qualquer estrutura retornada pela Evolution API para EvoInstance
+function normalizeInstance(item: Record<string, unknown>): EvoInstance | null {
+  try {
+    // Estrutura v2 nested: { instance: { instanceName, status, ... }, chats, contacts, messages }
+    if (item.instance && typeof item.instance === "object") {
+      const inst = item.instance as Record<string, unknown>;
+      return {
+        instance: {
+          instanceName: (inst.instanceName ?? inst.name ?? "") as string,
+          owner: (inst.owner ?? inst.ownerJid ?? "") as string,
+          profileName: (inst.profileName ?? inst.name ?? inst.instanceName ?? "") as string,
+          status: normalizeStatus(inst.status ?? inst.state),
+        },
+        chats: (item.chats ?? inst.chats) as number | undefined,
+        contacts: (item.contacts ?? inst.contacts) as number | undefined,
+        messages: (item.messages ?? inst.messages) as number | undefined,
+      };
+    }
+
+    // Estrutura v1 flat: { instanceName, status/state, owner, ... }
+    if (item.instanceName || item.name) {
+      return {
+        instance: {
+          instanceName: (item.instanceName ?? item.name ?? "") as string,
+          owner: (item.owner ?? item.ownerJid ?? "") as string,
+          profileName: (item.profileName ?? item.instanceName ?? item.name ?? "") as string,
+          status: normalizeStatus(item.status ?? item.state),
+        },
+        chats: item.chats as number | undefined,
+        contacts: item.contacts as number | undefined,
+        messages: item.messages as number | undefined,
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeStatus(raw: unknown): "open" | "close" | "connecting" {
+  const s = String(raw ?? "").toLowerCase();
+  if (s === "open" || s === "online" || s === "connected") return "open";
+  if (s === "connecting" || s === "qrcode") return "connecting";
+  return "close";
 }
 
 class EvolutionAPIService {
@@ -73,14 +121,27 @@ class EvolutionAPIService {
   }
 
   async fetchInstances(): Promise<EvoInstance[]> {
-    const data = await this.request<EvoInstance[] | { instances: EvoInstance[] }>("/instance/fetchInstances");
-    return Array.isArray(data) ? data : data.instances ?? [];
+    const data = await this.request<unknown>("/instance/fetchInstances");
+    const arr: unknown[] = Array.isArray(data)
+      ? data
+      : Array.isArray((data as Record<string, unknown>)?.instances)
+        ? ((data as Record<string, unknown>).instances as unknown[])
+        : [];
+
+    return arr
+      .map((item) => normalizeInstance(item as Record<string, unknown>))
+      .filter((i): i is EvoInstance => i !== null);
   }
 
   async fetchChats(instanceName: string): Promise<EvoChat[]> {
     try {
-      const data = await this.request<EvoChat[] | { chats: EvoChat[] }>(`/chat/findChats/${instanceName}`);
-      return Array.isArray(data) ? data : data.chats ?? [];
+      const data = await this.request<unknown>(`/chat/findChats/${instanceName}`);
+      const arr = Array.isArray(data)
+        ? data
+        : Array.isArray((data as Record<string, unknown>)?.chats)
+          ? ((data as Record<string, unknown>).chats as unknown[])
+          : [];
+      return arr as EvoChat[];
     } catch {
       return [];
     }
@@ -95,7 +156,7 @@ class EvolutionAPIService {
           body: JSON.stringify({ where: { key: { remoteJid } }, limit }),
         }
       );
-      return data.messages?.records ?? [];
+      return data?.messages?.records ?? [];
     } catch {
       return [];
     }
