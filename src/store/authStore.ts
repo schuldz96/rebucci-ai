@@ -42,8 +42,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, password: string) => {
     // Simulate API call delay
     await new Promise((r) => setTimeout(r, 800));
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
     const found = MOCK_USERS.find(
-      (u) => u.email === email && mockHashCompare(password, u.passwordHash)
+      (u) => u.email.toLowerCase() === normalizedEmail && mockHashCompare(normalizedPassword, u.passwordHash)
     );
     if (found) {
       set({
