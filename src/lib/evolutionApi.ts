@@ -14,13 +14,54 @@ export interface EvoInstance {
 }
 
 export interface EvoChat {
-  id: string;
-  remoteJid: string;
-  name?: string;
-  pushName?: string;
-  lastMessage?: string;
-  lastMessageTimestamp?: number;
-  unreadMessages?: number;
+  remoteJid: string;        // JID normalizado (sempre preenchido após normalização)
+  name: string;             // nome do contato
+  lastMessage: string;      // texto da última mensagem
+  lastMessageTimestamp: number; // unix timestamp
+  unreadCount: number;
+}
+
+// Normaliza qualquer estrutura de chat da Evolution API para EvoChat
+export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
+  try {
+    // JID: pode ser remoteJid, id, ou key.remoteJid
+    const jid = (raw.remoteJid ?? raw.id ?? "") as string;
+    if (!jid || (!jid.includes("@") && !jid.includes("-"))) return null;
+
+    // Nome do contato
+    const name = ((raw.pushName ?? raw.name ?? jid.split("@")[0] ?? "") as string).trim();
+
+    // Timestamp da última mensagem — vários campos possíveis
+    let ts = 0;
+    if (typeof raw.lastMsgTimestamp === "number") ts = raw.lastMsgTimestamp;
+    else if (typeof raw.lastMessageTimestamp === "number") ts = raw.lastMessageTimestamp;
+    else if (raw.lastMessage && typeof raw.lastMessage === "object") {
+      const lm = raw.lastMessage as Record<string, unknown>;
+      const innerTs = lm.messageTimestamp ?? lm.timestamp;
+      if (typeof innerTs === "number") ts = innerTs;
+    }
+
+    // Texto da última mensagem
+    let lastText = "";
+    if (typeof raw.lastMessage === "string") {
+      lastText = raw.lastMessage;
+    } else if (raw.lastMessage && typeof raw.lastMessage === "object") {
+      const lm = raw.lastMessage as Record<string, unknown>;
+      const msg = lm.message as Record<string, unknown> | undefined;
+      lastText =
+        (msg?.conversation as string) ??
+        ((msg?.extendedTextMessage as Record<string, unknown>)?.text as string) ??
+        (lm.body as string) ??
+        "";
+    }
+
+    // Unread
+    const unread = ((raw.unreadCount ?? raw.unreadMessages ?? 0) as number);
+
+    return { remoteJid: jid, name, lastMessage: lastText, lastMessageTimestamp: ts, unreadCount: unread };
+  } catch {
+    return null;
+  }
 }
 
 export interface EvoMessage {
@@ -168,15 +209,19 @@ class EvolutionAPIService {
       return [];
     };
 
+    let raw: unknown[] = [];
     try {
-      return await tryRequest("POST", JSON.stringify({}));
+      raw = await tryRequest("POST", JSON.stringify({}));
     } catch {
       try {
-        return await tryRequest("GET");
+        raw = await tryRequest("GET");
       } catch {
         return [];
       }
     }
+    return raw
+      .map((item) => normalizeChat(item as Record<string, unknown>))
+      .filter((c): c is EvoChat => c !== null);
   }
 
   async connectInstance(instanceName: string): Promise<{ pairingCode?: string; code?: string } | null> {

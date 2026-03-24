@@ -20,6 +20,32 @@ interface ChatState {
   pollMessages: () => Promise<void>;
 }
 
+async function ensureConfigured(): Promise<boolean> {
+  if (evolutionApi.isConfigured()) return true;
+  try {
+    const { supabase } = await import("@/lib/supabase");
+    const { data } = await supabase
+      .from("evolution_config")
+      .select("api_url, api_token")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    if (data?.api_url && data?.api_token) {
+      evolutionApi.configure(data.api_url, data.api_token);
+      return true;
+    }
+  } catch { /* sem config salva */ }
+  return false;
+}
+
+function safeTimestamp(ts: number): string {
+  try {
+    return new Date(ts * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
 export const useChatStore = create<ChatState>((set, get) => ({
   instances: [],
   conversations: [],
@@ -30,17 +56,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   loadingMessages: false,
 
   loadInstances: async () => {
-    // Tenta carregar config do Supabase se ainda não configurado
-    if (!evolutionApi.isConfigured()) {
-      try {
-        const { supabase } = await import("@/lib/supabase");
-        const { data } = await supabase.from("evolution_config").select("*").order("created_at", { ascending: false }).limit(1).single();
-        if (data) evolutionApi.configure(data.api_url, data.api_token);
-        else return;
-      } catch {
-        return;
-      }
-    }
+    const ok = await ensureConfigured();
+    if (!ok) return;
     set({ loading: true });
     try {
       const { supabase } = await import("@/lib/supabase");
@@ -48,26 +65,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
         evolutionApi.fetchInstances(),
         supabase.from("instance_webhooks").select("instance_name, display_name"),
       ]);
+
       const displayNames: Record<string, string> = {};
       (webhookRows ?? []).forEach((r: { instance_name: string; display_name: string | null }) => {
         if (r.display_name) displayNames[r.instance_name] = r.display_name;
       });
 
-      const instances: Instance[] = raw.map((r) => {
-        const iName = r.instance.instanceName;
-        const owner = (r.instance.owner ?? "").replace(/@s\.whatsapp\.net|@g\.us/g, "");
-        return {
-          id: iName,
-          name: displayNames[iName] ?? r.instance.profileName ?? iName,
-          phone: owner,
-          status: r.instance.status === "open" ? "online" : "offline",
-        };
-      });
+      const instances: Instance[] = raw.map((r) => ({
+        id: r.instance.instanceName,
+        name: displayNames[r.instance.instanceName] ?? r.instance.profileName ?? r.instance.instanceName,
+        phone: (r.instance.owner ?? "").replace(/@s\.whatsapp\.net|@g\.us/g, ""),
+        status: r.instance.status === "open" ? "online" : "offline",
+      }));
+
       set({ instances, loading: false });
-      // Auto-select first online instance
-      const first = instances.find((i) => i.status === "online") ?? instances[0];
-      if (first && !get().selectedInstanceId) {
-        get().selectInstance(first.id);
+
+      // Auto-seleciona apenas sem disparar loadConversations automaticamente
+      // (o usuário clica para carregar)
+      if (!get().selectedInstanceId && instances.length > 0) {
+        const first = instances.find((i) => i.status === "online") ?? instances[0];
+        set({ selectedInstanceId: first.id });
       }
     } catch {
       set({ loading: false });
@@ -75,23 +92,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   loadConversations: async (instanceName: string) => {
-    if (!evolutionApi.isConfigured()) return;
-    set({ loading: true });
+    const ok = await ensureConfigured();
+    if (!ok) return;
+    set({ loading: true, conversations: [] });
     try {
       const chats = await evolutionApi.fetchChats(instanceName);
       const conversations: Conversation[] = chats
-        .sort((a, b) => (b.lastMessageTimestamp ?? 0) - (a.lastMessageTimestamp ?? 0))
+        .filter((c) => c.remoteJid)
+        .sort((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp)
         .map((c) => ({
           id: c.remoteJid,
           instanceId: instanceName,
-          contactName: c.pushName ?? c.name ?? c.remoteJid.split("@")[0],
-          contactPhone: c.remoteJid.split("@")[0],
-          lastMessage: c.lastMessage ?? "",
-          lastMessageTime: c.lastMessageTimestamp
-            ? new Date(c.lastMessageTimestamp * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-            : "",
-          unreadCount: c.unreadMessages ?? 0,
-          status: (c.unreadMessages ?? 0) > 0 ? "pending" : "answered",
+          contactName: c.name || c.remoteJid.split("@")[0] || "Desconhecido",
+          contactPhone: c.remoteJid.split("@")[0] || "",
+          lastMessage: c.lastMessage || "",
+          lastMessageTime: c.lastMessageTimestamp ? safeTimestamp(c.lastMessageTimestamp) : "",
+          unreadCount: c.unreadCount || 0,
+          status: (c.unreadCount || 0) > 0 ? "pending" : "answered",
         }));
       set({ conversations, loading: false });
     } catch {
@@ -100,20 +117,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   loadMessages: async (instanceName: string, remoteJid: string) => {
-    if (!evolutionApi.isConfigured()) return;
-    set({ loadingMessages: true });
+    const ok = await ensureConfigured();
+    if (!ok) return;
+    set({ loadingMessages: true, messages: [] });
     try {
       const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 100);
-      // Ordenar do mais antigo para o mais recente (para exibir corretamente no chat)
-      const sorted = [...raw].sort((a, b) => a.messageTimestamp - b.messageTimestamp);
-      const messages: ChatMessage[] = sorted.map((m) => ({
-        id: m.key.id,
-        conversationId: remoteJid,
-        content: evolutionApi.extractMessageText(m),
-        type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
-        direction: m.key.fromMe ? "sent" : "received",
-        timestamp: new Date(m.messageTimestamp * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      }));
+      const sorted = [...raw].sort((a, b) =>
+        (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0)
+      );
+      const messages: ChatMessage[] = sorted
+        .filter((m) => m?.key)
+        .map((m) => ({
+          id: m.key?.id ?? `msg-${Math.random()}`,
+          conversationId: remoteJid,
+          content: evolutionApi.extractMessageText(m) || "",
+          type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
+          direction: m.key?.fromMe ? "sent" : "received",
+          timestamp: m.messageTimestamp ? safeTimestamp(m.messageTimestamp) : "",
+        }));
       set({ messages, loadingMessages: false });
     } catch {
       set({ loadingMessages: false });
@@ -134,22 +155,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
   pollMessages: async () => {
     const { selectedInstanceId, selectedConversationId } = get();
     if (!selectedInstanceId || !selectedConversationId) return;
-    // Atualiza silenciosamente (sem loading state para não piscar)
+    if (!evolutionApi.isConfigured()) return;
     try {
       const raw = await evolutionApi.fetchMessages(selectedInstanceId, selectedConversationId, 100);
-      const sorted = [...raw].sort((a, b) => a.messageTimestamp - b.messageTimestamp);
-      const messages: ChatMessage[] = sorted.map((m) => ({
-        id: m.key.id,
-        conversationId: selectedConversationId,
-        content: evolutionApi.extractMessageText(m),
-        type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
-        direction: m.key.fromMe ? "sent" : "received",
-        timestamp: new Date(m.messageTimestamp * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      }));
+      const sorted = [...raw].sort((a, b) =>
+        (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0)
+      );
+      const messages: ChatMessage[] = sorted
+        .filter((m) => m?.key)
+        .map((m) => ({
+          id: m.key?.id ?? `msg-${Math.random()}`,
+          conversationId: selectedConversationId,
+          content: evolutionApi.extractMessageText(m) || "",
+          type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
+          direction: m.key?.fromMe ? "sent" : "received",
+          timestamp: m.messageTimestamp ? safeTimestamp(m.messageTimestamp) : "",
+        }));
       set({ messages });
-    } catch {
-      // Silencioso no poll
-    }
+    } catch { /* silencioso */ }
   },
 
   sendMessage: async (content: string) => {
@@ -168,8 +191,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ messages: [...messages, optimistic] });
     try {
       await evolutionApi.sendTextMessage(selectedInstanceId, selectedConversationId, content);
-    } catch {
-      // Mantém a mensagem otimista mesmo em erro
-    }
+    } catch { /* mantém mensagem otimista */ }
   },
 }));
