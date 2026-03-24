@@ -1,147 +1,115 @@
-# RebucciAI CRM — CLAUDE.md
+# CLAUDE.md
 
-## Visão Geral
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## RebucciAI CRM
 
 CRM com IA para gestão de leads, contatos, negócios e atendimento via WhatsApp.
 Stack: React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui + Zustand.
-Projeto frontend puro (sem backend). Dados mockados em `src/data/mockData.ts`.
+**Projeto frontend puro — sem backend. Todos os dados estão em `src/data/mockData.ts`.**
 
 ---
 
-## Estrutura de Pastas
+## Comandos
+
+```bash
+npm run dev      # dev server na porta 8080
+npm run build    # build de produção
+npm run lint     # ESLint
+npm run test     # Vitest
+```
+
+Adicionar componente shadcn: `npx shadcn@latest add <componente>` (nunca editar `src/components/ui/` manualmente).
+
+---
+
+## Estrutura
 
 ```
 src/
+├── main.tsx              # Entry point Vite (referenciado em index.html)
+├── vite-env.d.ts
+├── app/
+│   └── App.tsx           # Roteamento + providers (QueryClient, Toaster, BrowserRouter)
+├── styles/
+│   └── index.css         # Tokens CSS HSL, utilitários (.glass, .surface-elevated, .glow, .text-gradient)
 ├── components/
-│   ├── layout/          # AppLayout.tsx, AppSidebar.tsx
-│   ├── deals/           # AIAgentModal.tsx, DealDetailPanel.tsx
-│   ├── shared/          # Componentes reutilizáveis (NavLink.tsx)
-│   └── ui/              # Componentes shadcn/ui (não editar diretamente)
-├── pages/               # Uma página por rota
-│   ├── LoginPage.tsx
-│   ├── DashboardPage.tsx
-│   ├── WhatsAppPage.tsx
-│   ├── ContactsPage.tsx
-│   ├── DealsPage.tsx
-│   ├── SettingsPage.tsx
-│   └── AIRagPage.tsx
-├── store/               # Estado global com Zustand
-│   ├── authStore.ts     # Autenticação
-│   ├── chatStore.ts     # WhatsApp (instâncias, conversas, mensagens)
-│   └── dealStore.ts     # Negócios e estágios kanban
+│   ├── layout/           # AppLayout (h-screen flex), AppSidebar (colapsável 68px/240px)
+│   ├── deals/            # AIAgentModal (7 abas), DealDetailPanel
+│   ├── shared/           # NavLink
+│   └── ui/               # shadcn/ui — não editar
+├── pages/                # Uma página por rota
+├── store/                # Zustand: authStore, chatStore, dealStore
 ├── data/
-│   └── mockData.ts      # Todos os dados mock + interfaces TypeScript
-├── hooks/
-│   ├── use-mobile.tsx   # Detecta viewport mobile (breakpoint 768px)
-│   └── use-toast.ts     # Notificações toast
+│   └── mockData.ts       # Dados mock + todas as interfaces TypeScript
+├── hooks/                # use-mobile (breakpoint 768px), use-toast
 ├── lib/
-│   └── utils.ts         # cn(), stripPhone(), formatPhone()
+│   └── utils.ts          # cn(), stripPhone(), formatPhone()
 └── test/
-    ├── setup.ts
-    └── example.test.ts
 ```
 
 ---
 
-## Roteamento (src/App.tsx)
+## Roteamento (`src/app/App.tsx`)
 
 ```
-/              → redireciona para /dashboard ou /login
-/login         → LoginPage (pública)
-/dashboard     → DashboardPage (protegida)
-/whatsapp      → WhatsAppPage (protegida)
-/contacts      → ContactsPage (protegida)
-/deals         → DealsPage (protegida)
-/settings      → SettingsPage (protegida)
+/           → redireciona para /dashboard ou /login
+/login      → LoginPage (pública)
+/dashboard  → DashboardPage  ┐
+/whatsapp   → WhatsAppPage   │ protegidas — verificam authStore.isAuthenticated
+/contacts   → ContactsPage   │ se não autenticado → /login
+/deals      → DealsPage      │
+/settings   → SettingsPage   ┘
 ```
 
-Rotas protegidas verificam `authStore.isAuthenticated`. Se não autenticado → redireciona para `/login`.
+Para adicionar página: criar em `src/pages/`, registrar em `src/app/App.tsx`.
 
 ---
 
-## Layout
+## Layout (regra crítica)
 
-`AppLayout` → `h-screen overflow-hidden` com sidebar + main.
-Todas as páginas devem usar `flex flex-col h-full overflow-hidden` para respeitar o layout fixo.
-Seções que não rolam usam `shrink-0`. Seções que rolam usam `flex-1 overflow-auto`.
+`AppLayout` usa `h-screen overflow-hidden`. **Toda página deve seguir este padrão:**
 
----
+```tsx
+<div className="flex flex-col h-full overflow-hidden">
+  <div className="shrink-0">...</div>        {/* header/filtros — não rola */}
+  <div className="flex-1 overflow-auto">...</div>  {/* conteúdo — rola */}
+</div>
+```
 
-## Design System
-
-- **Tema:** dark mode fixo (class-based)
-- **Fonte:** Inter (300–800)
-- **Cores:** variáveis CSS HSL em `src/index.css` (primary = roxo #9d66ff, accent = teal)
-- **Utilitário `.surface-elevated`:** card com sombra (definido em index.css)
-- **Animações:** Framer Motion — fade-in, slide-in, motion.tr nas tabelas
-- **Ícones:** Lucide React
-
-### Classes utilitárias customizadas (index.css)
-- `.glass` — card com opacidade 80% + backdrop-blur
-- `.surface-elevated` — card com shadow-md
-- `.text-gradient` — texto com gradiente primary
-- `.glow` — sombra roxa
+Quebrar esse padrão causa scroll na página inteira em vez de scroll interno.
 
 ---
 
 ## Estado Global (Zustand)
 
-### authStore
-- `user` — `{ id, email, name, role, avatar }`
-- `isAuthenticated` — boolean
-- `login(email, password)` — mock, valida contra hash
-- `logout()`
-- Credencial de teste: `marcos.schuldz@gmail.com` / `Violeiro12`
-
-### chatStore
-- `instances`, `conversations`, `messages`
-- `selectedInstanceId`, `selectedConversationId`
-- `sendMessage(content)` — auto-responde após 1.5s
-
-### dealStore
-- `deals`, `stages` (7 estágios kanban)
-- `selectedDealId`
-- `moveDeal(dealId, newStage)`, `addDeal()`, `updateDeal()`
+- **authStore** — `user`, `isAuthenticated`, `login()`, `logout()`
+  Credencial mock: `marcos.schuldz@gmail.com` / `Violeiro12`
+- **chatStore** — instâncias WhatsApp, conversas, mensagens. `sendMessage()` auto-responde em 1.5s
+- **dealStore** — deals, 7 estágios kanban, `moveDeal()`, `addDeal()`, `updateDeal()`
 
 ---
 
-## Interfaces TypeScript (src/data/mockData.ts)
+## Design System
 
-- `Instance` — conexão WhatsApp
-- `ChatMessage` — mensagem de chat (text/audio/image, sent/received)
-- `Conversation` — conversa com status (pending/unanswered/answered)
-- `Contact` — contato CRM com datas (ativação, término, feedbacks)
-- `Deal` — negócio com valor, estágio, prioridade
-- `RAGBase` — base de conhecimento IA
-- `AgentConfig` — configuração do agente IA
-
----
-
-## Utilitários (src/lib/utils.ts)
-
-```typescript
-cn(...inputs)          // merge de classes tailwind
-stripPhone(phone)      // remove não-dígitos
-formatPhone(phone)     // formata: +55 11 98765-4321
-```
+- **Tema:** dark mode fixo (class-based via Tailwind)
+- **Fonte:** Inter (300–800)
+- **Cores:** variáveis HSL em `src/styles/index.css` — primary = roxo `#9d66ff`, accent = teal
+- **Animações:** Framer Motion (`motion.tr` em tabelas, fade-in, slide-in)
+- **Ícones:** Lucide React
+- Alias `@/` → `src/`
 
 ---
 
-## Scripts
+## Interfaces TypeScript
 
-```bash
-npm run dev      # servidor de desenvolvimento (porta 8080)
-npm run build    # build de produção
-npm run lint     # ESLint
-npm run test     # Vitest (unitário)
-```
+Todas definidas em `src/data/mockData.ts`:
+`Instance`, `ChatMessage`, `Conversation`, `Contact`, `Deal`, `RAGBase`, `AgentConfig`
 
 ---
 
 ## Convenções
 
-- Português para todo texto de UI
-- Sem backend — dados em `src/data/mockData.ts`
-- shadcn/ui em `src/components/ui/` — não editar diretamente, usar via CLI shadcn
-- Alias `@/` aponta para `src/`
-- Páginas novas devem ser adicionadas em `src/pages/` e registradas em `App.tsx`
+- Todo texto de UI em **português**
+- Novos dados mock em `src/data/mockData.ts`
+- Componentes shadcn adicionados via CLI, nunca editados manualmente
