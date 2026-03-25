@@ -77,14 +77,26 @@ export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
 }
 
 export interface EvoMessage {
-  key: { remoteJid: string; fromMe: boolean; id: string };
+  key: {
+    remoteJid: string;
+    remoteJidAlt?: string; // telefone real @s.whatsapp.net quando remoteJid é @lid
+    fromMe: boolean;
+    id: string;
+    participant?: string;
+    participantAlt?: string;
+  };
   pushName?: string;
   messageTimestamp: number;
+  messageType?: string;
   message?: {
     conversation?: string;
     extendedTextMessage?: { text: string };
     imageMessage?: { caption?: string };
     audioMessage?: Record<string, unknown>;
+    videoMessage?: Record<string, unknown>;
+    stickerMessage?: Record<string, unknown>;
+    documentMessage?: { title?: string; caption?: string };
+    reactionMessage?: { text?: string };
   };
 }
 
@@ -207,6 +219,60 @@ class EvolutionAPIService {
   }
 
   async fetchChats(instanceName: string, limit = 100): Promise<EvoChat[]> {
+    // Estratégia 1: usar findMessages (mais confiável no v2 — tem timestamps reais e suporta @lid)
+    try {
+      const data = await this.request<{ messages: { records: EvoMessage[] } }>(
+        `/chat/findMessages/${instanceName}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            where: {},
+            orderBy: { messageTimestamp: "desc" },
+            limit: Math.max(limit * 3, 300), // pega mais msgs para cobrir mais conversas únicas
+          }),
+        }
+      );
+      const records = data?.messages?.records ?? [];
+      if (records.length > 0) {
+        // Agrupa por remoteJid — cada conversa única aparece apenas 1x (a mais recente primeiro)
+        type Entry = { chat: EvoChat; hasName: boolean };
+        const chatMap = new Map<string, Entry>();
+
+        for (const msg of records) {
+          if (!msg?.key?.remoteJid) continue;
+          const jid = msg.key.remoteJid;
+          const existing = chatMap.get(jid);
+
+          if (!existing) {
+            const fromMe = !!msg.key.fromMe;
+            const name = (!fromMe && msg.pushName) ? msg.pushName : (jid.split("@")[0] ?? "");
+            chatMap.set(jid, {
+              chat: {
+                remoteJid: jid,
+                name,
+                lastMessage: this.extractMessageText(msg),
+                lastMessageTimestamp: msg.messageTimestamp ?? 0,
+                unreadCount: 0,
+              },
+              hasName: !fromMe && !!msg.pushName,
+            });
+          } else if (!existing.hasName && !msg.key.fromMe && msg.pushName) {
+            // Atualiza nome se ainda não tinha (mensagem recebida com pushName)
+            existing.chat.name = msg.pushName;
+            existing.hasName = true;
+          }
+
+          // Limita a `limit` conversas únicas
+          if (chatMap.size >= limit) break;
+        }
+
+        if (chatMap.size > 0) {
+          return Array.from(chatMap.values()).map((e) => e.chat);
+        }
+      }
+    } catch { /* tenta findChats */ }
+
+    // Estratégia 2: findChats endpoint (fallback)
     const extractArray = (data: unknown): unknown[] => {
       if (Array.isArray(data)) return data;
       const d = data as Record<string, unknown>;
@@ -216,23 +282,17 @@ class EvolutionAPIService {
       return [];
     };
 
-    // Tenta múltiplos formatos que a Evolution API v2 pode aceitar
-    const attempts: Array<() => Promise<unknown>> = [
-      () => this.request(`/chat/findChats/${instanceName}`, {
-        method: "POST",
-        body: JSON.stringify({ where: {}, orderBy: { lastMsgTimestamp: "desc" }, limit }),
-      }),
-      () => this.request(`/chat/findChats/${instanceName}`, {
-        method: "POST",
-        body: JSON.stringify({ where: {}, limit }),
-      }),
-      () => this.request(`/chat/findChats/${instanceName}`, { method: "POST", body: JSON.stringify({}) }),
-      () => this.request(`/chat/findChats/${instanceName}`, { method: "GET" }),
-    ];
-
-    for (const attempt of attempts) {
+    for (const [method, body] of [
+      ["POST", JSON.stringify({ where: {}, orderBy: { lastMsgTimestamp: "desc" }, limit })],
+      ["POST", JSON.stringify({ where: {}, limit })],
+      ["POST", JSON.stringify({})],
+      ["GET", undefined],
+    ] as [string, string | undefined][]) {
       try {
-        const data = await attempt();
+        const data = await this.request(`/chat/findChats/${instanceName}`, {
+          method,
+          ...(body ? { body } : {}),
+        });
         const raw = extractArray(data);
         if (raw.length > 0) {
           return raw
@@ -277,11 +337,19 @@ class EvolutionAPIService {
   }
 
   extractMessageText(msg: EvoMessage): string {
+    const m = msg.message;
+    if (!m) return "";
     return (
-      msg.message?.conversation ??
-      msg.message?.extendedTextMessage?.text ??
-      msg.message?.imageMessage?.caption ??
-      (msg.message?.audioMessage ? "[Áudio]" : "[Mensagem]")
+      m.conversation ??
+      m.extendedTextMessage?.text ??
+      m.imageMessage?.caption ??
+      m.documentMessage?.caption ??
+      m.documentMessage?.title ??
+      m.reactionMessage?.text ??
+      (m.audioMessage ? "[Áudio]" : undefined) ??
+      (m.videoMessage ? "[Vídeo]" : undefined) ??
+      (m.stickerMessage ? "[Sticker]" : undefined) ??
+      ""
     );
   }
 }
