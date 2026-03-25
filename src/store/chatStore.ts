@@ -133,7 +133,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!ok) return;
     set({ loadingMessages: true, messages: [] });
     try {
-      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 100);
+      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 50);
+      // Descarta se o usuário trocou de conversa enquanto carregava
+      if (get().selectedConversationId !== remoteJid) return;
       const sorted = [...raw].sort((a, b) =>
         (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0)
       );
@@ -168,8 +170,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const { selectedInstanceId, selectedConversationId } = get();
     if (!selectedInstanceId || !selectedConversationId) return;
     if (!evolutionApi.isConfigured()) return;
+    const snapConvId = selectedConversationId;
     try {
-      const raw = await evolutionApi.fetchMessages(selectedInstanceId, selectedConversationId, 100);
+      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 50);
+      // Descarta se o usuário trocou de conversa enquanto o poll estava em voo
+      if (get().selectedConversationId !== snapConvId) return;
       const sorted = [...raw].sort((a, b) =>
         (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0)
       );
@@ -177,7 +182,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         .filter((m) => m?.key)
         .map((m) => ({
           id: m.key?.id ?? `msg-${Math.random()}`,
-          conversationId: selectedConversationId,
+          conversationId: snapConvId,
           content: evolutionApi.extractMessageText(m) || "",
           type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
           direction: m.key?.fromMe ? "sent" : "received",

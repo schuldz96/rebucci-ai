@@ -13,7 +13,7 @@ type ConvFilter = "all" | "pending" | "unanswered" | "answered";
 type SortMode = "recent" | "old" | "az" | "za";
 type InstanceFilter = "all" | "online" | "offline";
 
-const POLL_INTERVAL = 3000;
+const POLL_INTERVAL = 8000;
 
 const WhatsAppPage = () => {
   const {
