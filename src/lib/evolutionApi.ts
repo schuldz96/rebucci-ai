@@ -14,10 +14,11 @@ export interface EvoInstance {
 }
 
 export interface EvoChat {
-  remoteJid: string;        // JID normalizado (sempre preenchido após normalização)
-  name: string;             // nome do contato
-  lastMessage: string;      // texto da última mensagem
-  lastMessageTimestamp: number; // unix timestamp
+  remoteJid: string;         // JID principal (pode ser @lid no v2)
+  remoteJidAlt?: string;     // telefone real (@s.whatsapp.net) quando remoteJid é @lid
+  name: string;
+  lastMessage: string;
+  lastMessageTimestamp: number;
   unreadCount: number;
 }
 
@@ -67,10 +68,27 @@ export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
         "";
     }
 
+    // remoteJidAlt: para JIDs @lid, o telefone real fica em lastMessage.key.remoteJidAlt
+    let remoteJidAlt: string | undefined;
+    if (jid.includes("@lid") && raw.lastMessage && typeof raw.lastMessage === "object") {
+      const lm = raw.lastMessage as Record<string, unknown>;
+      const k = lm.key as Record<string, unknown> | undefined;
+      if (typeof k?.remoteJidAlt === "string" && k.remoteJidAlt) {
+        remoteJidAlt = k.remoteJidAlt;
+      }
+    }
+
+    // pushName do contato também pode estar em lastMessage.pushName
+    const finalName = (name ||
+      (raw.lastMessage && typeof raw.lastMessage === "object"
+        ? ((raw.lastMessage as Record<string, unknown>).pushName as string | undefined) ?? ""
+        : "")
+    ).trim();
+
     // Unread
     const unread = ((raw.unreadCount ?? raw.unreadMessages ?? raw.unread ?? 0) as number);
 
-    return { remoteJid: jid, name, lastMessage: lastText, lastMessageTimestamp: ts, unreadCount: unread };
+    return { remoteJid: jid, remoteJidAlt, name: finalName, lastMessage: lastText, lastMessageTimestamp: ts, unreadCount: unread };
   } catch {
     return null;
   }
@@ -219,89 +237,68 @@ class EvolutionAPIService {
   }
 
   async fetchChats(instanceName: string, limit = 100): Promise<EvoChat[]> {
-    // Estratégia 1: usar findMessages (mais confiável no v2 — tem timestamps reais e suporta @lid)
-    try {
-      const data = await this.request<{ messages: { records: EvoMessage[] } }>(
-        `/chat/findMessages/${instanceName}`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            where: {},
-            orderBy: { messageTimestamp: "desc" },
-            limit: Math.max(limit * 3, 300), // pega mais msgs para cobrir mais conversas únicas
-          }),
-        }
-      );
-      const records = data?.messages?.records ?? [];
-      if (records.length > 0) {
-        // Agrupa por remoteJid — cada conversa única aparece apenas 1x (a mais recente primeiro)
-        type Entry = { chat: EvoChat; hasName: boolean };
-        const chatMap = new Map<string, Entry>();
-
-        for (const msg of records) {
-          if (!msg?.key?.remoteJid) continue;
-          const jid = msg.key.remoteJid;
-          const existing = chatMap.get(jid);
-
-          if (!existing) {
-            const fromMe = !!msg.key.fromMe;
-            const name = (!fromMe && msg.pushName) ? msg.pushName : (jid.split("@")[0] ?? "");
-            chatMap.set(jid, {
-              chat: {
-                remoteJid: jid,
-                name,
-                lastMessage: this.extractMessageText(msg),
-                lastMessageTimestamp: msg.messageTimestamp ?? 0,
-                unreadCount: 0,
-              },
-              hasName: !fromMe && !!msg.pushName,
-            });
-          } else if (!existing.hasName && !msg.key.fromMe && msg.pushName) {
-            // Atualiza nome se ainda não tinha (mensagem recebida com pushName)
-            existing.chat.name = msg.pushName;
-            existing.hasName = true;
-          }
-
-          // Limita a `limit` conversas únicas
-          if (chatMap.size >= limit) break;
-        }
-
-        if (chatMap.size > 0) {
-          return Array.from(chatMap.values()).map((e) => e.chat);
-        }
-      }
-    } catch { /* tenta findChats */ }
-
-    // Estratégia 2: findChats endpoint (fallback)
-    const extractArray = (data: unknown): unknown[] => {
+    const toArray = (data: unknown): unknown[] => {
       if (Array.isArray(data)) return data;
       const d = data as Record<string, unknown>;
-      if (Array.isArray(d.chats)) return d.chats;
-      if (Array.isArray(d.data)) return d.data;
-      if (Array.isArray(d.records)) return d.records;
-      return [];
+      return Array.isArray(d.chats) ? d.chats
+        : Array.isArray(d.data) ? d.data
+        : Array.isArray(d.records) ? d.records
+        : [];
     };
 
-    for (const [method, body] of [
-      ["POST", JSON.stringify({ where: {}, orderBy: { lastMsgTimestamp: "desc" }, limit })],
-      ["POST", JSON.stringify({ where: {}, limit })],
-      ["POST", JSON.stringify({})],
-      ["GET", undefined],
-    ] as [string, string | undefined][]) {
+    let raw: unknown[] = [];
+
+    // findChats POST {} — padrão Evolution API v2 (mais simples e confiável)
+    try {
+      const data = await this.request(`/chat/findChats/${instanceName}`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      raw = toArray(data);
+    } catch { /* try GET */ }
+
+    // Fallback GET
+    if (raw.length === 0) {
       try {
-        const data = await this.request(`/chat/findChats/${instanceName}`, {
-          method,
-          ...(body ? { body } : {}),
-        });
-        const raw = extractArray(data);
-        if (raw.length > 0) {
-          return raw
-            .map((item) => normalizeChat(item as Record<string, unknown>))
-            .filter((c): c is EvoChat => c !== null);
-        }
-      } catch { /* tenta próximo */ }
+        const data = await this.request(`/chat/findChats/${instanceName}`);
+        raw = toArray(data);
+      } catch { return []; }
     }
-    return [];
+
+    if (raw.length === 0) return [];
+
+    // Normaliza + deduplica (@lid e @s.whatsapp.net do mesmo contato viram 1 entrada)
+    const phoneMap = new Map<string, EvoChat>();
+
+    for (const item of raw) {
+      const c = normalizeChat(item as Record<string, unknown>);
+      if (!c) continue;
+
+      // Chave de dedup: para @lid usa o telefone real (remoteJidAlt), senão usa o número do JID
+      const dedupKey = (c.remoteJid.includes("@lid") && c.remoteJidAlt)
+        ? c.remoteJidAlt.replace(/@.*/, "")
+        : c.remoteJid.replace(/@.*/, "");
+
+      if (!dedupKey) continue;
+
+      const existing = phoneMap.get(dedupKey);
+      if (!existing) {
+        phoneMap.set(dedupKey, c);
+      } else {
+        // Merge: mantém o mais recente, preserva nome e unread
+        const newer = c.lastMessageTimestamp >= existing.lastMessageTimestamp ? c : existing;
+        const older = newer === c ? existing : c;
+        phoneMap.set(dedupKey, {
+          ...newer,
+          name: newer.name || older.name,
+          unreadCount: Math.max(newer.unreadCount, older.unreadCount),
+        });
+      }
+    }
+
+    return Array.from(phoneMap.values())
+      .sort((a, b) => (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0))
+      .slice(0, limit);
   }
 
   async connectInstance(instanceName: string): Promise<{ pairingCode?: string; code?: string } | null> {

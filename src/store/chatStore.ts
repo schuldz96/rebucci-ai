@@ -106,16 +106,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
           if (!b.lastMessageTimestamp) return -1;
           return b.lastMessageTimestamp - a.lastMessageTimestamp;
         })
-        .map((c) => ({
-          id: c.remoteJid,
-          instanceId: instanceName,
-          contactName: c.name || c.remoteJid.split("@")[0] || "Desconhecido",
-          contactPhone: c.remoteJid.split("@")[0] || "",
-          lastMessage: c.lastMessage || "",
-          lastMessageTime: c.lastMessageTimestamp ? safeTimestamp(c.lastMessageTimestamp) : "",
-          unreadCount: c.unreadCount || 0,
-          status: (c.unreadCount || 0) > 0 ? "pending" : "answered",
-        }));
+        .map((c) => {
+          // Para JIDs @lid, o número real fica em remoteJidAlt
+          const phoneJid = c.remoteJidAlt || c.remoteJid;
+          const phone = phoneJid.split("@")[0] || "";
+          return {
+            id: c.remoteJid,
+            instanceId: instanceName,
+            contactName: c.name || phone || "Desconhecido",
+            contactPhone: phone,
+            lastMessage: c.lastMessage || "",
+            lastMessageTime: c.lastMessageTimestamp ? safeTimestamp(c.lastMessageTimestamp) : "",
+            unreadCount: c.unreadCount || 0,
+            status: (c.unreadCount || 0) > 0 ? "pending" : "answered",
+          };
+        });
       set({ conversations, loading: false });
     } catch {
       set({ loading: false });
