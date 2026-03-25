@@ -38,8 +38,8 @@ export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
     // Aceita JIDs WhatsApp individuais (@s.whatsapp.net), grupos (@g.us), e qualquer formato com @
     if (!jid.includes("@") && !jid.includes("-") && !/^\d{7,}$/.test(jid)) return null;
 
-    // Nome do contato
-    const name = ((raw.pushName ?? raw.name ?? raw.contactName ?? jid.split("@")[0] ?? "") as string).trim();
+    // Nome do contato (ainda sem remoteJidAlt — calculado abaixo)
+    const nameRaw = ((raw.pushName ?? raw.name ?? raw.contactName ?? "") as string).trim();
 
     // Timestamp da última mensagem — vários campos possíveis
     let ts = 0;
@@ -79,11 +79,16 @@ export function normalizeChat(raw: Record<string, unknown>): EvoChat | null {
     }
 
     // pushName do contato também pode estar em lastMessage.pushName
-    const finalName = (name ||
-      (raw.lastMessage && typeof raw.lastMessage === "object"
-        ? ((raw.lastMessage as Record<string, unknown>).pushName as string | undefined) ?? ""
-        : "")
-    ).trim();
+    const lastMsgPushName = (raw.lastMessage && typeof raw.lastMessage === "object"
+      ? ((raw.lastMessage as Record<string, unknown>).pushName as string | undefined) ?? ""
+      : "");
+
+    // Para @lid sem nome real, usa o telefone de remoteJidAlt como fallback (não o LID)
+    const jidFallback = (jid.includes("@lid") && remoteJidAlt)
+      ? remoteJidAlt.split("@")[0]
+      : jid.split("@")[0];
+
+    const finalName = (nameRaw || lastMsgPushName || jidFallback).trim();
 
     // Unread
     const unread = ((raw.unreadCount ?? raw.unreadMessages ?? raw.unread ?? 0) as number);

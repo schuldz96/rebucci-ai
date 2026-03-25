@@ -108,6 +108,18 @@ Todas definidas em `src/data/mockData.ts`:
 
 ---
 
+## Deploy
+
+**Este projeto é hospedado no Lovable.** Todo deploy deve ser feito via Lovable — nunca via `npm run build` diretamente para produção.
+
+Para publicar alterações:
+1. Faça as edições normalmente neste repositório
+2. Acesse o painel do Lovable e faça o deploy a partir do repositório conectado
+
+**Nunca sugerir Vercel, Netlify ou outros hosts** — o destino é sempre Lovable.
+
+---
+
 ## Convenções
 
 - Todo texto de UI em **português**
