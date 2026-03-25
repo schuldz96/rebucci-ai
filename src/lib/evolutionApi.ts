@@ -206,7 +206,7 @@ class EvolutionAPIService {
       .filter((i): i is EvoInstance => i !== null);
   }
 
-  async fetchChats(instanceName: string): Promise<EvoChat[]> {
+  async fetchChats(instanceName: string, limit = 100): Promise<EvoChat[]> {
     const extractArray = (data: unknown): unknown[] => {
       if (Array.isArray(data)) return data;
       const d = data as Record<string, unknown>;
@@ -218,7 +218,14 @@ class EvolutionAPIService {
 
     // Tenta múltiplos formatos que a Evolution API v2 pode aceitar
     const attempts: Array<() => Promise<unknown>> = [
-      () => this.request(`/chat/findChats/${instanceName}`, { method: "POST", body: JSON.stringify({ where: {} }) }),
+      () => this.request(`/chat/findChats/${instanceName}`, {
+        method: "POST",
+        body: JSON.stringify({ where: {}, orderBy: { lastMsgTimestamp: "desc" }, limit }),
+      }),
+      () => this.request(`/chat/findChats/${instanceName}`, {
+        method: "POST",
+        body: JSON.stringify({ where: {}, limit }),
+      }),
       () => this.request(`/chat/findChats/${instanceName}`, { method: "POST", body: JSON.stringify({}) }),
       () => this.request(`/chat/findChats/${instanceName}`, { method: "GET" }),
     ];

@@ -96,10 +96,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!ok) return;
     set({ loading: true, conversations: [] });
     try {
-      const chats = await evolutionApi.fetchChats(instanceName);
+      const chats = await evolutionApi.fetchChats(instanceName, 100);
       const conversations: Conversation[] = chats
         .filter((c) => c.remoteJid)
-        .sort((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp)
+        .sort((a, b) => {
+          // Sem timestamp vai pro fim
+          if (!a.lastMessageTimestamp && !b.lastMessageTimestamp) return 0;
+          if (!a.lastMessageTimestamp) return 1;
+          if (!b.lastMessageTimestamp) return -1;
+          return b.lastMessageTimestamp - a.lastMessageTimestamp;
+        })
         .map((c) => ({
           id: c.remoteJid,
           instanceId: instanceName,
