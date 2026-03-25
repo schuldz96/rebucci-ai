@@ -96,7 +96,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!ok) return;
     set({ loading: true, conversations: [] });
     try {
-      const chats = await evolutionApi.fetchChats(instanceName, 100);
+      const chats = await evolutionApi.fetchChats(instanceName, 200);
       const conversations: Conversation[] = chats
         .filter((c) => c.remoteJid)
         .sort((a, b) => {
@@ -117,6 +117,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             contactPhone: phone,
             lastMessage: c.lastMessage || "",
             lastMessageTime: c.lastMessageTimestamp ? safeTimestamp(c.lastMessageTimestamp) : "",
+            lastMessageTimestamp: c.lastMessageTimestamp || 0,
             unreadCount: c.unreadCount || 0,
             status: (c.unreadCount || 0) > 0 ? "pending" : "answered",
           };

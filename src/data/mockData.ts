@@ -22,6 +22,7 @@ export interface Conversation {
   contactPhone: string;
   lastMessage: string;
   lastMessageTime: string;
+  lastMessageTimestamp?: number;
   unreadCount: number;
   status: "pending" | "unanswered" | "answered";
 }

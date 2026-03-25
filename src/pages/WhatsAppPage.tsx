@@ -67,8 +67,8 @@ const WhatsAppPage = () => {
     .sort((a, b) => {
       if (sortMode === "az") return a.contactName.localeCompare(b.contactName);
       if (sortMode === "za") return b.contactName.localeCompare(a.contactName);
-      if (sortMode === "old") return 1;
-      return -1; // recent: mais recentes primeiro (já vêm ordenadas da API)
+      if (sortMode === "old") return (a.lastMessageTimestamp ?? 0) - (b.lastMessageTimestamp ?? 0);
+      return (b.lastMessageTimestamp ?? 0) - (a.lastMessageTimestamp ?? 0); // recent: mais recentes primeiro
     });
 
   const activeConversation = conversations.find((c) => c.id === selectedConversationId);

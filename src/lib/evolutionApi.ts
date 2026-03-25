@@ -254,27 +254,17 @@ class EvolutionAPIService {
         method: "POST",
         body: JSON.stringify({}),
       });
-      console.log("[fetchChats] POST response keys:", data && typeof data === "object" ? Object.keys(data as object) : typeof data, "isArray:", Array.isArray(data));
       raw = toArray(data);
-      console.log("[fetchChats] raw.length after POST:", raw.length, raw.length > 0 ? "first item keys:" + Object.keys(raw[0] as object).join(",") : "");
-    } catch (err) {
-      console.error("[fetchChats] POST error:", err);
-    }
+    } catch { /* try GET */ }
 
     // Fallback GET
     if (raw.length === 0) {
       try {
         const data = await this.request(`/chat/findChats/${instanceName}`);
-        console.log("[fetchChats] GET response:", data && typeof data === "object" ? Object.keys(data as object) : typeof data);
         raw = toArray(data);
-        console.log("[fetchChats] raw.length after GET:", raw.length);
-      } catch (err) {
-        console.error("[fetchChats] GET error:", err);
-        return [];
-      }
+      } catch { return []; }
     }
 
-    console.log("[fetchChats] total raw items:", raw.length);
     if (raw.length === 0) return [];
 
     // Normaliza + deduplica (@lid e @s.whatsapp.net do mesmo contato viram 1 entrada)
@@ -306,11 +296,9 @@ class EvolutionAPIService {
       }
     }
 
-    const result = Array.from(phoneMap.values())
+    return Array.from(phoneMap.values())
       .sort((a, b) => (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0))
       .slice(0, limit);
-    console.log("[fetchChats] phoneMap.size:", phoneMap.size, "returning:", result.length);
-    return result;
   }
 
   async connectInstance(instanceName: string): Promise<{ pairingCode?: string; code?: string } | null> {
