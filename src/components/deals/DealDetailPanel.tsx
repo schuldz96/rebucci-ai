@@ -14,7 +14,7 @@ type DealEditKey = "responsibleUser" | "value" | "phone" | "group" | "priority";
 type ContactEditKey = "company" | "activationDate" | "endDate" | "lastFeedback" | "nextFeedback";
 type EditKey = DealEditKey | ContactEditKey;
 
-interface ChatMsg { id: string; content: string; direction: "sent" | "received"; timestamp: string; type: string; }
+interface ChatMsg { id: string; content: string; direction: "sent" | "received"; timestamp: string; type: string; ts: number; }
 
 interface Props {
   deal: Deal;
@@ -50,6 +50,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chatInstanceRef = useRef<string | null>(null);
   const chatRemoteJidRef = useRef<string | null>(null);
+  const lastTimestampRef = useRef<number>(0);
 
   const linkedContact = deal.contactId
     ? contacts.find((c) => c.id === deal.contactId) ?? null
@@ -87,8 +88,8 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     // Tentativa 1: fetchMessages direto com variantes @s.whatsapp.net
     for (const variant of variants) {
       const remoteJid = `${variant}@s.whatsapp.net`;
-      const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 50);
-      if (msgs.length > 0) return { remoteJid, msgs: processMsgs(msgs) };
+      const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 100);
+      if (msgs.length > 0) return { remoteJid, msgs: processMsgs(msgs, true) };
     }
     // Tentativa 2: fetchChats (cobre @lid e outros formatos)
     const chats = await evolutionApi.fetchChats(instanceName, 500);
@@ -97,8 +98,8 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       return variants.some((v) => chatPhone === v || chatPhone === v.slice(2));
     });
     if (found) {
-      const msgs = await evolutionApi.fetchMessages(instanceName, found.remoteJid, 50);
-      return { remoteJid: found.remoteJid, msgs: processMsgs(msgs) };
+      const msgs = await evolutionApi.fetchMessages(instanceName, found.remoteJid, 100);
+      return { remoteJid: found.remoteJid, msgs: processMsgs(msgs, true) };
     }
     return null;
   };
@@ -153,17 +154,24 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deal.phone, linkedContact?.phone]);
 
-  function processMsgs(raw: Parameters<typeof evolutionApi.extractMessageText>[0][]): ChatMsg[] {
-    return [...raw]
-      .sort((a, b) => (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0))
+  function processMsgs(raw: Parameters<typeof evolutionApi.extractMessageText>[0][], updateLastTs = false): ChatMsg[] {
+    const sorted = [...raw]
       .filter((m) => m?.key)
-      .map((m) => ({
-        id: m.key?.id ?? `msg-${Math.random()}`,
-        content: evolutionApi.extractMessageText(m) || "",
-        type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
-        direction: m.key?.fromMe ? "sent" : "received",
-        timestamp: m.messageTimestamp ? safeTime(m.messageTimestamp) : "",
-      }));
+      .sort((a, b) => (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0));
+
+    if (updateLastTs && sorted.length > 0) {
+      const maxTs = sorted[sorted.length - 1].messageTimestamp ?? 0;
+      if (maxTs > lastTimestampRef.current) lastTimestampRef.current = maxTs;
+    }
+
+    return sorted.map((m) => ({
+      id: m.key?.id ?? `msg-${Math.random()}`,
+      content: evolutionApi.extractMessageText(m) || "",
+      type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
+      direction: m.key?.fromMe ? "sent" : "received",
+      timestamp: m.messageTimestamp ? safeTime(m.messageTimestamp) : "",
+      ts: m.messageTimestamp ?? 0,
+    }));
   }
 
   // Mantém refs atualizados para o polling acessar sem re-criar o interval
@@ -177,23 +185,33 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Polling silencioso a cada 3s para capturar respostas recebidas
+  // Polling incremental: busca apenas mensagens após o último timestamp conhecido
   useEffect(() => {
     const poll = async () => {
       const inst = chatInstanceRef.current;
       const jid = chatRemoteJidRef.current;
       if (!inst || !jid) return;
       try {
-        const msgs = await evolutionApi.fetchMessages(inst, jid, 50);
-        if (msgs.length > 0) {
-          const processed = processMsgs(msgs);
-          setChatMessages((prev) => {
-            if (processed.length === prev.length && processed[processed.length - 1]?.id === prev[prev.length - 1]?.id) return prev;
-            return processed;
-          });
-        }
+        const afterTs = lastTimestampRef.current;
+        // Se ainda não carregamos nada, aguarda
+        if (afterTs === 0) return;
+
+        const raw = await evolutionApi.fetchMessagesAfter(inst, jid, afterTs + 1, 50);
+        if (raw.length === 0) return;
+
+        const incoming = processMsgs(raw, true);
+        if (incoming.length === 0) return;
+
+        setChatMessages((prev) => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const newMsgs = incoming.filter(m => !existingIds.has(m.id));
+          if (newMsgs.length === 0) return prev;
+          // Remove optimistas substituídos + append novas em ordem de ts
+          const base = prev.filter(m => !m.id.startsWith("temp-"));
+          return [...base, ...newMsgs].sort((a, b) => a.ts - b.ts);
+        });
       } catch {
-        // silencioso — não exibe erro no polling
+        // silencioso
       }
     };
 
@@ -201,6 +219,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -213,7 +232,8 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     const text = chatInput.trim();
     setChatInput("");
     // Optimistic
-    const tempMsg: ChatMsg = { id: `temp-${Date.now()}`, content: text, direction: "sent", timestamp: safeTime(Date.now() / 1000), type: "text" };
+    const nowTs = Math.floor(Date.now() / 1000);
+    const tempMsg: ChatMsg = { id: `temp-${Date.now()}`, content: text, direction: "sent", timestamp: safeTime(nowTs), type: "text", ts: nowTs };
     setChatMessages((prev) => [...prev, tempMsg]);
     try {
       const phone = chatRemoteJid.split("@")[0];

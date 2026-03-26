@@ -331,6 +331,28 @@ class EvolutionAPIService {
     }
   }
 
+  /** Busca apenas mensagens após um determinado timestamp (para polling incremental) */
+  async fetchMessagesAfter(instanceName: string, remoteJid: string, afterTimestamp: number, limit = 50): Promise<EvoMessage[]> {
+    try {
+      const data = await this.request<{ messages: { records: EvoMessage[] } }>(
+        `/chat/findMessages/${instanceName}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            where: {
+              key: { remoteJid },
+              messageTimestamp: { gte: afterTimestamp },
+            },
+            limit,
+          }),
+        }
+      );
+      return data?.messages?.records ?? [];
+    } catch {
+      return [];
+    }
+  }
+
   async sendTextMessage(instanceName: string, to: string, text: string) {
     return this.request(`/message/sendText/${instanceName}`, {
       method: "POST",
