@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDealStore } from "@/store/dealStore";
+import { useContactStore } from "@/store/contactStore";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus } from "lucide-react";
+import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AIAgentModal from "@/components/deals/AIAgentModal";
 import DealDetailPanel from "@/components/deals/DealDetailPanel";
-import { type Deal } from "@/data/mockData";
+import { type Deal, type Contact } from "@/data/mockData";
 
 const priorityColors: Record<string, string> = {
   high: "bg-destructive/20 text-destructive border-destructive/30",
@@ -34,24 +35,115 @@ const agentNames: Record<string, string> = {
   "Fechado": "Agente",
 };
 
+interface NewDealForm {
+  title: string;
+  contactName: string;
+  contactId: string | undefined;
+  phone: string;
+  value: number;
+  priority: "low" | "medium" | "high";
+  stage: string;
+}
+
+const emptyForm: NewDealForm = {
+  title: "",
+  contactName: "",
+  contactId: undefined,
+  phone: "",
+  value: 0,
+  priority: "medium",
+  stage: "",
+};
+
 const DealsPage = () => {
-  const { deals, stages, moveDeal, addDeal, updateDeal } = useDealStore();
+  const { deals, stages, moveDeal, addDeal, updateDeal, loadDeals } = useDealStore();
+  const { contacts, loadContacts } = useContactStore();
   const [aiModalStage, setAiModalStage] = useState<string | null>(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
-  const [newDeal, setNewDeal] = useState<{ title: string; contactName: string; value: number; priority: "low" | "medium" | "high"; stage: string }>({ title: "", contactName: "", value: 0, priority: "medium", stage: "" });
+  const [newDeal, setNewDeal] = useState<NewDealForm>(emptyForm);
+  const [contactSearch, setContactSearch] = useState("");
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const contactRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadDeals();
+    loadContacts();
+  }, [loadDeals, loadContacts]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (contactRef.current && !contactRef.current.contains(e.target as Node)) {
+        setShowContactDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredContacts = contacts.filter((c) =>
+    contactSearch
+      ? c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+        c.phone.includes(contactSearch)
+      : true
+  );
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     moveDeal(result.draggableId, result.destination.droppableId);
   };
 
-  const handleCreateDeal = () => {
-    if (!newDeal.title || !newDeal.stage) return;
-    addDeal(newDeal);
-    setNewDeal({ title: "", contactName: "", value: 0, priority: "medium", stage: "" });
-    setShowNewDeal(false);
+  const handleSelectContact = (contact: Contact) => {
+    setNewDeal((prev) => ({
+      ...prev,
+      contactName: contact.name,
+      contactId: contact.id,
+      phone: contact.phone,
+    }));
+    setContactSearch(contact.name);
+    setShowContactDropdown(false);
+  };
+
+  const handleClearContact = () => {
+    setNewDeal((prev) => ({ ...prev, contactName: "", contactId: undefined, phone: "" }));
+    setContactSearch("");
+  };
+
+  const handleCreateDeal = async () => {
+    setSaveError("");
+    if (!newDeal.title) { setSaveError("Título é obrigatório"); return; }
+    if (!newDeal.stage) { setSaveError("Selecione a etapa"); return; }
+    if (!newDeal.contactName) { setSaveError("Nome do contato é obrigatório"); return; }
+    setSaving(true);
+    try {
+      await addDeal({
+        title: newDeal.title,
+        contactName: newDeal.contactName,
+        value: newDeal.value,
+        priority: newDeal.priority,
+        stage: newDeal.stage,
+        contactId: newDeal.contactId,
+        phone: newDeal.phone || undefined,
+      });
+      setNewDeal(emptyForm);
+      setContactSearch("");
+      setShowNewDeal(false);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Erro ao salvar negócio");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openNewDeal = (stage = "") => {
+    setNewDeal({ ...emptyForm, stage });
+    setContactSearch("");
+    setSaveError("");
+    setShowNewDeal(true);
   };
 
   return (
@@ -70,7 +162,7 @@ const DealsPage = () => {
               <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-semibold">{deals.length}</span>
             </div>
           </div>
-          <button onClick={() => setShowNewDeal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+          <button onClick={() => openNewDeal()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
             <Plus className="w-4 h-4" /> Criar registro
           </button>
         </div>
@@ -102,7 +194,6 @@ const DealsPage = () => {
               <Droppable key={stage} droppableId={stage}>
                 {(provided, snapshot) => (
                   <div ref={provided.innerRef} {...provided.droppableProps} className={cn("w-[260px] shrink-0 rounded-2xl border border-border flex flex-col transition-colors", snapshot.isDraggingOver ? "bg-secondary/80" : "bg-card/50")}>
-                    {/* Agent badge */}
                     <div className="px-3 pt-3 flex items-center justify-between">
                       <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-secondary border border-border text-[10px] font-medium text-foreground">
                         <Bot className="w-3 h-3" />
@@ -112,7 +203,6 @@ const DealsPage = () => {
                         <ChevronDown className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    {/* Stage header */}
                     <div className="px-3 pt-2 pb-2 space-y-1.5">
                       <div className="flex items-center gap-2">
                         <p className="text-xs font-semibold text-foreground">{stage}</p>
@@ -144,7 +234,7 @@ const DealsPage = () => {
                         </Draggable>
                       ))}
                       {provided.placeholder}
-                      <button onClick={() => { setNewDeal({ ...newDeal, stage }); setShowNewDeal(true); }} className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1 border border-dashed border-border rounded-xl hover:border-primary/30">
+                      <button onClick={() => openNewDeal(stage)} className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1 border border-dashed border-border rounded-xl hover:border-primary/30">
                         <Plus className="w-3 h-3" /> Adicionar registro
                       </button>
                     </div>
@@ -183,19 +273,107 @@ const DealsPage = () => {
                 <button onClick={() => setShowNewDeal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
               </div>
               <div className="space-y-4">
-                <input value={newDeal.title} onChange={(e) => setNewDeal({ ...newDeal, title: e.target.value })} placeholder="Título" className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-                <input value={newDeal.contactName} onChange={(e) => setNewDeal({ ...newDeal, contactName: e.target.value })} placeholder="Nome do contato" className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-                <input type="number" value={newDeal.value || ""} onChange={(e) => setNewDeal({ ...newDeal, value: Number(e.target.value) })} placeholder="Valor (R$)" className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-                <select value={newDeal.priority} onChange={(e) => setNewDeal({ ...newDeal, priority: e.target.value as "low" | "medium" | "high" })} className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground">
+                {/* Título */}
+                <input
+                  value={newDeal.title}
+                  onChange={(e) => setNewDeal({ ...newDeal, title: e.target.value })}
+                  placeholder="Título"
+                  className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+
+                {/* Vincular contato existente */}
+                <div ref={contactRef} className="relative">
+                  <label className="block text-xs text-muted-foreground mb-1.5">Vincular contato existente</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <input
+                      value={contactSearch}
+                      onChange={(e) => {
+                        setContactSearch(e.target.value);
+                        setShowContactDropdown(true);
+                        if (!e.target.value) handleClearContact();
+                      }}
+                      onFocus={() => setShowContactDropdown(true)}
+                      placeholder="Buscar por nome ou telefone..."
+                      className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                    {newDeal.contactId && (
+                      <button
+                        onClick={handleClearContact}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {showContactDropdown && filteredContacts.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-44 overflow-y-auto">
+                      {filteredContacts.slice(0, 8).map((c) => (
+                        <button
+                          key={c.id}
+                          onMouseDown={() => handleSelectContact(c)}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-2"
+                        >
+                          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-semibold text-primary">{c.name.charAt(0).toUpperCase()}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground truncate">{c.name}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{c.company} · {c.phone}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {newDeal.contactId && (
+                    <p className="mt-1 text-[11px] text-success">✓ Contato vinculado</p>
+                  )}
+                </div>
+
+                {/* Nome do contato (editável se sem vínculo) */}
+                <input
+                  value={newDeal.contactName}
+                  onChange={(e) => setNewDeal({ ...newDeal, contactName: e.target.value })}
+                  placeholder="Nome do contato"
+                  readOnly={!!newDeal.contactId}
+                  className={cn(
+                    "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+                    newDeal.contactId && "opacity-60 cursor-default"
+                  )}
+                />
+
+                <input
+                  type="number"
+                  value={newDeal.value || ""}
+                  onChange={(e) => setNewDeal({ ...newDeal, value: Number(e.target.value) })}
+                  placeholder="Valor (R$)"
+                  className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <select
+                  value={newDeal.priority}
+                  onChange={(e) => setNewDeal({ ...newDeal, priority: e.target.value as "low" | "medium" | "high" })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground"
+                >
                   <option value="low">Baixa</option>
                   <option value="medium">Média</option>
                   <option value="high">Alta</option>
                 </select>
-                <select value={newDeal.stage} onChange={(e) => setNewDeal({ ...newDeal, stage: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground">
+                <select
+                  value={newDeal.stage}
+                  onChange={(e) => setNewDeal({ ...newDeal, stage: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground"
+                >
                   <option value="">Selecione a etapa</option>
                   {stages.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-                <button onClick={handleCreateDeal} className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">Criar registro</button>
+                {saveError && <p className="text-xs text-destructive">{saveError}</p>}
+                <button
+                  onClick={handleCreateDeal}
+                  disabled={saving}
+                  className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {saving ? "Salvando..." : "Criar registro"}
+                </button>
               </div>
             </motion.div>
           </motion.div>

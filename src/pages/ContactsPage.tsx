@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { mockContacts, type Contact } from "@/data/mockData";
+import { useState, useEffect } from "react";
+import { useContactStore } from "@/store/contactStore";
+import type { Contact } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, X, Filter } from "lucide-react";
 import { cn, formatPhone, stripPhone } from "@/lib/utils";
@@ -17,12 +18,17 @@ const statusLabels: Record<string, string> = {
 };
 
 const ContactsPage = () => {
-  const [contacts, setContacts] = useState<Contact[]>(mockContacts);
+  const { contacts, loading, loadContacts, addContact } = useContactStore();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showModal, setShowModal] = useState(false);
   const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", company: "", status: "lead" as Contact["status"] });
   const [createError, setCreateError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadContacts();
+  }, [loadContacts]);
 
   const filtered = contacts
     .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter))
@@ -34,26 +40,29 @@ const ContactsPage = () => {
         : true
     );
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     setCreateError("");
     if (!newContact.name) { setCreateError("Nome é obrigatório"); return; }
     if (!newContact.email) { setCreateError("Email é obrigatório"); return; }
     if (!newContact.phone) { setCreateError("Telefone é obrigatório"); return; }
     const phoneDigits = stripPhone(newContact.phone);
-    if (contacts.some((c) => c.email.toLowerCase() === newContact.email.toLowerCase())) { setCreateError("Já existe um contato com este email"); return; }
-    if (contacts.some((c) => c.phone === phoneDigits)) { setCreateError("Já existe um contato com este telefone"); return; }
-    setContacts([
-      ...contacts,
-      {
-        ...newContact,
-        phone: phoneDigits,
-        id: `ct-${Date.now()}`,
-        createdAt: new Date().toISOString().split("T")[0],
-      },
-    ]);
-    setNewContact({ name: "", email: "", phone: "", company: "", status: "lead" });
-    setCreateError("");
-    setShowModal(false);
+    if (contacts.some((c) => c.email.toLowerCase() === newContact.email.toLowerCase())) {
+      setCreateError("Já existe um contato com este email"); return;
+    }
+    if (contacts.some((c) => c.phone === phoneDigits)) {
+      setCreateError("Já existe um contato com este telefone"); return;
+    }
+    setSaving(true);
+    try {
+      await addContact({ ...newContact, phone: phoneDigits });
+      setNewContact({ name: "", email: "", phone: "", company: "", status: "lead" });
+      setShowModal(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao salvar contato";
+      setCreateError(msg.includes("unique") ? "Email ou telefone já cadastrado" : msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -62,7 +71,9 @@ const ContactsPage = () => {
       <div className="flex items-center justify-between px-6 lg:px-8 pt-6 pb-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Contatos</h1>
-          <p className="text-muted-foreground mt-1">{contacts.length} contatos cadastrados</p>
+          <p className="text-muted-foreground mt-1">
+            {loading ? "Carregando..." : `${contacts.length} contatos cadastrados`}
+          </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -100,51 +111,57 @@ const ContactsPage = () => {
         </div>
       </div>
 
-      {/* Table — scrollable area */}
+      {/* Table */}
       <div className="flex-1 overflow-hidden px-6 lg:px-8 pb-6">
         <div className="surface-elevated h-full overflow-auto">
-          <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-card">
-              <tr className="border-b border-border">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Nome</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Email</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Telefone</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Empresa</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Criado em</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Ativação</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Término</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Últ. Feedback</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Próx. Feedback</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c, i) => (
-                <motion.tr
-                  key={c.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03 }}
-                  className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
-                >
-                  <td className="px-5 py-3.5 text-sm font-medium text-foreground whitespace-nowrap">{c.name}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.email}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{formatPhone(c.phone)}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.company}</td>
-                  <td className="px-5 py-3.5 whitespace-nowrap">
-                    <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium", statusColors[c.status])}>
-                      {statusLabels[c.status]}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.createdAt}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.activationDate || "—"}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.endDate || "—"}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.lastFeedback || "—"}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.nextFeedback || "—"}</td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+          {loading && contacts.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              Carregando contatos...
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="sticky top-0 z-10 bg-card">
+                <tr className="border-b border-border">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Nome</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Email</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Telefone</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Empresa</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Status</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Criado em</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Ativação</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Término</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Últ. Feedback</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Próx. Feedback</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((c, i) => (
+                  <motion.tr
+                    key={c.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
+                  >
+                    <td className="px-5 py-3.5 text-sm font-medium text-foreground whitespace-nowrap">{c.name}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.email}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{formatPhone(c.phone)}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.company}</td>
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium", statusColors[c.status])}>
+                        {statusLabels[c.status]}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.createdAt}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.activationDate || "—"}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.endDate || "—"}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.lastFeedback || "—"}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.nextFeedback || "—"}</td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -165,7 +182,7 @@ const ContactsPage = () => {
             >
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-semibold text-foreground">Novo Contato</h3>
-                <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
+                <button onClick={() => { setShowModal(false); setCreateError(""); }} className="text-muted-foreground hover:text-foreground">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -188,14 +205,13 @@ const ContactsPage = () => {
                   <option value="active">Ativo</option>
                   <option value="inactive">Inativo</option>
                 </select>
-                {createError && (
-                  <p className="text-xs text-destructive">{createError}</p>
-                )}
+                {createError && <p className="text-xs text-destructive">{createError}</p>}
                 <button
                   onClick={handleCreate}
-                  className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                  disabled={saving}
+                  className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
                 >
-                  Criar Contato
+                  {saving ? "Salvando..." : "Criar Contato"}
                 </button>
               </div>
             </motion.div>
