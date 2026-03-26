@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { type Deal, mockContacts, mockDealMessages } from "@/data/mockData";
+import { type Deal, mockDealMessages } from "@/data/mockData";
+import { useContactStore } from "@/store/contactStore";
 import { X, ChevronLeft, Send, Sparkles, Plus, UserPlus } from "lucide-react";
 import { cn, formatPhone, stripPhone } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -13,17 +14,18 @@ interface Props {
 }
 
 const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
+  const { contacts } = useContactStore();
   const [chatInput, setChatInput] = useState("");
   const [showLinkContact, setShowLinkContact] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
 
   const linkedContact = deal.contactId
-    ? mockContacts.find((c) => c.id === deal.contactId) || null
+    ? contacts.find((c) => c.id === deal.contactId) || null
     : null;
 
   const messages = mockDealMessages.filter((m) => m.conversationId === deal.id);
 
-  const filteredContacts = mockContacts.filter((c) => {
+  const filteredContacts = contacts.filter((c) => {
     if (!contactSearch) return true;
     const q = contactSearch.toLowerCase();
     const phoneDigits = stripPhone(contactSearch);
