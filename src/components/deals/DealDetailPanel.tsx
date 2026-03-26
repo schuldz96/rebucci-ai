@@ -1,11 +1,16 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { type Deal, mockDealMessages } from "@/data/mockData";
 import { useContactStore } from "@/store/contactStore";
-import { X, ChevronLeft, Send, Sparkles, Plus, UserPlus } from "lucide-react";
+import { useDealStore } from "@/store/dealStore";
+import { X, ChevronLeft, Send, Sparkles, Plus, UserPlus, Pencil, Check } from "lucide-react";
 import { cn, formatPhone, stripPhone } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
+const inputCls = "w-full px-3 py-1.5 rounded-lg bg-background border border-ring text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring";
+
+type DealEditKey = "responsibleUser" | "value" | "phone" | "group" | "priority";
+type ContactEditKey = "company" | "activationDate" | "endDate" | "lastFeedback" | "nextFeedback";
+type EditKey = DealEditKey | ContactEditKey;
 
 interface Props {
   deal: Deal;
@@ -14,13 +19,17 @@ interface Props {
 }
 
 const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
-  const { contacts } = useContactStore();
+  const { contacts, updateContact } = useContactStore();
+  const { updateDeal } = useDealStore();
   const [chatInput, setChatInput] = useState("");
   const [showLinkContact, setShowLinkContact] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
+  const [editing, setEditing] = useState<EditKey | null>(null);
+  const [editVal, setEditVal] = useState("");
+  const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
 
   const linkedContact = deal.contactId
-    ? contacts.find((c) => c.id === deal.contactId) || null
+    ? contacts.find((c) => c.id === deal.contactId) ?? null
     : null;
 
   const messages = mockDealMessages.filter((m) => m.conversationId === deal.id);
@@ -38,6 +47,95 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+  const startEdit = (key: EditKey, currentVal: string) => {
+    setEditing(key);
+    setEditVal(currentVal);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    const dealKeys: DealEditKey[] = ["responsibleUser", "value", "phone", "group", "priority"];
+    if (dealKeys.includes(editing as DealEditKey)) {
+      const patch: Partial<Deal> = {};
+      if (editing === "value") patch.value = Number(editVal) || 0;
+      else (patch as Record<string, string>)[editing] = editVal;
+      await updateDeal(deal.id, patch);
+    } else if (linkedContact) {
+      await updateContact(linkedContact.id, { [editing]: editVal || undefined });
+    }
+    setEditing(null);
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") saveEdit();
+    if (e.key === "Escape") setEditing(null);
+  };
+
+  // Renders an editable row
+  const EditableRow = ({
+    label,
+    fieldKey,
+    display,
+    rawVal,
+    type = "text",
+    options,
+  }: {
+    label: string;
+    fieldKey: EditKey;
+    display: string;
+    rawVal: string;
+    type?: "text" | "number" | "date" | "select";
+    options?: { value: string; label: string }[];
+  }) => {
+    const isEditing = editing === fieldKey;
+    return (
+      <div className="flex items-center justify-between py-2 border-b border-border/50 group">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        {isEditing ? (
+          <div className="flex items-center gap-1.5 ml-4 flex-1 justify-end">
+            {type === "select" && options ? (
+              <select
+                ref={inputRef as React.RefObject<HTMLSelectElement>}
+                value={editVal}
+                onChange={(e) => setEditVal(e.target.value)}
+                onBlur={saveEdit}
+                className="px-2 py-1 rounded-lg bg-background border border-ring text-xs text-foreground focus:outline-none"
+              >
+                {options.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                ref={inputRef as React.RefObject<HTMLInputElement>}
+                type={type}
+                value={editVal}
+                onChange={(e) => setEditVal(e.target.value)}
+                onBlur={saveEdit}
+                onKeyDown={handleKey}
+                className="px-2 py-1 rounded-lg bg-background border border-ring text-xs text-foreground focus:outline-none w-40"
+              />
+            )}
+            <button onClick={saveEdit} className="text-primary hover:text-primary/80">
+              <Check className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-foreground font-medium">{display}</span>
+            <button
+              onClick={() => startEdit(fieldKey, rawVal)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <motion.div
@@ -59,7 +157,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
               <button onClick={onClose} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft className="w-4 h-4" /> Voltar
               </button>
-              <span className="text-xs text-muted-foreground">Lead #{deal.id.replace("deal-", "")}</span>
+              <span className="text-xs text-muted-foreground">Lead #{deal.id}</span>
             </div>
             <h2 className="text-lg font-bold text-foreground">{deal.title}</h2>
             <div className="flex items-center gap-2 mt-1">
@@ -68,6 +166,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Contato vinculado */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contato vinculado</label>
               {linkedContact ? (
@@ -89,6 +188,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
               )}
             </div>
 
+            {/* Busca de contato */}
             {showLinkContact && (
               <div className="p-3 rounded-xl bg-secondary border border-border space-y-3">
                 <div className="flex items-center justify-between">
@@ -124,36 +224,36 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
               </div>
             )}
 
-            <div className="space-y-3">
-              {[
-                { label: "Usuário responsável", value: deal.responsibleUser || "..." },
-                { label: "Venda", value: formatCurrency(deal.value) },
-                { label: "Telefone", value: deal.phone ? formatPhone(deal.phone) : "..." },
-                { label: "Grupo", value: deal.group || "..." },
-                { label: "Prioridade", value: deal.priority === "high" ? "Alta" : deal.priority === "medium" ? "Média" : "Baixa" },
-              ].map((field) => (
-                <div key={field.label} className="flex items-center justify-between py-1.5 border-b border-border/50">
-                  <span className="text-xs text-muted-foreground">{field.label}</span>
-                  <span className="text-xs text-foreground font-medium">{field.value}</span>
-                </div>
-              ))}
+            {/* Campos do negócio */}
+            <div className="space-y-0">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Negócio</p>
+              <EditableRow label="Usuário responsável" fieldKey="responsibleUser" display={deal.responsibleUser || "—"} rawVal={deal.responsibleUser || ""} />
+              <EditableRow label="Venda" fieldKey="value" display={formatCurrency(deal.value)} rawVal={String(deal.value)} type="number" />
+              <EditableRow label="Telefone" fieldKey="phone" display={deal.phone ? formatPhone(deal.phone) : "—"} rawVal={deal.phone || ""} />
+              <EditableRow label="Grupo" fieldKey="group" display={deal.group || "—"} rawVal={deal.group || ""} />
+              <EditableRow
+                label="Prioridade"
+                fieldKey="priority"
+                display={deal.priority === "high" ? "Alta" : deal.priority === "medium" ? "Média" : "Baixa"}
+                rawVal={deal.priority}
+                type="select"
+                options={[
+                  { value: "high", label: "Alta" },
+                  { value: "medium", label: "Média" },
+                  { value: "low", label: "Baixa" },
+                ]}
+              />
             </div>
 
+            {/* Campos do contato vinculado */}
             {linkedContact && (
-              <div className="space-y-3 pt-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados do contato</p>
-                {[
-                  { label: "Empresa", value: linkedContact.company },
-                  { label: "Data Ativação", value: linkedContact.activationDate || "..." },
-                  { label: "Data Término", value: linkedContact.endDate || "..." },
-                  { label: "Último Feedback", value: linkedContact.lastFeedback || "..." },
-                  { label: "Próximo Feedback", value: linkedContact.nextFeedback || "..." },
-                ].map((field) => (
-                  <div key={field.label} className="flex items-center justify-between py-1.5 border-b border-border/50">
-                    <span className="text-xs text-muted-foreground">{field.label}</span>
-                    <span className="text-xs text-foreground font-medium">{field.value}</span>
-                  </div>
-                ))}
+              <div className="space-y-0 pt-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Dados do contato</p>
+                <EditableRow label="Empresa" fieldKey="company" display={linkedContact.company || "—"} rawVal={linkedContact.company || ""} />
+                <EditableRow label="Data Ativação" fieldKey="activationDate" display={linkedContact.activationDate || "—"} rawVal={linkedContact.activationDate || ""} type="date" />
+                <EditableRow label="Data Término" fieldKey="endDate" display={linkedContact.endDate || "—"} rawVal={linkedContact.endDate || ""} type="date" />
+                <EditableRow label="Último Feedback" fieldKey="lastFeedback" display={linkedContact.lastFeedback || "—"} rawVal={linkedContact.lastFeedback || ""} type="date" />
+                <EditableRow label="Próximo Feedback" fieldKey="nextFeedback" display={linkedContact.nextFeedback || "—"} rawVal={linkedContact.nextFeedback || ""} type="date" />
               </div>
             )}
           </div>
@@ -177,7 +277,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
                 Colocar em espera
               </button>
               <span className="text-[10px] px-2 py-1 rounded-lg border border-primary/30 text-primary font-mono">
-                Conversa Nº A4060{deal.id.replace("deal-", "")}
+                Conversa Nº A4060{deal.id}
               </span>
             </div>
           </div>

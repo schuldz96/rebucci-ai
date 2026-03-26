@@ -7,6 +7,7 @@ interface ContactState {
   loading: boolean;
   loadContacts: () => Promise<void>;
   addContact: (contact: Omit<Contact, "id" | "createdAt">) => Promise<void>;
+  updateContact: (id: string, updates: Partial<Contact>) => Promise<void>;
 }
 
 const mapRow = (r: Record<string, unknown>): Contact => ({
@@ -37,6 +38,25 @@ export const useContactStore = create<ContactState>((set) => ({
       set({ contacts: data.map(mapRow) });
     }
     set({ loading: false });
+  },
+
+  updateContact: async (id, updates) => {
+    const patch: Record<string, unknown> = {};
+    if (updates.name !== undefined) patch.name = updates.name;
+    if (updates.email !== undefined) patch.email = updates.email;
+    if (updates.phone !== undefined) patch.phone = updates.phone;
+    if (updates.company !== undefined) patch.company = updates.company;
+    if (updates.status !== undefined) patch.status = updates.status;
+    if (updates.activationDate !== undefined) patch.activation_date = updates.activationDate || null;
+    if (updates.endDate !== undefined) patch.end_date = updates.endDate || null;
+    if (updates.lastFeedback !== undefined) patch.last_feedback = updates.lastFeedback || null;
+    if (updates.nextFeedback !== undefined) patch.next_feedback = updates.nextFeedback || null;
+    set((state) => ({
+      contacts: state.contacts.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+    }));
+    if (Object.keys(patch).length > 0) {
+      await supabase.from("contacts").update(patch).eq("id", id);
+    }
   },
 
   addContact: async (contact) => {
