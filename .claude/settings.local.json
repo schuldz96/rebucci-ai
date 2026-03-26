@@ -13,7 +13,61 @@
       "Bash(curl -s \"https://api.supabase.com/v1/projects/urrbpxrtdzurfdsucukb\" -H \"Authorization: Bearer sbp_67580cdab12a315bb80cc3590285d5e931d2fba5\")",
       "Bash(curl -s \"https://api.supabase.com/v1/projects/urrbpxrtdzurfdsucukb/api-keys\" -H \"Authorization: Bearer sbp_67580cdab12a315bb80cc3590285d5e931d2fba5\")",
       "Bash(SERVICE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVycmJweHJ0ZHp1cmZkc3VjdWtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDM4Nzg3NSwiZXhwIjoyMDg5OTYzODc1fQ.cygbRECDzUrJ0fUDGiGqC_FSZDb6QupoZ7g8N3RcyfM\")",
-      "Bash(__NEW_LINE_af2c1716b785495f__ curl -s -X POST \"https://urrbpxrtdzurfdsucukb.supabase.co/auth/v1/admin/users\" -H \"Authorization: Bearer $SERVICE_KEY\" -H \"apikey: $SERVICE_KEY\" -H \"Content-Type: application/json\" -d '{:*)"
+      "Bash(__NEW_LINE_af2c1716b785495f__ curl -s -X POST \"https://urrbpxrtdzurfdsucukb.supabase.co/auth/v1/admin/users\" -H \"Authorization: Bearer $SERVICE_KEY\" -H \"apikey: $SERVICE_KEY\" -H \"Content-Type: application/json\" -d '{:*)",
+      "WebFetch(domain:doc.evolution-api.com)",
+      "Bash(SQL='ALTER TABLE instance_webhooks ADD COLUMN IF NOT EXISTS display_name text;')",
+      "Bash(__NEW_LINE_6874e6eac7c9ac3d__ curl:*)",
+      "WebFetch(domain:api.evolution-api.com)",
+      "Bash(npm run:*)",
+      "Bash(supabase --version)",
+      "Bash(supabase status:*)",
+      "Bash(supabase db:*)",
+      "Bash(supabase projects:*)",
+      "Bash(git checkout:*)",
+      "Read(//Users/maxter/.config/supabase/**)",
+      "Read(//Users/maxter/.supabase/**)",
+      "Read(//Users/maxter/.config/**)",
+      "Read(//Users/maxter/**)",
+      "Bash(curl -s -X GET \"https://api.supabase.com/v1/projects\" -H \"Authorization: Bearer sbp_b89f10ecd32d7b3c05c78c0367ffc06f475d7bd9\")",
+      "Bash(python3 -c \"import sys,json; [print\\(p[''''id''''], p[''''name'''']\\) for p in json.load\\(sys.stdin\\)]\")",
+      "Bash(python3 -c \"import sys,json; [print\\(r[''''table_name'''']\\) for r in json.load\\(sys.stdin\\)]\")",
+      "Bash(python3 -c \"import sys,json; [print\\(r\\) for r in json.load\\(sys.stdin\\)]\")"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/code-intel-pretool.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-session-digest.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/synapse-engine.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
