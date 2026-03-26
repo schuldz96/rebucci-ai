@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
   Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2, Pencil, X,
-  Plus, Trash2, Shield, Tag, ChevronDown,
+  Plus, Trash2, Shield, Tag, ChevronDown, Building2, Facebook,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -12,7 +12,7 @@ import { evolutionApi, type EvoInstance } from "@/lib/evolutionApi";
 const SUPABASE_URL = "https://urrbpxrtdzurfdsucukb.supabase.co";
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
-type SettingsSection = "evolution" | "users";
+type SettingsSection = "general" | "users" | "evolution" | "meta";
 type EvoTab = "config" | "instances" | "rag";
 type UserTab = "users" | "licenses" | "teams" | "permissions" | "presets";
 type ModalType = null | "user" | "team" | "perm" | "preset";
@@ -23,12 +23,16 @@ interface PermissionSet { id: string; name: string; description: string | null; 
 interface Preset { id: string; name: string; type: string; content: string | null; }
 
 const menuSections = [
-  { title: "Integrações", items: [{ id: "evolution" as const, label: "EvolutionAPI", icon: Link2 }] },
-  { title: "Gerenciamento de conta", items: [{ id: "users" as const, label: "Usuários e equipes", icon: Users }] },
+  { title: "Geral", items: [{ id: "general" as const, label: "Informações básicas", icon: Building2 }] },
+  { title: "Gerenciamento de conta", items: [{ id: "users" as const, label: "Usuários", icon: Users }] },
+  { title: "Integrações", items: [
+    { id: "evolution" as const, label: "EvolutionAPI", icon: Link2 },
+    { id: "meta" as const, label: "Meta API", icon: Facebook },
+  ]},
 ];
 
 const SettingsPage = () => {
-  const [section, setSection] = useState<SettingsSection>("evolution");
+  const [section, setSection] = useState<SettingsSection>("general");
   const [evoTab, setEvoTab] = useState<EvoTab>("config");
 
   // Config state
@@ -377,6 +381,94 @@ const SettingsPage = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+
+        {/* ═══════ GERAL ═══════ */}
+        {section === "general" && (
+          <div className="max-w-2xl space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Informações básicas</h2>
+                <p className="text-sm text-muted-foreground">Dados gerais da sua conta</p>
+              </div>
+            </div>
+            <div className="surface-elevated p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da empresa</label>
+                <input placeholder="Ex: RebucciAI" className={inputCls} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email de contato</label>
+                <input type="email" placeholder="contato@empresa.com" className={inputCls} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Telefone</label>
+                <input placeholder="+55 42 99999-0000" className={inputCls} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fuso horário</label>
+                <select className={inputCls}>
+                  <option value="America/Sao_Paulo">America/Sao_Paulo (UTC-3)</option>
+                  <option value="America/Manaus">America/Manaus (UTC-4)</option>
+                  <option value="America/Belem">America/Belem (UTC-3)</option>
+                </select>
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+                <Save className="w-4 h-4" /> Salvar alterações
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════ META API ═══════ */}
+        {section === "meta" && (
+          <div className="max-w-2xl space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+                <Facebook className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Meta API</h2>
+                <p className="text-sm text-muted-foreground">Integração com WhatsApp Business via Meta Cloud API</p>
+              </div>
+            </div>
+            <div className="surface-elevated p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Token de acesso permanente</label>
+                <div className="relative">
+                  <input type="password" placeholder="EAAxxxxxxxxxxxxxxx" className={inputCls} />
+                </div>
+                <p className="text-[11px] text-muted-foreground">Token gerado no painel Meta for Developers → seu app → WhatsApp → API Setup</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Phone Number ID</label>
+                <input placeholder="123456789012345" className={inputCls} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp Business Account ID (WABA)</label>
+                <input placeholder="123456789012345" className={inputCls} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Versão da API</label>
+                <select className={inputCls}>
+                  <option value="v21.0">v21.0 (recomendada)</option>
+                  <option value="v20.0">v20.0</option>
+                  <option value="v19.0">v19.0</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-3">
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+                  <Save className="w-4 h-4" /> Salvar
+                </button>
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors">
+                  <Zap className="w-4 h-4" /> Testar conexão
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ═══════ EVOLUTION API ═══════ */}
         {section === "evolution" && (

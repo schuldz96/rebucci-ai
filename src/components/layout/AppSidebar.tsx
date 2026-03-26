@@ -15,9 +15,9 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "WhatsApp", icon: MessageSquare, path: "/whatsapp" },
   { label: "Contatos", icon: Users, path: "/contacts" },
   { label: "Negócios", icon: Kanban, path: "/deals" },
+  { label: "WhatsApp", icon: MessageSquare, path: "/whatsapp" },
   { label: "Configurações", icon: Settings, path: "/settings" },
 ];
 
