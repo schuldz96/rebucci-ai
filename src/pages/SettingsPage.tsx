@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
   Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2, Pencil, X,
+  Plus, Trash2, Shield, Tag, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -13,10 +14,13 @@ const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-borde
 
 type SettingsSection = "evolution" | "users";
 type EvoTab = "config" | "instances" | "rag";
+type UserTab = "users" | "licenses" | "teams" | "permissions" | "presets";
+type ModalType = null | "user" | "team" | "perm" | "preset";
 
-const mockUsers = [
-  { id: "u-1", name: "Marcos Schuldz", email: "marcos.schuldz@gmail.com", role: "Admin", permissionSet: "--", team: "--", status: "Ativo" },
-];
+interface CrmUser { id: string; name: string; email: string; role: string; team_id: string | null; permission_set_id: string | null; status: "active" | "inactive"; created_at: string; }
+interface Team { id: string; name: string; description: string | null; }
+interface PermissionSet { id: string; name: string; description: string | null; }
+interface Preset { id: string; name: string; type: string; content: string | null; }
 
 const menuSections = [
   { title: "Integrações", items: [{ id: "evolution" as const, label: "EvolutionAPI", icon: Link2 }] },
@@ -56,8 +60,17 @@ const SettingsPage = () => {
   const [ragStatus, setRagStatus] = useState<string | null>(null);
   const [ragJobs, setRagJobs] = useState<{ id: string; instance_name: string; status: string; total_messages: number | null; total_chunks: number | null; created_at: string }[]>([]);
 
-  // Users state
+  // Users section state
+  const [userTab, setUserTab] = useState<UserTab>("users");
   const [userSearch, setUserSearch] = useState("");
+  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [permSets, setPermSets] = useState<PermissionSet[]>([]);
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [modalType, setModalType] = useState<ModalType>(null);
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   // Load saved config from Supabase
   useEffect(() => {
@@ -243,6 +256,98 @@ const SettingsPage = () => {
       setRagStatus(`❌ Erro: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
     }
     setRagLoading(false);
+  };
+
+  // Carrega dados da seção de usuários
+  useEffect(() => {
+    if (section !== "users") return;
+    const load = async () => {
+      setUsersLoading(true);
+      const [{ data: u }, { data: t }, { data: p }, { data: pr }] = await Promise.all([
+        supabase.from("crm_users").select("*").order("created_at"),
+        supabase.from("teams").select("*").order("name"),
+        supabase.from("permission_sets").select("*").order("name"),
+        supabase.from("presets").select("*").order("name"),
+      ]);
+      if (u) setCrmUsers(u);
+      if (t) setTeams(t);
+      if (p) setPermSets(p);
+      if (pr) setPresets(pr);
+      setUsersLoading(false);
+    };
+    load();
+  }, [section]);
+
+  const openModal = (type: ModalType) => { setFormData({}); setModalType(type); };
+  const closeModal = () => { setModalType(null); setFormData({}); };
+  const setField = (k: string, v: string) => setFormData((prev) => ({ ...prev, [k]: v }));
+
+  const handleCreateUser = async () => {
+    if (!formData.name || !formData.email) return;
+    setSubmitting(true);
+    const { data } = await supabase.from("crm_users").insert({
+      name: formData.name, email: formData.email,
+      role: formData.role || "Agente",
+      team_id: formData.team_id || null,
+      permission_set_id: formData.permission_set_id || null,
+      status: "active",
+    }).select().single();
+    if (data) setCrmUsers((prev) => [...prev, data]);
+    setSubmitting(false);
+    closeModal();
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    await supabase.from("crm_users").delete().eq("id", id);
+    setCrmUsers((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const handleToggleUserStatus = async (user: CrmUser) => {
+    const next = user.status === "active" ? "inactive" : "active";
+    await supabase.from("crm_users").update({ status: next }).eq("id", user.id);
+    setCrmUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, status: next } : u));
+  };
+
+  const handleCreateTeam = async () => {
+    if (!formData.name) return;
+    setSubmitting(true);
+    const { data } = await supabase.from("teams").insert({ name: formData.name, description: formData.description || null }).select().single();
+    if (data) setTeams((prev) => [...prev, data]);
+    setSubmitting(false);
+    closeModal();
+  };
+
+  const handleDeleteTeam = async (id: string) => {
+    await supabase.from("teams").delete().eq("id", id);
+    setTeams((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleCreatePerm = async () => {
+    if (!formData.name) return;
+    setSubmitting(true);
+    const { data } = await supabase.from("permission_sets").insert({ name: formData.name, description: formData.description || null }).select().single();
+    if (data) setPermSets((prev) => [...prev, data]);
+    setSubmitting(false);
+    closeModal();
+  };
+
+  const handleDeletePerm = async (id: string) => {
+    await supabase.from("permission_sets").delete().eq("id", id);
+    setPermSets((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleCreatePreset = async () => {
+    if (!formData.name) return;
+    setSubmitting(true);
+    const { data } = await supabase.from("presets").insert({ name: formData.name, type: formData.type || "Resposta rápida", content: formData.content || null }).select().single();
+    if (data) setPresets((prev) => [...prev, data]);
+    setSubmitting(false);
+    closeModal();
+  };
+
+  const handleDeletePreset = async (id: string) => {
+    await supabase.from("presets").delete().eq("id", id);
+    setPresets((prev) => prev.filter((p) => p.id !== id));
   };
 
   return (
@@ -581,55 +686,324 @@ const SettingsPage = () => {
               <h1 className="text-xl font-bold text-foreground">Usuários e equipes</h1>
               <p className="text-sm text-muted-foreground mt-1">Crie novos usuários, personalize as permissões e remova usuários da conta.</p>
             </div>
+
+            {/* Tabs */}
             <div className="flex gap-1 border-b border-border">
-              {["Usuários", "Licenças", "Equipes", "Conjuntos de permissões", "Pré-definições"].map((t, i) => (
-                <button key={t} className={cn("px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px", i === 0 ? "text-foreground border-foreground font-medium" : "text-muted-foreground border-transparent hover:text-foreground")}>{t}</button>
+              {([
+                { key: "users" as const, label: "Usuários" },
+                { key: "licenses" as const, label: "Licenças" },
+                { key: "teams" as const, label: "Equipes" },
+                { key: "permissions" as const, label: "Conjuntos de permissões" },
+                { key: "presets" as const, label: "Pré-definições" },
+              ]).map((t) => (
+                <button key={t.key} onClick={() => setUserTab(t.key)}
+                  className={cn("px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px whitespace-nowrap",
+                    userTab === t.key ? "text-foreground border-foreground font-medium" : "text-muted-foreground border-transparent hover:text-foreground"
+                  )}>{t.label}</button>
               ))}
             </div>
-            <div className="flex items-center gap-6">
-              {[["1", "Usuários"], ["1", "Ativos"], ["0", "Inativos"]].map(([n, l]) => (
-                <div key={l}><p className="text-2xl font-bold text-foreground">{n}</p><p className="text-[10px] text-muted-foreground uppercase tracking-wider">{l}</p></div>
-              ))}
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Pesquisar nome ou e-mail" className={cn(inputCls, "pl-9 max-w-xs")} />
-              </div>
-              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">Criar usuário</button>
-            </div>
-            <div className="border border-border rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-secondary/50">
-                    {["Nome", "Cargo", "Conjunto de permissão", "Equipe", "Status"].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockUsers.filter((u) => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase())).map((u) => (
-                    <tr key={u.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">MA</div>
-                          <div><p className="text-sm font-medium text-primary">{u.name}</p><p className="text-xs text-muted-foreground">{u.email}</p></div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-foreground">{u.role}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{u.permissionSet}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{u.team}</td>
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 text-sm">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          <span className="text-foreground">{u.status}</span>
-                        </span>
-                      </td>
-                    </tr>
+
+            {usersLoading && (
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+            )}
+
+            {/* ── Usuários ── */}
+            {!usersLoading && userTab === "users" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="flex items-center gap-6">
+                  {[[crmUsers.length.toString(), "Usuários"], [crmUsers.filter(u => u.status === "active").length.toString(), "Ativos"], [crmUsers.filter(u => u.status === "inactive").length.toString(), "Inativos"]].map(([n, l]) => (
+                    <div key={l}><p className="text-2xl font-bold text-foreground">{n}</p><p className="text-[10px] text-muted-foreground uppercase tracking-wider">{l}</p></div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="relative max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Pesquisar nome ou e-mail" className={cn(inputCls, "pl-9")} />
+                  </div>
+                  <button onClick={() => openModal("user")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+                    <Plus className="w-4 h-4" /> Criar usuário
+                  </button>
+                </div>
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/50">
+                        {["Nome", "Cargo", "Conjunto de permissão", "Equipe", "Status", ""].map((h) => (
+                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {crmUsers.filter((u) => !userSearch || u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase())).map((u) => {
+                        const team = teams.find(t => t.id === u.team_id);
+                        const perm = permSets.find(p => p.id === u.permission_set_id);
+                        const initials = u.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+                        return (
+                          <tr key={u.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">{initials}</div>
+                                <div><p className="text-sm font-medium text-primary">{u.name}</p><p className="text-xs text-muted-foreground">{u.email}</p></div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-foreground">{u.role}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{perm?.name ?? "--"}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{team?.name ?? "--"}</td>
+                            <td className="px-4 py-3">
+                              <button onClick={() => handleToggleUserStatus(u)} className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity">
+                                <span className={cn("w-2 h-2 rounded-full", u.status === "active" ? "bg-emerald-500" : "bg-muted-foreground")} />
+                                <span className="text-foreground">{u.status === "active" ? "Ativo" : "Inativo"}</span>
+                              </button>
+                            </td>
+                            <td className="px-4 py-3">
+                              <button onClick={() => handleDeleteUser(u.id)} className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {crmUsers.length === 0 && (
+                        <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum usuário encontrado</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Licenças ── */}
+            {!usersLoading && userTab === "licenses" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="surface-elevated p-6 rounded-xl border border-border space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-semibold text-foreground">Plano Pro</h3>
+                      <p className="text-sm text-muted-foreground mt-0.5">Licença ativa — acesso completo ao CRM e integrações</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-500 text-xs font-medium">Ativa</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border">
+                    <div><p className="text-2xl font-bold text-foreground">{crmUsers.length}</p><p className="text-xs text-muted-foreground">Usuários ativos</p></div>
+                    <div><p className="text-2xl font-bold text-foreground">Ilimitado</p><p className="text-xs text-muted-foreground">Conversas</p></div>
+                    <div><p className="text-2xl font-bold text-foreground">∞</p><p className="text-xs text-muted-foreground">Instâncias WhatsApp</p></div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/50 border border-border text-sm text-muted-foreground">
+                    <Shield className="w-4 h-4 shrink-0 text-primary" />
+                    <span>Para alterar o plano ou adicionar licenças, entre em contato com o suporte.</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Equipes ── */}
+            {!usersLoading && userTab === "teams" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="flex justify-end">
+                  <button onClick={() => openModal("team")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+                    <Plus className="w-4 h-4" /> Nova equipe
+                  </button>
+                </div>
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/50">
+                        {["Nome", "Descrição", "Membros", ""].map((h) => (
+                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teams.map((t) => {
+                        const members = crmUsers.filter(u => u.team_id === t.id).length;
+                        return (
+                          <tr key={t.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                            <td className="px-4 py-3 font-medium text-foreground">{t.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{t.description ?? "--"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{members}</td>
+                            <td className="px-4 py-3">
+                              <button onClick={() => handleDeleteTeam(t.id)} className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {teams.length === 0 && (
+                        <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhuma equipe criada</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Conjuntos de permissões ── */}
+            {!usersLoading && userTab === "permissions" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="flex justify-end">
+                  <button onClick={() => openModal("perm")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+                    <Plus className="w-4 h-4" /> Novo conjunto
+                  </button>
+                </div>
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/50">
+                        {["Nome", "Descrição", "Usuários", ""].map((h) => (
+                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {permSets.map((p) => {
+                        const users = crmUsers.filter(u => u.permission_set_id === p.id).length;
+                        return (
+                          <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                            <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2"><Shield className="w-4 h-4 text-primary" />{p.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{p.description ?? "--"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{users}</td>
+                            <td className="px-4 py-3">
+                              <button onClick={() => handleDeletePerm(p.id)} className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {permSets.length === 0 && (
+                        <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum conjunto de permissão criado</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Pré-definições ── */}
+            {!usersLoading && userTab === "presets" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="flex justify-end">
+                  <button onClick={() => openModal("preset")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+                    <Plus className="w-4 h-4" /> Nova pré-definição
+                  </button>
+                </div>
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/50">
+                        {["Nome", "Tipo", "Conteúdo", ""].map((h) => (
+                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {presets.map((p) => (
+                        <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                          <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2"><Tag className="w-4 h-4 text-primary" />{p.name}</td>
+                          <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{p.type}</span></td>
+                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{p.content ?? "--"}</td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => handleDeletePreset(p.id)} className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {presets.length === 0 && (
+                        <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhuma pré-definição criada</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Modal de criação ── */}
+            {modalType && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={closeModal}>
+                <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base font-semibold text-foreground">
+                      {modalType === "user" && "Criar usuário"}
+                      {modalType === "team" && "Nova equipe"}
+                      {modalType === "perm" && "Novo conjunto de permissão"}
+                      {modalType === "preset" && "Nova pré-definição"}
+                    </h2>
+                    <button onClick={closeModal} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+                  </div>
+
+                  {/* Campos: Usuário */}
+                  {modalType === "user" && (
+                    <div className="space-y-3">
+                      <input placeholder="Nome completo *" value={formData.name ?? ""} onChange={(e) => setField("name", e.target.value)} className={inputCls} />
+                      <input placeholder="E-mail *" type="email" value={formData.email ?? ""} onChange={(e) => setField("email", e.target.value)} className={inputCls} />
+                      <div className="relative">
+                        <select value={formData.role ?? "Agente"} onChange={(e) => setField("role", e.target.value)} className={cn(inputCls, "appearance-none")}>
+                          {["Admin", "Supervisor", "Agente"].map(r => <option key={r}>{r}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select value={formData.team_id ?? ""} onChange={(e) => setField("team_id", e.target.value)} className={cn(inputCls, "appearance-none")}>
+                          <option value="">Equipe (opcional)</option>
+                          {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select value={formData.permission_set_id ?? ""} onChange={(e) => setField("permission_set_id", e.target.value)} className={cn(inputCls, "appearance-none")}>
+                          <option value="">Conjunto de permissão (opcional)</option>
+                          {permSets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Campos: Equipe */}
+                  {modalType === "team" && (
+                    <div className="space-y-3">
+                      <input placeholder="Nome da equipe *" value={formData.name ?? ""} onChange={(e) => setField("name", e.target.value)} className={inputCls} />
+                      <input placeholder="Descrição (opcional)" value={formData.description ?? ""} onChange={(e) => setField("description", e.target.value)} className={inputCls} />
+                    </div>
+                  )}
+
+                  {/* Campos: Permissão */}
+                  {modalType === "perm" && (
+                    <div className="space-y-3">
+                      <input placeholder="Nome do conjunto *" value={formData.name ?? ""} onChange={(e) => setField("name", e.target.value)} className={inputCls} />
+                      <input placeholder="Descrição (opcional)" value={formData.description ?? ""} onChange={(e) => setField("description", e.target.value)} className={inputCls} />
+                    </div>
+                  )}
+
+                  {/* Campos: Preset */}
+                  {modalType === "preset" && (
+                    <div className="space-y-3">
+                      <input placeholder="Nome *" value={formData.name ?? ""} onChange={(e) => setField("name", e.target.value)} className={inputCls} />
+                      <div className="relative">
+                        <select value={formData.type ?? "Resposta rápida"} onChange={(e) => setField("type", e.target.value)} className={cn(inputCls, "appearance-none")}>
+                          {["Resposta rápida", "Tag", "Nota", "Assinatura"].map(t => <option key={t}>{t}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                      <textarea placeholder="Conteúdo (opcional)" value={formData.content ?? ""} onChange={(e) => setField("content", e.target.value)} rows={3} className={cn(inputCls, "resize-none")} />
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-1">
+                    <button onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors">Cancelar</button>
+                    <button
+                      disabled={submitting || !formData.name}
+                      onClick={modalType === "user" ? handleCreateUser : modalType === "team" ? handleCreateTeam : modalType === "perm" ? handleCreatePerm : handleCreatePreset}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
