@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDealStore } from "@/store/dealStore";
 import { useContactStore } from "@/store/contactStore";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
@@ -58,10 +59,13 @@ const emptyForm: NewDealForm = {
 const DealsPage = () => {
   const { deals, stages, moveDeal, addDeal, updateDeal, loadDeals } = useDealStore();
   const { contacts, loadContacts } = useContactStore();
+  const navigate = useNavigate();
+  const { dealId } = useParams<{ dealId: string }>();
   const [aiModalStage, setAiModalStage] = useState<string | null>(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+
+  const selectedDeal = dealId ? (deals.find((d) => d.id === dealId) ?? null) : null;
   const [newDeal, setNewDeal] = useState<NewDealForm>(emptyForm);
   const [contactSearch, setContactSearch] = useState("");
   const [showContactDropdown, setShowContactDropdown] = useState(false);
@@ -214,7 +218,7 @@ const DealsPage = () => {
                       {stageDeals.map((deal, idx) => (
                         <Draggable key={deal.id} draggableId={deal.id} index={idx}>
                           {(prov, snap) => (
-                            <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps} onClick={() => setSelectedDeal(deal)} className={cn("p-3 rounded-xl border border-border bg-card transition-shadow cursor-pointer hover:border-primary/30", snap.isDragging && "shadow-lg")}>
+                            <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps} onClick={() => navigate(`/deals/${deal.id}`)} className={cn("p-3 rounded-xl border border-border bg-card transition-shadow cursor-pointer hover:border-primary/30", snap.isDragging && "shadow-lg")}>
                               <div className="flex items-start justify-between">
                                 <p className="text-sm font-semibold text-primary truncate">{deal.title}</p>
                                 <Star className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -254,11 +258,9 @@ const DealsPage = () => {
         {selectedDeal && (
           <DealDetailPanel
             deal={selectedDeal}
-            onClose={() => setSelectedDeal(null)}
-            onLinkContact={(dealId, contactId) => {
-              updateDeal(dealId, { contactId });
-              const updated = deals.find((d) => d.id === dealId);
-              if (updated) setSelectedDeal({ ...updated, contactId });
+            onClose={() => navigate("/deals")}
+            onLinkContact={(id, contactId) => {
+              updateDeal(id, { contactId });
             }}
           />
         )}
