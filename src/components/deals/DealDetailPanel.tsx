@@ -86,23 +86,23 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   };
 
   const searchInInstance = async (instanceName: string, variants: string[]): Promise<{ remoteJid: string; altRemoteJid?: string; msgs: ReturnType<typeof processMsgs> } | null> => {
-    // Tentativa 1: fetchMessages direto com variantes @s.whatsapp.net
-    for (const variant of variants) {
-      const remoteJid = `${variant}@s.whatsapp.net`;
-      const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 100);
-      if (msgs.length > 0) return { remoteJid, msgs: processMsgs(msgs, true) };
-    }
-    // Tentativa 2: fetchChats (cobre @lid e outros formatos)
+    // Busca via fetchChats PRIMEIRO — dá os dois JIDs (@lid + @s.whatsapp.net)
+    // para poder buscar enviadas e recebidas juntas
     const chats = await evolutionApi.fetchChats(instanceName, 500);
     const found = chats.find((c) => {
       const chatPhone = (c.remoteJidAlt ?? c.remoteJid).split("@")[0];
       return variants.some((v) => chatPhone === v || chatPhone === v.slice(2));
     });
     if (found) {
-      // Para @lid: altRemoteJid = JID @s.whatsapp.net onde ficam as mensagens enviadas
       const altRemoteJid = found.remoteJidAlt ?? undefined;
       const msgs = await evolutionApi.fetchMessages(instanceName, found.remoteJid, 100, altRemoteJid);
-      return { remoteJid: found.remoteJid, altRemoteJid, msgs: processMsgs(msgs, true) };
+      if (msgs.length > 0) return { remoteJid: found.remoteJid, altRemoteJid, msgs: processMsgs(msgs, true) };
+    }
+    // Fallback: tenta direto com @s.whatsapp.net (sem @lid)
+    for (const variant of variants) {
+      const remoteJid = `${variant}@s.whatsapp.net`;
+      const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 100);
+      if (msgs.length > 0) return { remoteJid, msgs: processMsgs(msgs, true) };
     }
     return null;
   };
