@@ -1,24 +1,24 @@
 -- ============================================================
--- Migrar IDs existentes de deals e contacts para IDs curtos
--- deals  → 8 caracteres
--- contacts → 6 caracteres
+-- IDs numéricos curtos: deals = 8 dígitos, contacts = 6 dígitos
+-- Migra registros existentes e define defaults para novos
 -- ============================================================
 
--- Garante que a função já existe (idempotente)
-CREATE OR REPLACE FUNCTION generate_short_id(len int, tbl text, col text)
+-- Função geradora de ID numérico único
+CREATE OR REPLACE FUNCTION generate_numeric_id(len int, tbl text, col text)
 RETURNS text
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   result text;
   taken  boolean;
 BEGIN
   LOOP
     result := '';
     FOR i IN 1..len LOOP
-      result := result || substr(chars, floor(random() * length(chars))::int + 1, 1);
+      result := result || floor(random() * 10)::int::text;
     END LOOP;
+    -- Evita começar com zero
+    result := (floor(random() * 9) + 1)::int::text || substr(result, 2);
     EXECUTE format('SELECT EXISTS(SELECT 1 FROM %I WHERE %I = $1)', tbl, col)
       INTO taken USING result;
     EXIT WHEN NOT taken;
@@ -27,42 +27,38 @@ BEGIN
 END;
 $$;
 
--- ── Migrar deals existentes ───────────────────────────────────
+-- ── Migrar deals existentes (IDs que não são 8 dígitos numéricos) ──
 DO $$
 DECLARE
-  r RECORD;
+  r      RECORD;
   new_id text;
 BEGIN
   FOR r IN
-    SELECT id FROM deals WHERE length(id) > 8
+    SELECT id FROM deals WHERE id !~ '^\d{8}$'
   LOOP
-    new_id := generate_short_id(8, 'deals', 'id');
-
-    -- Atualizar FK em outras tabelas se houver
+    new_id := generate_numeric_id(8, 'deals', 'id');
     UPDATE deals SET id = new_id WHERE id = r.id;
   END LOOP;
 END;
 $$;
 
--- ── Migrar contacts existentes ────────────────────────────────
+-- ── Migrar contacts existentes (IDs que não são 6 dígitos numéricos) ──
 DO $$
 DECLARE
-  r RECORD;
+  r      RECORD;
   new_id text;
 BEGIN
   FOR r IN
-    SELECT id FROM contacts WHERE length(id) > 6
+    SELECT id FROM contacts WHERE id !~ '^\d{6}$'
   LOOP
-    new_id := generate_short_id(6, 'contacts', 'id');
-
-    -- Atualizar FK em deals que referenciam este contato
+    new_id := generate_numeric_id(6, 'contacts', 'id');
+    -- Mantém FK em deals consistente
     UPDATE deals SET contact_id = new_id WHERE contact_id = r.id;
-
     UPDATE contacts SET id = new_id WHERE id = r.id;
   END LOOP;
 END;
 $$;
 
--- Confirmar defaults para novos registros
-ALTER TABLE deals    ALTER COLUMN id SET DEFAULT generate_short_id(8, 'deals',    'id');
-ALTER TABLE contacts ALTER COLUMN id SET DEFAULT generate_short_id(6, 'contacts', 'id');
+-- ── Defaults para novos registros ──────────────────────────────
+ALTER TABLE deals    ALTER COLUMN id SET DEFAULT generate_numeric_id(8, 'deals',    'id');
+ALTER TABLE contacts ALTER COLUMN id SET DEFAULT generate_numeric_id(6, 'contacts', 'id');
