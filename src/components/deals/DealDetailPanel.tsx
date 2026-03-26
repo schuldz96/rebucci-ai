@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { type Deal } from "@/data/mockData";
 import { useContactStore } from "@/store/contactStore";
 import { useDealStore } from "@/store/dealStore";
-import { evolutionApi, type EvoInstance } from "@/lib/evolutionApi";
+import { evolutionApi, isFromMe, type EvoInstance } from "@/lib/evolutionApi";
 import { supabase } from "@/lib/supabase";
 import { X, ChevronLeft, Send, Sparkles, Plus, UserPlus, Pencil, Check, Loader2, RefreshCw } from "lucide-react";
 import { cn, formatPhone, stripPhone, getPhoneVariants } from "@/lib/utils";
@@ -168,7 +168,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       id: m.key?.id ?? `msg-${Math.random()}`,
       content: evolutionApi.extractMessageText(m) || "",
       type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
-      direction: m.key?.fromMe ? "sent" : "received",
+      direction: isFromMe(m) ? "sent" : "received",
       timestamp: m.messageTimestamp ? safeTime(m.messageTimestamp) : "",
       ts: m.messageTimestamp ?? 0,
     }));

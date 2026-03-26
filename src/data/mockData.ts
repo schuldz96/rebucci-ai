@@ -25,6 +25,7 @@ export interface Conversation {
   lastMessageTimestamp?: number;
   unreadCount: number;
   status: "pending" | "unanswered" | "answered";
+  remoteJidAlt?: string; // JID alternativo (@s.whatsapp.net) quando id é @lid
 }
 
 export interface Contact {

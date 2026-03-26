@@ -103,7 +103,7 @@ export interface EvoMessage {
   key: {
     remoteJid: string;
     remoteJidAlt?: string; // telefone real @s.whatsapp.net quando remoteJid é @lid
-    fromMe: boolean;
+    fromMe: boolean | number | string; // API pode retornar boolean, 0/1 ou "true"/"false"
     id: string;
     participant?: string;
     participantAlt?: string;
@@ -316,14 +316,16 @@ class EvolutionAPIService {
     }
   }
 
-  async fetchMessages(instanceName: string, remoteJid: string, limit = 50): Promise<EvoMessage[]> {
+  async fetchMessages(instanceName: string, remoteJid: string, limit = 50, altRemoteJid?: string): Promise<EvoMessage[]> {
     try {
+      // Se há um JID alternativo (ex: @lid + @s.whatsapp.net), usa OR para pegar sent e received
+      const where = altRemoteJid
+        ? { OR: [{ key: { remoteJid } }, { key: { remoteJid: altRemoteJid } }] }
+        : { key: { remoteJid } };
+
       const data = await this.request<{ messages: { records: EvoMessage[] } }>(
         `/chat/findMessages/${instanceName}`,
-        {
-          method: "POST",
-          body: JSON.stringify({ where: { key: { remoteJid } }, limit }),
-        }
+        { method: "POST", body: JSON.stringify({ where, limit }) }
       );
       return data?.messages?.records ?? [];
     } catch {
@@ -332,17 +334,18 @@ class EvolutionAPIService {
   }
 
   /** Busca apenas mensagens após um determinado timestamp (para polling incremental) */
-  async fetchMessagesAfter(instanceName: string, remoteJid: string, afterTimestamp: number, limit = 50): Promise<EvoMessage[]> {
+  async fetchMessagesAfter(instanceName: string, remoteJid: string, afterTimestamp: number, limit = 50, altRemoteJid?: string): Promise<EvoMessage[]> {
     try {
+      const jidFilter = altRemoteJid
+        ? { OR: [{ key: { remoteJid } }, { key: { remoteJid: altRemoteJid } }] }
+        : { key: { remoteJid } };
+
       const data = await this.request<{ messages: { records: EvoMessage[] } }>(
         `/chat/findMessages/${instanceName}`,
         {
           method: "POST",
           body: JSON.stringify({
-            where: {
-              key: { remoteJid },
-              messageTimestamp: { gte: afterTimestamp },
-            },
+            where: { ...jidFilter, messageTimestamp: { gte: afterTimestamp } },
             limit,
           }),
         }
@@ -379,3 +382,13 @@ class EvolutionAPIService {
 }
 
 export const evolutionApi = new EvolutionAPIService();
+
+/**
+ * Determina se uma mensagem foi enviada pela instância (nosso número).
+ * Lida com boolean, number (0/1) e string ("true"/"false"/"1"/"0").
+ */
+export function isFromMe(msg: EvoMessage): boolean {
+  const v = msg.key?.fromMe;
+  if (v === true || v === 1 || v === "true" || v === "1") return true;
+  return false;
+}

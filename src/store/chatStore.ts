@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { evolutionApi } from "@/lib/evolutionApi";
+import { evolutionApi, isFromMe } from "@/lib/evolutionApi";
 import type { ChatMessage, Conversation, Instance } from "@/data/mockData";
 
 interface ChatState {
@@ -120,6 +120,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             lastMessageTimestamp: c.lastMessageTimestamp || 0,
             unreadCount: c.unreadCount || 0,
             status: (c.unreadCount || 0) > 0 ? "pending" : "answered",
+            remoteJidAlt: c.remoteJidAlt,
           };
         });
       set({ conversations, loading: false });
@@ -133,7 +134,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!ok) return;
     set({ loadingMessages: true, messages: [] });
     try {
-      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 50);
+      // Para @lid: busca também com o JID alternativo para pegar sent + received
+      const conv = get().conversations.find(c => c.id === remoteJid);
+      const altJid = conv?.remoteJidAlt;
+      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 100, altJid);
       // Descarta se o usuário trocou de conversa enquanto carregava
       if (get().selectedConversationId !== remoteJid) return;
       const sorted = [...raw].sort((a, b) =>
@@ -146,7 +150,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           conversationId: remoteJid,
           content: evolutionApi.extractMessageText(m) || "",
           type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
-          direction: m.key?.fromMe ? "sent" : "received",
+          direction: isFromMe(m) ? "sent" : "received",
           timestamp: m.messageTimestamp ? safeTimestamp(m.messageTimestamp) : "",
         }));
       set({ messages, loadingMessages: false });
@@ -172,7 +176,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!evolutionApi.isConfigured()) return;
     const snapConvId = selectedConversationId;
     try {
-      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 50);
+      const conv = get().conversations.find(c => c.id === snapConvId);
+      const altJid = conv?.remoteJidAlt;
+      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 100, altJid);
       // Descarta se o usuário trocou de conversa enquanto o poll estava em voo
       if (get().selectedConversationId !== snapConvId) return;
       const sorted = [...raw].sort((a, b) =>
@@ -185,7 +191,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           conversationId: snapConvId,
           content: evolutionApi.extractMessageText(m) || "",
           type: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
-          direction: m.key?.fromMe ? "sent" : "received",
+          direction: isFromMe(m) ? "sent" : "received",
           timestamp: m.messageTimestamp ? safeTimestamp(m.messageTimestamp) : "",
         }));
       set({ messages });
