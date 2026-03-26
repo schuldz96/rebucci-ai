@@ -46,7 +46,10 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [allInstances, setAllInstances] = useState<string[]>([]);
-  const [selectedInstance, setSelectedInstance] = useState<string>("auto");
+  const [selectedInstance, setSelectedInstance] = useState<string>("MarcoR");
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const chatInstanceRef = useRef<string | null>(null);
+  const chatRemoteJidRef = useRef<string | null>(null);
 
   const linkedContact = deal.contactId
     ? contacts.find((c) => c.id === deal.contactId) ?? null
@@ -163,9 +166,42 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       }));
   }
 
+  // Mantém refs atualizados para o polling acessar sem re-criar o interval
+  useEffect(() => { chatInstanceRef.current = chatInstance; }, [chatInstance]);
+  useEffect(() => { chatRemoteJidRef.current = chatRemoteJid; }, [chatRemoteJid]);
+
+  // Carregamento inicial usando a instância selecionada por padrão
   useEffect(() => {
-    findAndLoadChat();
-  }, [findAndLoadChat]);
+    const inst = selectedInstance === "auto" ? undefined : selectedInstance;
+    findAndLoadChat(inst);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Polling silencioso a cada 3s para capturar respostas recebidas
+  useEffect(() => {
+    const poll = async () => {
+      const inst = chatInstanceRef.current;
+      const jid = chatRemoteJidRef.current;
+      if (!inst || !jid) return;
+      try {
+        const msgs = await evolutionApi.fetchMessages(inst, jid, 50);
+        if (msgs.length > 0) {
+          const processed = processMsgs(msgs);
+          setChatMessages((prev) => {
+            if (processed.length === prev.length && processed[processed.length - 1]?.id === prev[prev.length - 1]?.id) return prev;
+            return processed;
+          });
+        }
+      } catch {
+        // silencioso — não exibe erro no polling
+      }
+    };
+
+    pollingRef.current = setInterval(poll, 3000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -345,22 +381,24 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
             </div>
             <div className="flex items-center gap-2">
               {/* Seletor de instância */}
-              {allInstances.length > 0 && (
-                <select
-                  value={selectedInstance}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedInstance(val);
-                    findAndLoadChat(val === "auto" ? undefined : val);
-                  }}
-                  className="text-xs px-2 py-1.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="auto">Automático</option>
-                  {allInstances.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              )}
+              <select
+                value={selectedInstance}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedInstance(val);
+                  findAndLoadChat(val === "auto" ? undefined : val);
+                }}
+                className="text-xs px-2 py-1.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="auto">Automático</option>
+                {/* Garante que a opção padrão aparece mesmo antes das instâncias carregarem */}
+                {!allInstances.includes(selectedInstance) && selectedInstance !== "auto" && (
+                  <option value={selectedInstance}>{selectedInstance}</option>
+                )}
+                {allInstances.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
               {chatInstance && (
                 <span className="text-[10px] text-success shrink-0">● {chatInstance}</span>
               )}
