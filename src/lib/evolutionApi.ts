@@ -316,16 +316,11 @@ class EvolutionAPIService {
     }
   }
 
-  async fetchMessages(instanceName: string, remoteJid: string, limit = 50, altRemoteJid?: string): Promise<EvoMessage[]> {
+  async fetchMessages(instanceName: string, remoteJid: string, limit = 50): Promise<EvoMessage[]> {
     try {
-      // Se há um JID alternativo (ex: @lid + @s.whatsapp.net), usa OR para pegar sent e received
-      const where = altRemoteJid
-        ? { OR: [{ key: { remoteJid } }, { key: { remoteJid: altRemoteJid } }] }
-        : { key: { remoteJid } };
-
       const data = await this.request<{ messages: { records: EvoMessage[] } }>(
         `/chat/findMessages/${instanceName}`,
-        { method: "POST", body: JSON.stringify({ where, limit }) }
+        { method: "POST", body: JSON.stringify({ where: { key: { remoteJid } }, limit }) }
       );
       return data?.messages?.records ?? [];
     } catch {
@@ -334,18 +329,14 @@ class EvolutionAPIService {
   }
 
   /** Busca apenas mensagens após um determinado timestamp (para polling incremental) */
-  async fetchMessagesAfter(instanceName: string, remoteJid: string, afterTimestamp: number, limit = 50, altRemoteJid?: string): Promise<EvoMessage[]> {
+  async fetchMessagesAfter(instanceName: string, remoteJid: string, afterTimestamp: number, limit = 50): Promise<EvoMessage[]> {
     try {
-      const jidFilter = altRemoteJid
-        ? { OR: [{ key: { remoteJid } }, { key: { remoteJid: altRemoteJid } }] }
-        : { key: { remoteJid } };
-
       const data = await this.request<{ messages: { records: EvoMessage[] } }>(
         `/chat/findMessages/${instanceName}`,
         {
           method: "POST",
           body: JSON.stringify({
-            where: { ...jidFilter, messageTimestamp: { gte: afterTimestamp } },
+            where: { key: { remoteJid }, messageTimestamp: { gte: afterTimestamp } },
             limit,
           }),
         }
