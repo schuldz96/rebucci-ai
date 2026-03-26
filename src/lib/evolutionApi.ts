@@ -316,11 +316,14 @@ class EvolutionAPIService {
     }
   }
 
-  async fetchMessages(instanceName: string, remoteJid: string, limit = 50): Promise<EvoMessage[]> {
+  /** Fetch interno para um único JID */
+  private async _fetchOne(instanceName: string, remoteJid: string, limit: number, afterTs?: number): Promise<EvoMessage[]> {
     try {
+      const where: Record<string, unknown> = { key: { remoteJid } };
+      if (afterTs !== undefined) where.messageTimestamp = { gte: afterTs };
       const data = await this.request<{ messages: { records: EvoMessage[] } }>(
         `/chat/findMessages/${instanceName}`,
-        { method: "POST", body: JSON.stringify({ where: { key: { remoteJid } }, limit }) }
+        { method: "POST", body: JSON.stringify({ where, limit }) }
       );
       return data?.messages?.records ?? [];
     } catch {
@@ -328,23 +331,37 @@ class EvolutionAPIService {
     }
   }
 
+  /** Deduplica mensagens por key.id */
+  private _dedup(msgs: EvoMessage[]): EvoMessage[] {
+    const seen = new Set<string>();
+    return msgs.filter(m => {
+      const id = m?.key?.id;
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }
+
+  /**
+   * Busca mensagens de uma conversa.
+   * Para conversas @lid, passe altRemoteJid (@s.whatsapp.net) para também buscar
+   * as mensagens enviadas (que ficam armazenadas sob o JID real, não o @lid).
+   */
+  async fetchMessages(instanceName: string, remoteJid: string, limit = 50, altRemoteJid?: string): Promise<EvoMessage[]> {
+    const [primary, secondary] = await Promise.all([
+      this._fetchOne(instanceName, remoteJid, limit),
+      altRemoteJid ? this._fetchOne(instanceName, altRemoteJid, limit) : Promise.resolve([]),
+    ]);
+    return this._dedup([...primary, ...secondary]);
+  }
+
   /** Busca apenas mensagens após um determinado timestamp (para polling incremental) */
-  async fetchMessagesAfter(instanceName: string, remoteJid: string, afterTimestamp: number, limit = 50): Promise<EvoMessage[]> {
-    try {
-      const data = await this.request<{ messages: { records: EvoMessage[] } }>(
-        `/chat/findMessages/${instanceName}`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            where: { key: { remoteJid }, messageTimestamp: { gte: afterTimestamp } },
-            limit,
-          }),
-        }
-      );
-      return data?.messages?.records ?? [];
-    } catch {
-      return [];
-    }
+  async fetchMessagesAfter(instanceName: string, remoteJid: string, afterTimestamp: number, limit = 50, altRemoteJid?: string): Promise<EvoMessage[]> {
+    const [primary, secondary] = await Promise.all([
+      this._fetchOne(instanceName, remoteJid, limit, afterTimestamp),
+      altRemoteJid ? this._fetchOne(instanceName, altRemoteJid, limit, afterTimestamp) : Promise.resolve([]),
+    ]);
+    return this._dedup([...primary, ...secondary]);
   }
 
   async sendTextMessage(instanceName: string, to: string, text: string) {

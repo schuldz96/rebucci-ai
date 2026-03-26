@@ -134,7 +134,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!ok) return;
     set({ loadingMessages: true, messages: [] });
     try {
-      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 100);
+      const conv = get().conversations.find(c => c.id === remoteJid);
+      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 100, conv?.remoteJidAlt);
       // Descarta se o usuário trocou de conversa enquanto carregava
       if (get().selectedConversationId !== remoteJid) return;
       const sorted = [...raw].sort((a, b) =>
@@ -173,7 +174,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!evolutionApi.isConfigured()) return;
     const snapConvId = selectedConversationId;
     try {
-      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 100);
+      const conv = get().conversations.find(c => c.id === snapConvId);
+      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 100, conv?.remoteJidAlt);
       // Descarta se o usuário trocou de conversa enquanto o poll estava em voo
       if (get().selectedConversationId !== snapConvId) return;
       const sorted = [...raw].sort((a, b) =>

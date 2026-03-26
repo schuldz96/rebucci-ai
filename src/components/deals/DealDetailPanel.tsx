@@ -50,6 +50,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chatInstanceRef = useRef<string | null>(null);
   const chatRemoteJidRef = useRef<string | null>(null);
+  const chatAltJidRef = useRef<string | null>(null); // @s.whatsapp.net quando conversa usa @lid
   const lastTimestampRef = useRef<number>(0);
 
   const linkedContact = deal.contactId
@@ -84,7 +85,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     return true;
   };
 
-  const searchInInstance = async (instanceName: string, variants: string[]): Promise<{ remoteJid: string; msgs: ReturnType<typeof processMsgs> } | null> => {
+  const searchInInstance = async (instanceName: string, variants: string[]): Promise<{ remoteJid: string; altRemoteJid?: string; msgs: ReturnType<typeof processMsgs> } | null> => {
     // Tentativa 1: fetchMessages direto com variantes @s.whatsapp.net
     for (const variant of variants) {
       const remoteJid = `${variant}@s.whatsapp.net`;
@@ -98,8 +99,10 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       return variants.some((v) => chatPhone === v || chatPhone === v.slice(2));
     });
     if (found) {
-      const msgs = await evolutionApi.fetchMessages(instanceName, found.remoteJid, 100);
-      return { remoteJid: found.remoteJid, msgs: processMsgs(msgs, true) };
+      // Para @lid: altRemoteJid = JID @s.whatsapp.net onde ficam as mensagens enviadas
+      const altRemoteJid = found.remoteJidAlt ?? undefined;
+      const msgs = await evolutionApi.fetchMessages(instanceName, found.remoteJid, 100, altRemoteJid);
+      return { remoteJid: found.remoteJid, altRemoteJid, msgs: processMsgs(msgs, true) };
     }
     return null;
   };
@@ -139,6 +142,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
         if (result) {
           setChatInstance(instanceName);
           setChatRemoteJid(result.remoteJid);
+          chatAltJidRef.current = result.altRemoteJid ?? null;
           setChatMessages(result.msgs);
           setLoadingChat(false);
           return;
@@ -196,7 +200,8 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
         // Se ainda não carregamos nada, aguarda
         if (afterTs === 0) return;
 
-        const raw = await evolutionApi.fetchMessagesAfter(inst, jid, afterTs + 1, 50);
+        const alt = chatAltJidRef.current ?? undefined;
+        const raw = await evolutionApi.fetchMessagesAfter(inst, jid, afterTs + 1, 50, alt);
         if (raw.length === 0) return;
 
         const incoming = processMsgs(raw, true);
