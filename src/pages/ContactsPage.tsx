@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useContactStore } from "@/store/contactStore";
+import { useDealStore } from "@/store/dealStore";
 import type { Contact } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, X, Filter } from "lucide-react";
 import { cn, formatPhone, stripPhone } from "@/lib/utils";
+import ContactDetailPanel from "@/components/contacts/ContactDetailPanel";
 
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success",
@@ -19,6 +22,10 @@ const statusLabels: Record<string, string> = {
 
 const ContactsPage = () => {
   const { contacts, loading, loadContacts, addContact } = useContactStore();
+  const { loadDeals } = useDealStore();
+  const navigate = useNavigate();
+  const { contactId } = useParams<{ contactId: string }>();
+  const selectedContact = contactId ? (contacts.find((c) => c.id === contactId) ?? null) : null;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showModal, setShowModal] = useState(false);
@@ -28,7 +35,8 @@ const ContactsPage = () => {
 
   useEffect(() => {
     loadContacts();
-  }, [loadContacts]);
+    loadDeals();
+  }, [loadContacts, loadDeals]);
 
   const filtered = contacts
     .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter))
@@ -141,7 +149,8 @@ const ContactsPage = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.03 }}
-                    className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
+                    onClick={() => navigate(`/contacts/${c.id}`)}
+                    className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
                   >
                     <td className="px-5 py-3.5 text-sm font-medium text-foreground whitespace-nowrap">{c.name}</td>
                     <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.email}</td>
@@ -165,7 +174,17 @@ const ContactsPage = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Contact Detail Panel */}
+      <AnimatePresence>
+        {selectedContact && (
+          <ContactDetailPanel
+            contact={selectedContact}
+            onClose={() => navigate("/contacts")}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Modal novo contato */}
       <AnimatePresence>
         {showModal && (
           <motion.div

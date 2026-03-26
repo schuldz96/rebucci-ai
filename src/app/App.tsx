@@ -47,6 +47,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/whatsapp" element={<WhatsAppPage />} />
         <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/contacts/:contactId" element={<ContactsPage />} />
         <Route path="/deals" element={<DealsPage />} />
         <Route path="/deals/:dealId" element={<DealsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
