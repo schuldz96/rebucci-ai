@@ -45,6 +45,8 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const [chatRemoteJid, setChatRemoteJid] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [allInstances, setAllInstances] = useState<string[]>([]);
+  const [selectedInstance, setSelectedInstance] = useState<string>("auto");
 
   const linkedContact = deal.contactId
     ? contacts.find((c) => c.id === deal.contactId) ?? null
@@ -65,74 +67,87 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   // ── Evolution API chat search ────────────────────────────────────────────────
-  const findAndLoadChat = useCallback(async () => {
+  const ensureConfigured = async (): Promise<boolean> => {
+    if (evolutionApi.isConfigured()) return true;
+    const { data } = await supabase
+      .from("evolution_config")
+      .select("api_url, api_token")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    if (!data?.api_url) return false;
+    evolutionApi.configure(data.api_url, data.api_token);
+    return true;
+  };
+
+  const searchInInstance = async (instanceName: string, variants: string[]): Promise<{ remoteJid: string; msgs: ReturnType<typeof processMsgs> } | null> => {
+    // Tentativa 1: fetchMessages direto com variantes @s.whatsapp.net
+    for (const variant of variants) {
+      const remoteJid = `${variant}@s.whatsapp.net`;
+      const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 50);
+      if (msgs.length > 0) return { remoteJid, msgs: processMsgs(msgs) };
+    }
+    // Tentativa 2: fetchChats (cobre @lid e outros formatos)
+    const chats = await evolutionApi.fetchChats(instanceName, 500);
+    const found = chats.find((c) => {
+      const chatPhone = (c.remoteJidAlt ?? c.remoteJid).split("@")[0];
+      return variants.some((v) => chatPhone === v || chatPhone === v.slice(2));
+    });
+    if (found) {
+      const msgs = await evolutionApi.fetchMessages(instanceName, found.remoteJid, 50);
+      return { remoteJid: found.remoteJid, msgs: processMsgs(msgs) };
+    }
+    return null;
+  };
+
+  const findAndLoadChat = useCallback(async (forceInstance?: string) => {
     const phone = deal.phone || linkedContact?.phone;
     if (!phone) return;
 
     setLoadingChat(true);
     setChatError(null);
     setChatMessages([]);
+    setChatInstance(null);
+    setChatRemoteJid(null);
 
     try {
-      // Configurar API se necessário
-      if (!evolutionApi.isConfigured()) {
-        const { data } = await supabase
-          .from("evolution_config")
-          .select("api_url, api_token")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-        if (!data?.api_url) {
-          setChatError("Evolution API não configurada. Configure em Configurações → EvolutionAPI.");
-          setLoadingChat(false);
-          return;
-        }
-        evolutionApi.configure(data.api_url, data.api_token);
+      const ok = await ensureConfigured();
+      if (!ok) {
+        setChatError("Evolution API não configurada. Configure em Configurações → EvolutionAPI.");
+        setLoadingChat(false);
+        return;
       }
 
       const variants = getPhoneVariants(phone);
       const instances: EvoInstance[] = await evolutionApi.fetchInstances();
       const activeInstances = instances.filter(i => i.instance.status === "open");
+      const names = activeInstances.map(i => i.instance.instanceName);
 
-      for (const inst of activeInstances) {
-        const instanceName = inst.instance.instanceName;
+      // Atualiza lista de instâncias disponíveis
+      setAllInstances(names);
 
-        // Tentativa 1: fetchMessages direto com variantes de remoteJid
-        for (const variant of variants) {
-          const remoteJid = `${variant}@s.whatsapp.net`;
-          const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 50);
-          if (msgs.length > 0) {
-            setChatInstance(instanceName);
-            setChatRemoteJid(remoteJid);
-            setChatMessages(processMsgs(msgs));
-            setLoadingChat(false);
-            return;
-          }
-        }
+      const instancesToSearch = forceInstance
+        ? [forceInstance]
+        : names;
 
-        // Tentativa 2: buscar nas conversas (cobre @lid e outros formatos)
-        const chats = await evolutionApi.fetchChats(instanceName, 500);
-        const found = chats.find((c) => {
-          const chatPhone = (c.remoteJidAlt ?? c.remoteJid).split("@")[0];
-          return variants.some((v) => chatPhone === v || chatPhone === v.slice(2));
-        });
-
-        if (found) {
-          const remoteJid = found.remoteJid;
-          const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 50);
+      for (const instanceName of instancesToSearch) {
+        const result = await searchInInstance(instanceName, variants);
+        if (result) {
           setChatInstance(instanceName);
-          setChatRemoteJid(remoteJid);
-          setChatMessages(processMsgs(msgs));
+          setChatRemoteJid(result.remoteJid);
+          setChatMessages(result.msgs);
           setLoadingChat(false);
           return;
         }
       }
 
-      setChatError("Nenhuma conversa encontrada para este número nas instâncias ativas.");
+      const ctx = forceInstance ? `na instância "${forceInstance}"` : "nas instâncias ativas";
+      setChatError(`Nenhuma conversa encontrada para este número ${ctx}.`);
     } catch (e) {
       setChatError("Erro ao buscar conversa: " + (e instanceof Error ? e.message : String(e)));
     }
     setLoadingChat(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deal.phone, linkedContact?.phone]);
 
   function processMsgs(raw: Parameters<typeof evolutionApi.extractMessageText>[0][]): ChatMsg[] {
@@ -326,13 +341,30 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
           <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
             <div>
               <p className="text-sm font-semibold text-foreground">{deal.contactName}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-muted-foreground">{deal.phone ? formatPhone(deal.phone) : "Sem telefone"}</p>
-                {chatInstance && <span className="text-[10px] text-success">● {chatInstance}</span>}
-              </div>
+              <p className="text-xs text-muted-foreground">{deal.phone ? formatPhone(deal.phone) : "Sem telefone"}</p>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={findAndLoadChat} disabled={loadingChat}
+              {/* Seletor de instância */}
+              {allInstances.length > 0 && (
+                <select
+                  value={selectedInstance}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedInstance(val);
+                    findAndLoadChat(val === "auto" ? undefined : val);
+                  }}
+                  className="text-xs px-2 py-1.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="auto">Automático</option>
+                  {allInstances.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              )}
+              {chatInstance && (
+                <span className="text-[10px] text-success shrink-0">● {chatInstance}</span>
+              )}
+              <button onClick={() => findAndLoadChat(selectedInstance === "auto" ? undefined : selectedInstance)} disabled={loadingChat}
                 className="p-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-40" title="Recarregar chat">
                 <RefreshCw className={cn("w-3.5 h-3.5", loadingChat && "animate-spin")} />
               </button>
