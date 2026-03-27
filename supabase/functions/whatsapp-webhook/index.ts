@@ -10,7 +10,6 @@ function stripPhone(p: string): string {
 function extractText(message: unknown): string {
   if (!message) return "";
   if (typeof message === "string") {
-    // pode ser base64 (webhookBase64=true) — tenta decodificar
     try {
       const dec = atob(message);
       const parsed = JSON.parse(dec);
@@ -41,7 +40,6 @@ function extractMessageData(body: Record<string, unknown>): Record<string, unkno
   return null;
 }
 
-// Gera variantes de telefone BR com/sem 55 e com/sem dígito 9
 function phoneVariants(raw: string): string[] {
   const set = new Set<string>([raw, `+${raw}`]);
   if (raw.startsWith("55") && raw.length === 13) {
@@ -67,6 +65,45 @@ function phoneVariants(raw: string): string[] {
   return Array.from(set);
 }
 
+/** Busca contexto relevante na vectorstore para a mensagem recebida */
+async function searchVectorstore(
+  supabase: ReturnType<typeof createClient>,
+  openaiToken: string,
+  instanceName: string,
+  query: string,
+): Promise<string> {
+  try {
+    // Gera embedding da mensagem recebida
+    const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiToken}` },
+      body: JSON.stringify({ model: "text-embedding-3-small", input: query.slice(0, 2000) }),
+    });
+    if (!embRes.ok) return "";
+    const embJson = await embRes.json();
+    const queryEmbedding: number[] = embJson.data?.[0]?.embedding;
+    if (!queryEmbedding) return "";
+
+    // Busca chunks similares via match_documents
+    const { data: matches } = await supabase.rpc("match_documents", {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.5,
+      match_count: 5,
+      p_instance_name: instanceName,
+    });
+
+    if (!matches || matches.length === 0) return "";
+
+    const context = (matches as { content: string; similarity: number }[])
+      .map((m, i) => `[Trecho ${i + 1}] ${m.content.slice(0, 800)}`)
+      .join("\n\n");
+
+    return context;
+  } catch {
+    return "";
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("ok", { status: 200 });
 
@@ -76,7 +113,6 @@ Deno.serve(async (req: Request) => {
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Log helper — nunca lança exceção
   const log = async (status: string, extra: Record<string, string> = {}) => {
     try {
       await supabase.from("webhook_logs").insert({
@@ -91,7 +127,6 @@ Deno.serve(async (req: Request) => {
   };
 
   try {
-    // Valida token
     const { data: webhookRow, error: tokenErr } = await supabase
       .from("instance_webhooks")
       .select("instance_name")
@@ -134,8 +169,6 @@ Deno.serve(async (req: Request) => {
 
     // Busca deal
     const variants = phoneVariants(rawPhone);
-    const orFilter = variants.map((v) => `phone.eq.${encodeURIComponent(v)}`).join(",");
-
     const { data: deals } = await supabase
       .from("deals")
       .select("id, stage, contact_name, phone")
@@ -148,7 +181,6 @@ Deno.serve(async (req: Request) => {
       return new Response("ok", { status: 200 });
     }
 
-    // Pega agent config ativo para o stage do deal
     const stages = [...new Set((deals as { stage: string }[]).map((d) => d.stage))];
     const { data: activeConfigs } = await supabase
       .from("agent_configs")
@@ -185,10 +217,21 @@ Deno.serve(async (req: Request) => {
       return new Response("ok", { status: 200 });
     }
 
-    // System prompt
+    // Busca contexto da vectorstore (sempre que houver chunks embedados)
+    const ragContext = await searchVectorstore(supabase, tokenRow.token, instanceName, messageText);
+
+    // Monta system prompt
     const promptParts: string[] = [];
     if (agentConfig.system_prompt) promptParts.push(agentConfig.system_prompt as string);
     if (agentConfig.prompt_complement) promptParts.push(agentConfig.prompt_complement as string);
+
+    if (ragContext) {
+      promptParts.push(
+        `\n\nCONTEXTO RELEVANTE DO HISTÓRICO DE ATENDIMENTOS:\n${ragContext}\n\nUse o contexto acima para embasar sua resposta quando relevante. Priorize as informações do contexto sobre conhecimento genérico.`
+      );
+      await log("rag_context_found", { instance: instanceName, jid: remoteJid, details: `${ragContext.length} chars de contexto` });
+    }
+
     const systemPrompt = promptParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda em português.";
 
     // OpenAI
@@ -216,7 +259,7 @@ Deno.serve(async (req: Request) => {
     const delayMs = Math.min(Number(agentConfig.response_delay ?? 1) * 1000, 10000);
     if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
 
-    // Envia via Evolution API — número puro sem @s.whatsapp.net
+    // Envia via Evolution API
     const sendInstance = (agentConfig.instance_name as string) || instanceName;
     const sendRes = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
       method: "POST",
@@ -233,7 +276,6 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (err) {
-    // Captura qualquer erro inesperado
     try {
       await supabase.from("webhook_logs").insert({
         instance_name: "error",
