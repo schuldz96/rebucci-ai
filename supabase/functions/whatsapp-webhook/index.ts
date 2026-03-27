@@ -7,25 +7,31 @@ function stripPhone(p: string): string {
   return p.replace(/\D/g, "");
 }
 
-function extractText(message: Record<string, unknown>): string {
-  if (!message) return "";
+function extractText(message: unknown): string {
+  if (!message || typeof message !== "object") return "";
   const m = message as Record<string, unknown>;
   const ext = m.extendedTextMessage as Record<string, unknown> | undefined;
   const img = m.imageMessage as Record<string, unknown> | undefined;
+  const vid = m.videoMessage as Record<string, unknown> | undefined;
   return (
-    (m.conversation as string) ??
-    (ext?.text as string) ??
-    (img?.caption as string) ??
+    (m.conversation as string | undefined) ??
+    (ext?.text as string | undefined) ??
+    (img?.caption as string | undefined) ??
+    (vid?.caption as string | undefined) ??
     ""
   );
 }
 
-async function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
+// Evolution API pode enviar data como objeto ou array — normaliza para objeto único
+function extractMessageData(body: Record<string, unknown>): Record<string, unknown> | null {
+  const raw = body.data;
+  if (!raw) return null;
+  if (Array.isArray(raw)) return raw.length > 0 ? (raw[0] as Record<string, unknown>) : null;
+  if (typeof raw === "object") return raw as Record<string, unknown>;
+  return null;
 }
 
 Deno.serve(async (req: Request) => {
-  // Evolution API sends HEAD/GET as health check
   if (req.method !== "POST") return new Response("ok", { status: 200 });
 
   const url = new URL(req.url);
@@ -34,14 +40,18 @@ Deno.serve(async (req: Request) => {
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Validate token → get instance name
+  // Valida token → pega nome da instância
   const { data: webhookRow } = await supabase
     .from("instance_webhooks")
     .select("instance_name")
     .eq("webhook_token", token)
     .maybeSingle();
 
-  if (!webhookRow) return new Response("unauthorized", { status: 401 });
+  if (!webhookRow) {
+    console.log(`[webhook] Token inválido: ${token}`);
+    return new Response("unauthorized", { status: 401 });
+  }
+
   const instanceName: string = webhookRow.instance_name;
 
   let body: Record<string, unknown>;
@@ -51,71 +61,94 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { status: 200 });
   }
 
-  // Only process incoming messages
-  if (body.event !== "messages.upsert") return new Response("ok", { status: 200 });
+  const event = ((body.event as string | undefined) ?? "").toLowerCase();
+  console.log(`[webhook] Evento: "${event}" | instância: ${instanceName}`);
 
-  const data = body.data as Record<string, unknown> | undefined;
-  if (!data) return new Response("ok", { status: 200 });
+  if (!event.includes("messages.upsert") && !event.includes("messages_upsert")) {
+    return new Response("ok", { status: 200 });
+  }
+
+  const data = extractMessageData(body);
+  if (!data) {
+    console.log("[webhook] Payload sem data");
+    return new Response("ok", { status: 200 });
+  }
 
   const key = data.key as Record<string, unknown> | undefined;
-  if (key?.fromMe) return new Response("ok", { status: 200 }); // ignore sent messages
+  if (key?.fromMe === true) return new Response("ok", { status: 200 });
 
-  const remoteJid = (key?.remoteJid as string) ?? "";
-  if (!remoteJid || remoteJid.endsWith("@g.us")) return new Response("ok", { status: 200 }); // skip groups
+  const remoteJid = (key?.remoteJid as string | undefined) ?? "";
+  if (!remoteJid || remoteJid.endsWith("@g.us")) {
+    return new Response("ok", { status: 200 }); // ignora grupos
+  }
 
   const rawPhone = stripPhone(remoteJid.split("@")[0]);
-  const messageText = extractText(data.message as Record<string, unknown>);
-  if (!messageText.trim()) return new Response("ok", { status: 200 });
+  const messageText = extractText(data.message).trim();
 
-  // Match deal by phone — try exact + variants (with/without country code 55)
-  const phone13 = rawPhone; // e.g. 5511999999999
-  const phone11 = rawPhone.length === 13 && rawPhone.startsWith("55") ? rawPhone.slice(2) : rawPhone;
-  const phonePlus = `+${rawPhone}`;
+  console.log(`[webhook] De: ${rawPhone} | Msg: "${messageText.slice(0, 80)}"`);
+  if (!messageText) return new Response("ok", { status: 200 });
 
-  const { data: deal } = await supabase
+  // Variantes de telefone (BR: 5542999999999 → tenta também sem 55)
+  const phone13 = rawPhone;
+  const phone11 = rawPhone.length === 13 && rawPhone.startsWith("55") ? rawPhone.slice(2) : "";
+  const orParts = [`phone.eq.${phone13}`, `phone.eq.+${phone13}`];
+  if (phone11) orParts.push(`phone.eq.${phone11}`);
+
+  // Busca deal com esse telefone — pega o que está em etapa com IA ativa
+  const { data: deals } = await supabase
     .from("deals")
     .select("id, stage, contact_name, phone")
-    .or(`phone.eq.${phone13},phone.eq.${phone11},phone.eq.${phonePlus}`)
+    .or(orParts.join(","))
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(10);
 
-  if (!deal) {
-    console.log(`[webhook] No deal found for phone ${rawPhone} — ignoring`);
+  if (!deals || deals.length === 0) {
+    console.log(`[webhook] Nenhum deal para telefone ${rawPhone} — sem resposta`);
     return new Response("ok", { status: 200 });
   }
 
-  // Find active agent config for this stage + instance
-  const { data: agentConfig } = await supabase
+  // Carrega configs de agente ativas para os stages dos deals encontrados
+  const stages = [...new Set(deals.map((d: { stage: string }) => d.stage))];
+  const { data: activeConfigs } = await supabase
     .from("agent_configs")
     .select("*")
-    .eq("stage", deal.stage)
-    .eq("active", true)
-    .or(`instance_name.eq.${instanceName},instance_name.eq.`)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .in("stage", stages)
+    .eq("active", true);
 
-  if (!agentConfig) {
-    console.log(`[webhook] No active agent config for stage "${deal.stage}" — ignoring`);
+  // Seleciona o deal cujo stage tem IA ativa
+  let deal: { id: string; stage: string; contact_name: string; phone: string } | null = null;
+  let agentConfig: Record<string, unknown> | null = null;
+
+  for (const d of deals) {
+    const cfg = activeConfigs?.find((c: { stage: string }) => c.stage === d.stage);
+    if (cfg) {
+      deal = d;
+      agentConfig = cfg as Record<string, unknown>;
+      break;
+    }
+  }
+
+  if (!deal || !agentConfig) {
+    console.log(`[webhook] Nenhum deal em etapa com IA ativa para ${rawPhone} (stages: ${stages.join(", ")})`);
     return new Response("ok", { status: 200 });
   }
 
-  // Get AI provider token
-  const provider: string = agentConfig.provider ?? "openai";
+  console.log(`[webhook] Deal: "${deal.contact_name}" | Etapa: "${deal.stage}" | Agente: ${agentConfig.name}`);
+
+  // Token OpenAI (IA sempre usa OpenAI GPT-4o mini)
   const { data: tokenRow } = await supabase
     .from("api_tokens")
     .select("token")
-    .ilike("provider", provider)
+    .ilike("provider", "openai")
     .limit(1)
     .maybeSingle();
 
   if (!tokenRow?.token) {
-    console.log(`[webhook] No API token for provider "${provider}"`);
+    console.log("[webhook] Token OpenAI não encontrado em api_tokens");
     return new Response("ok", { status: 200 });
   }
 
-  // Get Evolution API config
+  // Config Evolution API para envio
   const { data: evoConfig } = await supabase
     .from("evolution_config")
     .select("api_url, api_token")
@@ -123,69 +156,57 @@ Deno.serve(async (req: Request) => {
     .limit(1)
     .maybeSingle();
 
-  if (!evoConfig) return new Response("ok", { status: 200 });
+  if (!evoConfig) {
+    console.log("[webhook] evolution_config não encontrada");
+    return new Response("ok", { status: 200 });
+  }
 
-  // Build system prompt
-  const systemParts: string[] = [];
-  if (agentConfig.system_prompt) systemParts.push(agentConfig.system_prompt);
-  if (agentConfig.prompt_complement) systemParts.push(agentConfig.prompt_complement);
-  const systemPrompt = systemParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda de forma educada e objetiva.";
+  // System prompt
+  const parts: string[] = [];
+  if (agentConfig.system_prompt) parts.push(agentConfig.system_prompt as string);
+  if (agentConfig.prompt_complement) parts.push(agentConfig.prompt_complement as string);
+  const systemPrompt = parts.join("\n\n") ||
+    "Você é um assistente de atendimento ao cliente. Responda de forma educada e objetiva em português.";
 
-  // Generate AI response
+  // Gera resposta via OpenAI
   let aiResponse = "";
   try {
-    if (provider === "openai") {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${tokenRow.token}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: messageText },
-          ],
-          max_tokens: 600,
-          temperature: 0.7,
-        }),
-      });
-      const json = await res.json();
-      aiResponse = json.choices?.[0]?.message?.content?.trim() ?? "";
-    } else if (provider === "anthropic") {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": tokenRow.token,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 600,
-          system: systemPrompt,
-          messages: [{ role: "user", content: messageText }],
-        }),
-      });
-      const json = await res.json();
-      aiResponse = (json.content?.[0]?.text ?? "").trim();
-    }
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenRow.token}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: messageText },
+        ],
+        max_tokens: 600,
+        temperature: 0.7,
+      }),
+    });
+    const json = await res.json();
+    aiResponse = (json.choices?.[0]?.message?.content ?? "").trim();
+    if (!aiResponse) console.log("[webhook] OpenAI resposta vazia:", JSON.stringify(json).slice(0, 300));
   } catch (err) {
-    console.error("[webhook] AI error:", err);
+    console.error("[webhook] Erro OpenAI:", err);
     return new Response("ok", { status: 200 });
   }
 
   if (!aiResponse) return new Response("ok", { status: 200 });
 
-  // Apply response delay (max 10s to avoid timeout)
-  const delayMs = Math.min((agentConfig.response_delay ?? 1) * 1000, 10000);
-  if (delayMs > 0) await sleep(delayMs);
+  console.log(`[webhook] Resposta (${aiResponse.length} chars): "${aiResponse.slice(0, 100)}"`);
 
-  // Send response via Evolution API
+  // Delay configurado (máx 10s)
+  const delayMs = Math.min(((agentConfig.response_delay as number) ?? 1) * 1000, 10000);
+  if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
+
+  // Envia via Evolution API
   try {
-    const sendUrl = `${evoConfig.api_url}/message/sendText/${instanceName}`;
-    await fetch(sendUrl, {
+    const sendInstance = (agentConfig.instance_name as string) || instanceName;
+    const sendRes = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -193,9 +214,10 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({ number: remoteJid, text: aiResponse }),
     });
-    console.log(`[webhook] Responded to ${rawPhone} in stage "${deal.stage}"`);
+    const sendJson = await sendRes.json().catch(() => ({}));
+    console.log(`[webhook] Enviado para ${rawPhone}:`, JSON.stringify(sendJson).slice(0, 200));
   } catch (err) {
-    console.error("[webhook] Send error:", err);
+    console.error("[webhook] Erro ao enviar:", err);
   }
 
   return new Response("ok", { status: 200 });

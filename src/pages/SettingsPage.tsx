@@ -875,6 +875,12 @@ const SettingsPage = () => {
         updated_at: new Date().toISOString(),
       }).eq("id", job.id);
 
+      // Auto-criar/atualizar rag_bases para esta instância
+      await supabase.from("rag_bases").upsert(
+        { id: `rag-${ragInstance}`, name: `Histórico ${ragInstance}`, origin: "whatsapp", document_count: totalChunks },
+        { onConflict: "id" }
+      );
+
       setRagStatus(cancelled
         ? `⚠️ Cancelado. ${totalMessages.toLocaleString()} msgs → ${totalChunks} chunks salvos.`
         : `✅ Concluído! ${totalMessages.toLocaleString()} mensagens → ${totalChunks} chunks`);
