@@ -88,11 +88,39 @@ Deno.serve(async (req: Request) => {
   console.log(`[webhook] De: ${rawPhone} | Msg: "${messageText.slice(0, 80)}"`);
   if (!messageText) return new Response("ok", { status: 200 });
 
-  // Variantes de telefone (BR: 5542999999999 → tenta também sem 55)
-  const phone13 = rawPhone;
-  const phone11 = rawPhone.length === 13 && rawPhone.startsWith("55") ? rawPhone.slice(2) : "";
-  const orParts = [`phone.eq.${phone13}`, `phone.eq.+${phone13}`];
-  if (phone11) orParts.push(`phone.eq.${phone11}`);
+  // Gera todas as variantes de telefone BR (com/sem 55, com/sem dígito 9)
+  // Ex.: rawPhone = 5542998224190 (13 dígitos com 55 + 42 + 9 + 8 dígitos)
+  const variants = new Set<string>();
+  variants.add(rawPhone);             // 5542998224190
+  variants.add(`+${rawPhone}`);       // +5542998224190
+
+  if (rawPhone.startsWith("55") && rawPhone.length === 13) {
+    // Sem código BR: 42998224190
+    const sem55 = rawPhone.slice(2);
+    variants.add(sem55);
+
+    // Sem o 9 extra (após área code de 2 dígitos): 554298224190
+    const area = rawPhone.slice(2, 4); // "42"
+    const resto = rawPhone.slice(4);    // "998224190"
+    if (resto.startsWith("9") && resto.length === 9) {
+      const sem9 = `55${area}${resto.slice(1)}`; // 554298224190
+      variants.add(sem9);
+      variants.add(`+${sem9}`);
+      variants.add(`${area}${resto.slice(1)}`);  // 4298224190
+    }
+    variants.add(sem55); // 42998224190
+  } else if (rawPhone.length === 12 && rawPhone.startsWith("55")) {
+    // Número sem o 9 → adiciona variante com o 9
+    const area = rawPhone.slice(2, 4);
+    const resto = rawPhone.slice(4);
+    const com9 = `55${area}9${resto}`;
+    variants.add(com9);
+    variants.add(`+${com9}`);
+    variants.add(`${area}${resto}`);
+    variants.add(`${area}9${resto}`);
+  }
+
+  const orParts = Array.from(variants).map((v) => `phone.eq.${v}`);
 
   // Busca deal com esse telefone — pega o que está em etapa com IA ativa
   const { data: deals } = await supabase
