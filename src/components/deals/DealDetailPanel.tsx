@@ -49,6 +49,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const [pendingFile, setPendingFile] = useState<{ file: File; base64: string; preview?: string } | null>(null);
   const [allInstances, setAllInstances] = useState<string[]>([]);
   const [selectedInstance, setSelectedInstance] = useState<string>("MarcoR");
+  const [crmUsers, setCrmUsers] = useState<{ id: string; name: string }[]>([]);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chatInstanceRef = useRef<string | null>(null);
   const chatRemoteJidRef = useRef<string | null>(null);
@@ -189,6 +190,13 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     const inst = selectedInstance === "auto" ? undefined : selectedInstance;
     findAndLoadChat(inst);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Carrega lista de usuários do sistema
+  useEffect(() => {
+    supabase.from("crm_users").select("id, name").eq("status", "active").order("name").then(({ data }) => {
+      if (data) setCrmUsers(data);
+    });
   }, []);
 
   // Polling incremental: busca apenas mensagens após o último timestamp conhecido
@@ -428,7 +436,8 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
             {/* Negócio */}
             <div className="space-y-0">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Negócio</p>
-              <EditableRow label="Usuário responsável" fieldKey="responsibleUser" display={deal.responsibleUser || "—"} rawVal={deal.responsibleUser || ""} />
+              <EditableRow label="Usuário responsável" fieldKey="responsibleUser" display={deal.responsibleUser || "—"} rawVal={deal.responsibleUser || ""}
+                type="select" options={[{ value: "", label: "Nenhum" }, ...crmUsers.map(u => ({ value: u.name, label: u.name }))]} />
               <EditableRow label="Venda" fieldKey="value" display={formatCurrency(deal.value)} rawVal={String(deal.value)} type="number" />
               <EditableRow label="Telefone" fieldKey="phone" display={deal.phone ? formatPhone(deal.phone) : "—"} rawVal={deal.phone || ""} />
               <EditableRow label="Grupo" fieldKey="group" display={deal.group || "—"} rawVal={deal.group || ""} />
