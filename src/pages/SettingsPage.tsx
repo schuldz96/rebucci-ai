@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
   Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2, Pencil, X,
-  Plus, Trash2, Shield, Tag, ChevronDown, Building2, Facebook, Kanban, GripVertical,
+  Plus, Trash2, Shield, Tag, ChevronDown, Building2, Facebook, Kanban, GripVertical, Key,
 } from "lucide-react";
 import { usePipelineStore } from "@/store/pipelineStore";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ import { evolutionApi, type EvoInstance } from "@/lib/evolutionApi";
 const SUPABASE_URL = "https://urrbpxrtdzurfdsucukb.supabase.co";
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
-type SettingsSection = "general" | "users" | "pipelines" | "evolution" | "meta" | "prime";
+type SettingsSection = "general" | "users" | "pipelines" | "properties" | "tokens" | "evolution" | "meta" | "prime";
 type EvoTab = "config" | "instances" | "rag";
 type UserTab = "users" | "teams";
 type ModalType = null | "user" | "team" | "perm" | "preset";
@@ -25,10 +25,10 @@ interface PermissionSet { id: string; name: string; description: string | null; 
 interface Preset { id: string; name: string; type: string; content: string | null; }
 
 const SECTION_MAP: Record<string, SettingsSection> = {
-  geral: "general", usuarios: "users", pipelines: "pipelines", evolution: "evolution", meta: "meta", prime: "prime",
+  geral: "general", usuarios: "users", pipelines: "pipelines", propriedades: "properties", tokens: "tokens", evolution: "evolution", meta: "meta", prime: "prime",
 };
 const SECTION_SLUG: Record<SettingsSection, string> = {
-  general: "geral", users: "usuarios", pipelines: "pipelines", evolution: "evolution", meta: "meta", prime: "prime",
+  general: "geral", users: "usuarios", pipelines: "pipelines", properties: "propriedades", tokens: "tokens", evolution: "evolution", meta: "meta", prime: "prime",
 };
 
 const menuSections = [
@@ -36,6 +36,8 @@ const menuSections = [
   { title: "Gerenciamento de conta", items: [
     { id: "users" as const, label: "Usuários", icon: Users },
     { id: "pipelines" as const, label: "Pipelines", icon: Kanban },
+    { id: "properties" as const, label: "Propriedades", icon: Tag },
+    { id: "tokens" as const, label: "Tokens", icon: Key },
   ]},
   { title: "Integrações", items: [
     { id: "evolution" as const, label: "EvolutionAPI", icon: Link2 },
@@ -43,6 +45,249 @@ const menuSections = [
     { id: "prime" as const, label: "Prime", icon: Zap },
   ]},
 ];
+
+// ─── Tokens Section ───────────────────────────────────────────────────────────
+const TOKEN_PROVIDERS = ["OpenAI", "Anthropic", "Google Gemini", "Groq", "Mistral", "Outro"];
+
+const TokensSection = () => {
+  const [tokens, setTokens] = useState<{ id: string; provider: string; label: string; token: string; created_at: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({ provider: "OpenAI", label: "", token: "" });
+  const [saving, setSaving] = useState(false);
+  const [showToken, setShowToken] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    supabase.from("api_tokens").select("*").order("created_at").then(({ data }) => {
+      if (data) setTokens(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!form.token) return;
+    setSaving(true);
+    const { data } = await supabase.from("api_tokens").insert({ provider: form.provider, label: form.label || form.provider, token: form.token }).select().single();
+    if (data) setTokens((prev) => [...prev, data]);
+    setForm({ provider: "OpenAI", label: "", token: "" });
+    setModal(false);
+    setSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from("api_tokens").delete().eq("id", id);
+    setTokens((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-yellow-500/20 flex items-center justify-center"><Key className="w-5 h-5 text-yellow-500" /></div>
+        <div><h2 className="text-xl font-bold text-foreground">Tokens</h2><p className="text-sm text-muted-foreground">Gerencie tokens de API para IA e integrações</p></div>
+      </div>
+      <div className="flex justify-end">
+        <button onClick={() => setModal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+          <Plus className="w-4 h-4" /> Novo token
+        </button>
+      </div>
+      {loading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+      {!loading && tokens.length === 0 && <div className="text-center py-12 text-muted-foreground text-sm">Nenhum token cadastrado</div>}
+      {!loading && tokens.length > 0 && (
+        <div className="border border-border rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary/50">
+                {["Provedor", "Rótulo", "Token", ""].map((h) => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tokens.map((t) => (
+                <tr key={t.id} className="border-b border-border last:border-0 hover:bg-secondary/20">
+                  <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">{t.provider}</span></td>
+                  <td className="px-4 py-3 text-foreground">{t.label}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{showToken[t.id] ? t.token : "••••••••••••••••"}</span>
+                      <button onClick={() => setShowToken((p) => ({ ...p, [t.id]: !p[t.id] }))} className="text-muted-foreground hover:text-foreground">
+                        {showToken[t.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => handleDelete(t.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setModal(false)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-foreground">Novo token</h3>
+              <button onClick={() => setModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Provedor</label>
+                <select value={form.provider} onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))} className={inputCls}>
+                  {TOKEN_PROVIDERS.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Rótulo (opcional)</label>
+                <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="Ex: Produção, Dev..." className={inputCls} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Token *</label>
+                <input type="password" value={form.token} onChange={(e) => setForm((f) => ({ ...f, token: e.target.value }))} placeholder="sk-..." className={inputCls} />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors">Cancelar</button>
+              <button onClick={handleSave} disabled={saving || !form.token}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Properties Section ────────────────────────────────────────────────────────
+const PROPERTY_TYPES = ["Texto", "Número", "Data", "Seleção única", "Seleção múltipla", "Booleano", "URL", "Telefone", "E-mail"];
+const PROPERTY_OBJECTS = ["Negócio", "Contato"];
+
+const PropertiesSection = () => {
+  const [properties, setProperties] = useState<{ id: string; name: string; type: string; object_type: string; required: boolean; created_at: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({ name: "", type: "Texto", object_type: "Negócio", required: false });
+  const [saving, setSaving] = useState(false);
+  const [filterObj, setFilterObj] = useState<string>("Todos");
+
+  useEffect(() => {
+    supabase.from("crm_properties").select("*").order("created_at").then(({ data }) => {
+      if (data) setProperties(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!form.name) return;
+    setSaving(true);
+    const { data } = await supabase.from("crm_properties").insert(form).select().single();
+    if (data) setProperties((prev) => [...prev, data]);
+    setForm({ name: "", type: "Texto", object_type: "Negócio", required: false });
+    setModal(false);
+    setSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from("crm_properties").delete().eq("id", id);
+    setProperties((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const filtered = filterObj === "Todos" ? properties : properties.filter((p) => p.object_type === filterObj);
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center"><Tag className="w-5 h-5 text-primary" /></div>
+        <div><h2 className="text-xl font-bold text-foreground">Propriedades</h2><p className="text-sm text-muted-foreground">Campos personalizados para negócios e contatos</p></div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 border border-border rounded-xl overflow-hidden">
+          {["Todos", ...PROPERTY_OBJECTS].map((o) => (
+            <button key={o} onClick={() => setFilterObj(o)}
+              className={cn("px-4 py-2 text-sm transition-colors", filterObj === o ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:bg-secondary/50")}>
+              {o}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setModal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+          <Plus className="w-4 h-4" /> Nova propriedade
+        </button>
+      </div>
+      {loading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+      {!loading && filtered.length === 0 && <div className="text-center py-12 text-muted-foreground text-sm">Nenhuma propriedade cadastrada</div>}
+      {!loading && filtered.length > 0 && (
+        <div className="border border-border rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary/50">
+                {["Nome", "Tipo", "Objeto", "Obrigatório", ""].map((h) => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p) => (
+                <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/20">
+                  <td className="px-4 py-3 font-medium text-foreground">{p.name}</td>
+                  <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{p.type}</span></td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.object_type}</td>
+                  <td className="px-4 py-3"><span className={cn("text-xs", p.required ? "text-primary" : "text-muted-foreground")}>{p.required ? "Sim" : "Não"}</span></td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => handleDelete(p.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setModal(false)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-foreground">Nova propriedade</h3>
+              <button onClick={() => setModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Nome *</label>
+                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Segmento, Região..." className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Tipo</label>
+                  <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} className={inputCls}>
+                    {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Objeto</label>
+                  <select value={form.object_type} onChange={(e) => setForm((f) => ({ ...f, object_type: e.target.value }))} className={inputCls}>
+                    {PROPERTY_OBJECTS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.required} onChange={(e) => setForm((f) => ({ ...f, required: e.target.checked }))} className="rounded" />
+                <span className="text-sm text-foreground">Campo obrigatório</span>
+              </label>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors">Cancelar</button>
+              <button onClick={handleSave} disabled={saving || !form.name}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── Pipeline Settings Component ──────────────────────────────────────────────
 const STAGE_COLORS = [
@@ -738,6 +983,12 @@ const SettingsPage = () => {
             </div>
           </div>
         )}
+
+        {/* ═══════ TOKENS ═══════ */}
+        {section === "tokens" && <TokensSection />}
+
+        {/* ═══════ PROPRIEDADES ═══════ */}
+        {section === "properties" && <PropertiesSection />}
 
         {/* ═══════ PRIME ═══════ */}
         {section === "prime" && (
