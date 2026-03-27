@@ -647,25 +647,17 @@ const SettingsPage = () => {
       await loadVsStatus();
 
       // Chama Edge Function em loop até terminar
-      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-embeddings`;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
       while (true) {
-        const res = await fetch(fnUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
-          body: JSON.stringify({ instance_name: vsInstance }),
+        const { data, error } = await supabase.functions.invoke("generate-embeddings", {
+          body: { instance_name: vsInstance },
         });
 
-        const data = await res.json();
-
-        if (!res.ok || data.error) {
-          throw new Error(data.error ?? `Erro ${res.status}`);
-        }
+        if (error) throw new Error(error.message);
+        if (data?.error) throw new Error(data.error);
 
         await loadVsStatus();
 
-        if (data.done) break;
+        if (data?.done) break;
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
