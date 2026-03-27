@@ -73,7 +73,6 @@ async function searchVectorstore(
   query: string,
 ): Promise<string> {
   try {
-    // Gera embedding da mensagem recebida
     const embRes = await fetch("https://api.openai.com/v1/embeddings", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiToken}` },
@@ -84,10 +83,9 @@ async function searchVectorstore(
     const queryEmbedding: number[] = embJson.data?.[0]?.embedding;
     if (!queryEmbedding) return "";
 
-    // Busca chunks similares via match_documents
     const { data: matches } = await supabase.rpc("match_documents", {
       query_embedding: queryEmbedding,
-      match_threshold: 0.5,
+      match_threshold: 0.3,
       match_count: 5,
       p_instance_name: instanceName,
     });
@@ -101,6 +99,49 @@ async function searchVectorstore(
     return context;
   } catch {
     return "";
+  }
+}
+
+/** Busca histórico de conversa do número */
+async function fetchConversationHistory(
+  supabase: ReturnType<typeof createClient>,
+  instanceName: string,
+  phone: string,
+  limit = 10,
+): Promise<{ role: "user" | "assistant"; content: string }[]> {
+  try {
+    const { data } = await supabase
+      .from("ai_conversation_history")
+      .select("role, content")
+      .eq("instance_name", instanceName)
+      .eq("phone", phone)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (!data || data.length === 0) return [];
+    // Inverter para ordem cronológica
+    return (data as { role: "user" | "assistant"; content: string }[]).reverse();
+  } catch {
+    return [];
+  }
+}
+
+/** Salva mensagens no histórico */
+async function saveConversationHistory(
+  supabase: ReturnType<typeof createClient>,
+  instanceName: string,
+  phone: string,
+  userMessage: string,
+  aiResponse: string,
+): Promise<void> {
+  try {
+    const now = new Date().toISOString();
+    await supabase.from("ai_conversation_history").insert([
+      { instance_name: instanceName, phone, role: "user", content: userMessage, created_at: now },
+      { instance_name: instanceName, phone, role: "assistant", content: aiResponse, created_at: new Date(Date.now() + 1).toISOString() },
+    ]);
+  } catch {
+    // silencioso
   }
 }
 
@@ -217,8 +258,11 @@ Deno.serve(async (req: Request) => {
       return new Response("ok", { status: 200 });
     }
 
-    // Busca contexto da vectorstore
-    const ragContext = await searchVectorstore(supabase, tokenRow.token, instanceName, messageText);
+    // Busca contexto da vectorstore e histórico em paralelo
+    const [ragContext, conversationHistory] = await Promise.all([
+      searchVectorstore(supabase, tokenRow.token, instanceName, messageText),
+      fetchConversationHistory(supabase, instanceName, rawPhone),
+    ]);
 
     // Monta system prompt
     const promptParts: string[] = [];
@@ -234,13 +278,26 @@ Deno.serve(async (req: Request) => {
 
     const systemPrompt = promptParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda em português.";
 
+    await log("system_prompt_preview", { instance: instanceName, jid: remoteJid, details: systemPrompt.slice(0, 300) });
+
+    // Monta messages com histórico + mensagem atual
+    const messages: { role: string; content: string }[] = [
+      { role: "system", content: systemPrompt },
+      ...conversationHistory,
+      { role: "user", content: messageText },
+    ];
+
+    if (conversationHistory.length > 0) {
+      await log("history_loaded", { instance: instanceName, jid: remoteJid, details: `${conversationHistory.length} msgs no histórico` });
+    }
+
     // OpenAI
     const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: messageText }],
+        messages,
         max_tokens: 600,
         temperature: 0.7,
       }),
@@ -274,6 +331,9 @@ Deno.serve(async (req: Request) => {
       msg: aiResponse.slice(0, 200),
       details: JSON.stringify(sendJson).slice(0, 300),
     });
+
+    // Salva histórico de conversa
+    await saveConversationHistory(supabase, instanceName, rawPhone, messageText, aiResponse);
 
   } catch (err) {
     try {
