@@ -638,85 +638,35 @@ const SettingsPage = () => {
     if (!vsInstance) return;
     setVsLoading(true);
     try {
-      const { data: tokenRow } = await supabase
-        .from("api_tokens")
-        .select("token")
-        .ilike("provider", "openai")
-        .limit(1)
-        .maybeSingle();
-
-      if (!tokenRow?.token) {
-        alert("Token OpenAI não encontrado. Adicione em Configurações → Tokens com provedor 'openai'.");
-        return;
-      }
-
-      const { count: totalCount } = await supabase
-        .from("rag_chunks")
-        .select("id", { count: "exact", head: true })
-        .eq("instance_name", vsInstance);
-
-      const total = totalCount ?? 0;
-
-      const { count: doneCount } = await supabase
-        .from("rag_chunks")
-        .select("id", { count: "exact", head: true })
-        .eq("instance_name", vsInstance)
-        .not("embedding", "is", null);
-
+      // Inicia status
       const now = new Date().toISOString();
       await supabase.from("vectorstore_status").upsert(
-        { instance_name: vsInstance, total_chunks: total, embedded: doneCount ?? 0, status: "processing", last_run: now, updated_at: now },
+        { instance_name: vsInstance, status: "processing", last_run: now, updated_at: now },
         { onConflict: "instance_name" }
       );
       await loadVsStatus();
 
-      let processed = doneCount ?? 0;
-      const BATCH = 100;
+      // Chama Edge Function em loop até terminar
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-embeddings`;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       while (true) {
-        const { data: chunks } = await supabase
-          .from("rag_chunks")
-          .select("id, content")
-          .eq("instance_name", vsInstance)
-          .is("embedding", null)
-          .limit(BATCH);
-
-        if (!chunks || chunks.length === 0) break;
-
-        const res = await fetch("https://api.openai.com/v1/embeddings", {
+        const res = await fetch(fnUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
-          body: JSON.stringify({ model: "text-embedding-3-small", input: chunks.map((c) => c.content.slice(0, 8000)) }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}` },
+          body: JSON.stringify({ instance_name: vsInstance }),
         });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error?.message ?? "Erro na API OpenAI");
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          throw new Error(data.error ?? `Erro ${res.status}`);
         }
 
-        const json = await res.json();
-        const embeddings: number[][] = json.data.map((d: { embedding: number[] }) => d.embedding);
-        const embeddedAt = new Date().toISOString();
-
-        await Promise.all(
-          chunks.map((chunk, i) =>
-            supabase.from("rag_chunks").update({ embedding: JSON.stringify(embeddings[i]), embedded_at: embeddedAt }).eq("id", chunk.id)
-          )
-        );
-
-        processed += chunks.length;
-        await supabase.from("vectorstore_status").upsert(
-          { instance_name: vsInstance, total_chunks: total, embedded: processed, status: "processing", updated_at: new Date().toISOString() },
-          { onConflict: "instance_name" }
-        );
         await loadVsStatus();
-      }
 
-      await supabase.from("vectorstore_status").upsert(
-        { instance_name: vsInstance, total_chunks: total, embedded: processed, status: "done", updated_at: new Date().toISOString() },
-        { onConflict: "instance_name" }
-      );
-      await loadVsStatus();
+        if (data.done) break;
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
       await supabase.from("vectorstore_status").upsert(
