@@ -497,6 +497,7 @@ const SettingsPage = () => {
   const [ragStatus, setRagStatus] = useState<string | null>(null);
   const [ragJobs, setRagJobs] = useState<{ id: string; instance_name: string; status: string; total_messages: number | null; total_chunks: number | null; created_at: string }[]>([]);
   const ragCancelRef = React.useRef(false);
+  const csvCancelRef = React.useRef(false);
 
   // Vectorstore state
   const [vsInstance, setVsInstance] = useState("");
@@ -614,6 +615,19 @@ const SettingsPage = () => {
     const { data } = await supabase.from("rag_jobs").select("*").order("created_at", { ascending: false }).limit(10);
     if (data) setRagJobs(data);
   }, []);
+
+  const handleDeleteJob = async (jobId: string) => {
+    await supabase.from("rag_chunks").delete().eq("job_id", jobId);
+    await supabase.from("rag_jobs").delete().eq("id", jobId);
+    loadRagJobs();
+  };
+
+  const handleCancelJob = async (jobId: string) => {
+    ragCancelRef.current = true;
+    csvCancelRef.current = true;
+    await supabase.from("rag_jobs").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", jobId);
+    loadRagJobs();
+  };
 
   const loadVsStatus = useCallback(async () => {
     const { data } = await supabase.from("vectorstore_status").select("*").order("instance_name");
@@ -926,6 +940,7 @@ const SettingsPage = () => {
   const handleProcessCsv = async () => {
     if (!csvFile || !csvInstance) return;
     setCsvLoading(true);
+    csvCancelRef.current = false;
     setCsvStatus("Lendo arquivo...");
     try {
       const text = await csvFile.text();
@@ -935,6 +950,31 @@ const SettingsPage = () => {
       const headers = rows[0];
       const dataRows = rows.slice(1);
 
+      // Detecta índices das colunas relevantes
+      const idxJid = headers.findIndex(h => /remote.?jid|contato|contact|phone|numero/i.test(h));
+      const idxFromMe = headers.findIndex(h => /from.?me|enviado|sent/i.test(h));
+      const idxMsg = headers.findIndex(h => /mensagem|message|texto|text|body|conteudo/i.test(h));
+
+      setCsvStatus("Agrupando conversas por contato...");
+
+      // Agrupa mensagens por remote_jid
+      const convMap = new Map<string, string[]>();
+      for (const row of dataRows) {
+        const jid = idxJid >= 0 ? (row[idxJid] ?? "desconhecido") : "desconhecido";
+        const fromMe = idxFromMe >= 0 ? (row[idxFromMe] ?? "") : "";
+        const msg = idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ");
+        if (!msg.trim()) continue;
+
+        const speaker = String(fromMe).toLowerCase() === "true" || fromMe === "1" ? "[Atendente]" : "[Cliente]";
+        const line = `${speaker} ${msg.trim()}`;
+
+        if (!convMap.has(jid)) convMap.set(jid, []);
+        convMap.get(jid)!.push(line);
+      }
+
+      const uniqueContacts = convMap.size;
+      setCsvStatus(`${uniqueContacts.toLocaleString()} conversas únicas encontradas. Criando job...`);
+
       // Cria job
       const { data: job } = await supabase.from("rag_jobs").insert({
         instance_name: csvInstance,
@@ -943,30 +983,51 @@ const SettingsPage = () => {
       }).select().single();
       if (!job) throw new Error("Falha ao criar job");
 
-      // Processa em chunks de 50 linhas
-      const CHUNK = 50;
+      // Insere 1 chunk por conversa (máx 200 mensagens por chunk, divide se maior)
+      const MAX_MSGS_PER_CHUNK = 200;
+      const INSERT_BATCH = 20; // insere 20 chunks por vez no Supabase
       let totalChunks = 0;
+      let processed = 0;
 
-      for (let i = 0; i < dataRows.length; i += CHUNK) {
-        const slice = dataRows.slice(i, i + CHUNK);
-        const content = slice
-          .map((row) => headers.map((h, idx) => `${h}: ${row[idx] ?? ""}`).join("\n"))
-          .join("\n\n---\n\n");
+      const pending: object[] = [];
 
-        await supabase.from("rag_chunks").insert({
-          job_id: job.id,
-          instance_name: csvInstance,
-          chat_id: `csv-${csvFile.name}`,
-          contact_name: csvFile.name,
-          content,
-          message_count: slice.length,
-          chunk_index: Math.floor(i / CHUNK),
-        });
-        totalChunks++;
-        setCsvStatus(`Processando... ${Math.min(i + CHUNK, dataRows.length)} de ${dataRows.length} linhas`);
+      for (const [jid, lines] of convMap) {
+        const phone = jid.split("@")[0];
+        // Divide conversas longas em sub-chunks
+        for (let start = 0; start < lines.length; start += MAX_MSGS_PER_CHUNK) {
+          const slice = lines.slice(start, start + MAX_MSGS_PER_CHUNK);
+          const chunkIdx = Math.floor(start / MAX_MSGS_PER_CHUNK);
+          const content = `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`;
+          pending.push({
+            job_id: job.id,
+            instance_name: csvInstance,
+            chat_id: jid,
+            contact_name: phone,
+            content,
+            message_count: slice.length,
+            chunk_index: totalChunks,
+          });
+          totalChunks++;
+        }
+        processed++;
+
+        // Flush a cada INSERT_BATCH chunks
+        if (pending.length >= INSERT_BATCH) {
+          await supabase.from("rag_chunks").insert([...pending]);
+          pending.length = 0;
+          setCsvStatus(`Salvando... ${processed.toLocaleString()} de ${uniqueContacts.toLocaleString()} conversas (${totalChunks} chunks)`);
+        }
+
+        if (csvCancelRef.current) break;
       }
 
-      await supabase.from("rag_jobs").update({ status: "done", total_messages: dataRows.length, total_chunks: totalChunks, updated_at: new Date().toISOString() }).eq("id", job.id);
+      // Flush restante
+      if (pending.length > 0) {
+        await supabase.from("rag_chunks").insert([...pending]);
+      }
+
+      const csvCancelled = csvCancelRef.current;
+      await supabase.from("rag_jobs").update({ status: csvCancelled ? "cancelled" : "done", total_messages: dataRows.length, total_chunks: totalChunks, updated_at: new Date().toISOString() }).eq("id", job.id);
 
       // Auto-cria/atualiza rag_bases
       const { data: existing } = await supabase.from("rag_bases").select("document_count").eq("id", `rag-${csvInstance}`).maybeSingle();
@@ -976,7 +1037,9 @@ const SettingsPage = () => {
         { onConflict: "id" }
       );
 
-      setCsvStatus(`✅ Concluído! ${dataRows.length.toLocaleString()} linhas → ${totalChunks} chunks salvos.`);
+      setCsvStatus(csvCancelled
+        ? `⚠️ Cancelado. ${processed.toLocaleString()} conversas → ${totalChunks} chunks salvos.`
+        : `✅ Concluído! ${dataRows.length.toLocaleString()} mensagens → ${uniqueContacts.toLocaleString()} conversas → ${totalChunks} chunks salvos.`);
       setCsvFile(null);
       setCsvPreview([]);
       if (csvInputRef.current) csvInputRef.current.value = "";
@@ -1615,15 +1678,34 @@ const SettingsPage = () => {
                               {job.total_messages?.toLocaleString() ?? "—"} msgs • {job.total_chunks ?? "—"} chunks
                             </p>
                           </div>
-                          <div className="text-right">
-                            <span className={cn("text-xs px-2 py-1 rounded-full font-medium",
-                              job.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
-                                job.status === "error" ? "bg-destructive/20 text-destructive" :
-                                  "bg-primary/20 text-primary"
-                            )}>{job.status}</span>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(job.created_at).toLocaleDateString("pt-BR")}
-                            </p>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <span className={cn("text-xs px-2 py-1 rounded-full font-medium",
+                                job.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
+                                  job.status === "cancelled" ? "bg-yellow-500/20 text-yellow-500" :
+                                    job.status === "error" ? "bg-destructive/20 text-destructive" :
+                                      "bg-primary/20 text-primary"
+                              )}>{job.status}</span>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(job.created_at).toLocaleDateString("pt-BR")}
+                              </p>
+                            </div>
+                            {job.status === "processing" && (
+                              <button
+                                onClick={() => handleCancelJob(job.id)}
+                                title="Pausar processamento"
+                                className="p-1.5 rounded-lg hover:bg-yellow-500/20 text-yellow-500 transition-colors"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteJob(job.id)}
+                              title="Excluir job e chunks"
+                              className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
                       ))}
