@@ -176,8 +176,22 @@ Deno.serve(async () => {
         continue;
       }
 
-      // Envia via Evolution API
+      // Simulação de digitação (grouping_delay segundos)
       const sendInstance = (agentConfig.instance_name as string) || instanceName;
+      const typingSeconds = Math.min(Number(agentConfig.grouping_delay ?? 0), 60);
+
+      if (typingSeconds > 0) {
+        // Envia presença "digitando"
+        await fetch(`${evoConfig.api_url}/chat/sendPresence/${sendInstance}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
+          body: JSON.stringify({ number: phone, presence: "composing", delay: typingSeconds * 1000 }),
+        }).catch(() => {});
+        // Aguarda o tempo de digitação
+        await new Promise((r) => setTimeout(r, typingSeconds * 1000));
+      }
+
+      // Envia a mensagem
       const sendRes = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },

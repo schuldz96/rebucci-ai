@@ -166,26 +166,44 @@ Deno.serve(async (req: Request) => {
       return new Response("ok", { status: 200 });
     }
 
-    // Delay em segundos → converte para ms e calcula scheduled_at
-    const delaySeconds = Number(agentConfig.response_delay ?? 0);
-    const scheduledAt = new Date(Date.now() + delaySeconds * 1000).toISOString();
+    // response_delay = tempo máximo do webhook até responder (em segundos, padrão 10)
+    const responseDelay = Math.min(Number(agentConfig.response_delay ?? 10), 120);
+    const scheduledAt = new Date(Date.now() + responseDelay * 1000).toISOString();
 
-    // Enfileira mensagem para processamento futuro
-    await supabase.from("response_queue").insert({
-      instance_name: instanceName,
-      phone: rawPhone,
-      remote_jid: remoteJid,
-      message_text: messageText,
-      agent_config: agentConfig,
-      scheduled_at: scheduledAt,
-    });
+    // Debounce: se já existe item na fila para esse número (não processado), atualiza ao invés de inserir
+    const { data: existing } = await supabase
+      .from("response_queue")
+      .select("id, message_text")
+      .eq("instance_name", instanceName)
+      .eq("phone", rawPhone)
+      .is("processed_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    await log("queued", {
-      instance: instanceName,
-      jid: remoteJid,
-      msg: messageText.slice(0, 200),
-      details: `scheduled_at=${scheduledAt}`,
-    });
+    if (existing) {
+      // Agrupa a nova mensagem na existente e reseta o scheduled_at
+      const combined = `${existing.message_text}\n${messageText}`;
+      await supabase.from("response_queue")
+        .update({ message_text: combined, scheduled_at: scheduledAt })
+        .eq("id", existing.id);
+      await log("queued_merged", { instance: instanceName, jid: remoteJid, msg: messageText.slice(0, 100) });
+    } else {
+      await supabase.from("response_queue").insert({
+        instance_name: instanceName,
+        phone: rawPhone,
+        remote_jid: remoteJid,
+        message_text: messageText,
+        agent_config: agentConfig,
+        scheduled_at: scheduledAt,
+      });
+      await log("queued", {
+        instance: instanceName,
+        jid: remoteJid,
+        msg: messageText.slice(0, 200),
+        details: `delay=${responseDelay}s scheduled_at=${scheduledAt}`,
+      });
+    }
 
   } catch (err) {
     try {

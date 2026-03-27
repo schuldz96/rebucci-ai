@@ -354,16 +354,16 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-1 block">Delay de agrupamento: {config.groupingDelay}s</label>
-                    <p className="text-xs text-muted-foreground mb-2">Aguarda esse tempo para agrupar mensagens antes de responder</p>
-                    <input type="range" min={0} max={60} step={0.5} value={config.groupingDelay} onChange={(e) => setConfig({ ...config, groupingDelay: parseFloat(e.target.value) })} className="w-full accent-primary" />
+                    <label className="text-sm font-medium text-foreground mb-1 block">Simulação de digitação: {config.groupingDelay}s</label>
+                    <p className="text-xs text-muted-foreground mb-2">Exibe "digitando..." no WhatsApp por esse tempo antes de enviar</p>
+                    <input type="range" min={0} max={60} step={1} value={config.groupingDelay} onChange={(e) => setConfig({ ...config, groupingDelay: parseFloat(e.target.value) })} className="w-full accent-primary" />
                     <p className="text-xs text-muted-foreground mt-1">0s a 60s</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1 block">Delay de resposta: {config.responseDelay}s</label>
-                    <p className="text-xs text-muted-foreground mb-2">Simula tempo de digitação antes de enviar a resposta</p>
-                    <input type="range" min={0} max={600} step={5} value={config.responseDelay} onChange={(e) => setConfig({ ...config, responseDelay: parseFloat(e.target.value) })} className="w-full accent-primary" />
-                    <p className="text-xs text-muted-foreground mt-1">0s a 600s (10 minutos)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Tempo máximo do recebimento até enviar a resposta (padrão 10s)</p>
+                    <input type="range" min={0} max={120} step={5} value={config.responseDelay} onChange={(e) => setConfig({ ...config, responseDelay: parseFloat(e.target.value) })} className="w-full accent-primary" />
+                    <p className="text-xs text-muted-foreground mt-1">0s a 2 minutos</p>
                   </div>
                 </>
               )}
