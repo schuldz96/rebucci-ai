@@ -4,7 +4,7 @@ import { useContactStore } from "@/store/contactStore";
 import { useDealStore } from "@/store/dealStore";
 import { evolutionApi, isFromMe, type EvoInstance } from "@/lib/evolutionApi";
 import { supabase } from "@/lib/supabase";
-import { X, ChevronLeft, Send, Plus, UserPlus, Pencil, Check, Loader2, RefreshCw } from "lucide-react";
+import { X, ChevronLeft, Send, Plus, UserPlus, Pencil, Check, Loader2, RefreshCw, Paperclip, Mic, Image as ImageIcon, Video, File } from "lucide-react";
 import { cn, formatPhone, stripPhone, getPhoneVariants } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -45,6 +45,8 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const [chatRemoteJid, setChatRemoteJid] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<{ file: File; base64: string; preview?: string } | null>(null);
   const [allInstances, setAllInstances] = useState<string[]>([]);
   const [selectedInstance, setSelectedInstance] = useState<string>("MarcoR");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -232,11 +234,11 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   }, [chatMessages]);
 
   const handleSend = async () => {
+    if (pendingFile) return handleSendMedia();
     if (!chatInput.trim() || !chatInstance || !chatRemoteJid) return;
     setSending(true);
     const text = chatInput.trim();
     setChatInput("");
-    // Optimistic
     const nowTs = Math.floor(Date.now() / 1000);
     const tempMsg: ChatMsg = { id: `temp-${Date.now()}`, content: text, direction: "sent", timestamp: safeTime(nowTs), type: "text", ts: nowTs };
     setChatMessages((prev) => [...prev, tempMsg]);
@@ -248,6 +250,59 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       setChatInput(text);
     }
     setSending(false);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(",")[1];
+      const preview = file.type.startsWith("image/") ? dataUrl : undefined;
+      setPendingFile({ file, base64, preview });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleSendMedia = async () => {
+    if (!pendingFile || !chatInstance || !chatRemoteJid) return;
+    setSending(true);
+    const { file, base64 } = pendingFile;
+    const caption = chatInput.trim();
+    const phone = chatRemoteJid.split("@")[0];
+    const nowTs = Math.floor(Date.now() / 1000);
+    const tempMsg: ChatMsg = {
+      id: `temp-${Date.now()}`,
+      content: caption || `[${file.name}]`,
+      direction: "sent",
+      timestamp: safeTime(nowTs),
+      type: file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : "text",
+      ts: nowTs,
+    };
+    setChatMessages((prev) => [...prev, tempMsg]);
+    setPendingFile(null);
+    setChatInput("");
+    try {
+      if (file.type.startsWith("audio/")) {
+        await evolutionApi.sendAudioMessage(chatInstance, phone, base64, file.type);
+      } else {
+        const mediatype: "image" | "video" | "document" =
+          file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "document";
+        await evolutionApi.sendMediaMessage(chatInstance, phone, base64, mediatype, file.type, file.name, caption);
+      }
+    } catch {
+      setChatMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
+    }
+    setSending(false);
+  };
+
+  const fileTypeIcon = (file: File) => {
+    if (file.type.startsWith("image/")) return <ImageIcon className="w-4 h-4" />;
+    if (file.type.startsWith("video/")) return <Video className="w-4 h-4" />;
+    if (file.type.startsWith("audio/")) return <Mic className="w-4 h-4" />;
+    return <File className="w-4 h-4" />;
   };
 
   // ── Inline edit ──────────────────────────────────────────────────────────────
@@ -469,28 +524,51 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="px-4 py-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-warning">⏰</span>
-              <span>Nenhuma tarefa planejada, comece <span className="text-primary underline cursor-pointer">adicionando uma</span></span>
-            </div>
-            <span>Participantes: 0</span>
-          </div>
-
           <div className="p-4 border-t border-border shrink-0">
+            {/* Preview de arquivo pendente */}
+            {pendingFile && (
+              <div className="mb-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary border border-border">
+                {pendingFile.preview ? (
+                  <img src={pendingFile.preview} alt="preview" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                    {fileTypeIcon(pendingFile.file)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground truncate">{pendingFile.file.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{(pendingFile.file.size / 1024).toFixed(0)} KB</p>
+                </div>
+                <button onClick={() => setPendingFile(null)} className="text-muted-foreground hover:text-foreground shrink-0">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
+              {/* Input oculto para arquivos */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!chatInstance || sending}
+                className="p-2.5 rounded-xl border border-border text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+                title="Anexar arquivo"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
               <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary border border-border">
-                <span className="text-xs text-primary cursor-pointer hover:underline shrink-0">Bate-papo</span>
-                <span className="text-xs text-muted-foreground shrink-0">com</span>
-                <span className="text-xs text-primary cursor-pointer hover:underline shrink-0">todos os</span>
-                <span className="text-xs text-muted-foreground shrink-0">:</span>
                 <input value={chatInput} onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder={chatInstance ? "Escreva uma mensagem..." : "Sem conversa vinculada"}
+                  placeholder={pendingFile ? "Adicionar legenda (opcional)..." : chatInstance ? "Escreva uma mensagem..." : "Sem conversa vinculada"}
                   disabled={!chatInstance || sending}
                   className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50" />
               </div>
-              <button onClick={handleSend} disabled={!chatInstance || sending || !chatInput.trim()}
+              <button onClick={handleSend} disabled={!chatInstance || sending || (!chatInput.trim() && !pendingFile)}
                 className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40">
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>

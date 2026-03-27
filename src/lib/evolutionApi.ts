@@ -371,6 +371,28 @@ class EvolutionAPIService {
     });
   }
 
+  async sendMediaMessage(
+    instanceName: string,
+    to: string,
+    mediaBase64: string,
+    mediatype: "image" | "video" | "document",
+    mimetype: string,
+    fileName: string,
+    caption?: string,
+  ) {
+    return this.request(`/message/sendMedia/${instanceName}`, {
+      method: "POST",
+      body: JSON.stringify({ number: to, mediatype, mimetype, media: mediaBase64, fileName, caption: caption ?? "" }),
+    });
+  }
+
+  async sendAudioMessage(instanceName: string, to: string, audioBase64: string, mimetype: string) {
+    return this.request(`/message/sendWhatsAppAudio/${instanceName}`, {
+      method: "POST",
+      body: JSON.stringify({ number: to, audio: `data:${mimetype};base64,${audioBase64}`, encoding: true }),
+    });
+  }
+
   extractMessageText(msg: EvoMessage): string {
     const m = msg.message;
     if (!m) return "";
