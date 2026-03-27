@@ -97,18 +97,39 @@ Deno.serve(async () => {
 
   for (const item of items) {
     try {
-      // Marca como processada imediatamente para evitar duplicatas
-      await supabase
+      // Atomic claim: só prossegue se esta instância conseguiu marcar como processada
+      // Evita race condition entre múltiplas chamadas do pg_cron
+      const { data: claimed } = await supabase
         .from("response_queue")
         .update({ processed_at: new Date().toISOString() })
         .eq("id", item.id)
-        .is("processed_at", null);
+        .is("processed_at", null)
+        .select("id");
+
+      if (!claimed || claimed.length === 0) continue; // outro worker já pegou
 
       const agentConfig = item.agent_config as Record<string, unknown>;
       const instanceName = item.instance_name as string;
       const phone = item.phone as string;
       const remoteJid = item.remote_jid as string;
-      const messageText = item.message_text as string;
+      let messageText = item.message_text as string;
+
+      // Absorve mensagens pendentes do mesmo número que ainda não foram processadas
+      const { data: pending } = await supabase
+        .from("response_queue")
+        .select("id, message_text")
+        .eq("instance_name", instanceName)
+        .eq("phone", phone)
+        .is("processed_at", null)
+        .neq("id", item.id);
+
+      if (pending && pending.length > 0) {
+        const ids = pending.map((p: { id: string }) => p.id);
+        await supabase.from("response_queue")
+          .update({ processed_at: new Date().toISOString() })
+          .in("id", ids);
+        messageText = [messageText, ...pending.map((p: { message_text: string }) => p.message_text)].join("\n");
+      }
 
       // Token OpenAI
       const { data: tokenRow } = await supabase
