@@ -217,7 +217,7 @@ Deno.serve(async (req: Request) => {
       return new Response("ok", { status: 200 });
     }
 
-    // Busca contexto da vectorstore (sempre que houver chunks embedados)
+    // Busca contexto da vectorstore
     const ragContext = await searchVectorstore(supabase, tokenRow.token, instanceName, messageText);
 
     // Monta system prompt
