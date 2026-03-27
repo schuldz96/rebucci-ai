@@ -503,6 +503,14 @@ const SettingsPage = () => {
   const [vsLoading, setVsLoading] = useState(false);
   const [vsStatuses, setVsStatuses] = useState<{ instance_name: string; total_chunks: number; embedded: number; status: string; error_message?: string | null }[]>([]);
 
+  // CSV upload state
+  const [csvInstance, setCsvInstance] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvPreview, setCsvPreview] = useState<string[][]>([]);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvStatus, setCsvStatus] = useState<string | null>(null);
+  const csvInputRef = React.useRef<HTMLInputElement>(null);
+
   // Users section state
   const [userTab, setUserTab] = useState<UserTab>("users");
   const [userSearch, setUserSearch] = useState("");
@@ -890,6 +898,93 @@ const SettingsPage = () => {
     }
     ragCancelRef.current = false;
     setRagLoading(false);
+  };
+
+  // ── CSV Upload ──────────────────────────────────────────────────────────────
+  const parseCSV = (text: string): string[][] => {
+    // Detecta separador automaticamente (vírgula, ponto-vírgula, tab)
+    const firstLine = text.split("\n")[0] ?? "";
+    const sep = firstLine.includes(";") ? ";" : firstLine.includes("\t") ? "\t" : ",";
+    return text
+      .split("\n")
+      .map((line) => line.split(sep).map((c) => c.trim().replace(/^"|"$/g, "")))
+      .filter((row) => row.some((c) => c.length > 0));
+  };
+
+  const handleCsvFile = (file: File) => {
+    setCsvFile(file);
+    setCsvStatus(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = (e.target?.result as string) ?? "";
+      const rows = parseCSV(text);
+      setCsvPreview(rows.slice(0, 5));
+    };
+    reader.readAsText(file, "utf-8");
+  };
+
+  const handleProcessCsv = async () => {
+    if (!csvFile || !csvInstance) return;
+    setCsvLoading(true);
+    setCsvStatus("Lendo arquivo...");
+    try {
+      const text = await csvFile.text();
+      const rows = parseCSV(text);
+      if (rows.length < 2) throw new Error("CSV vazio ou sem dados após o cabeçalho.");
+
+      const headers = rows[0];
+      const dataRows = rows.slice(1);
+
+      // Cria job
+      const { data: job } = await supabase.from("rag_jobs").insert({
+        instance_name: csvInstance,
+        message_limit: dataRows.length,
+        status: "processing",
+      }).select().single();
+      if (!job) throw new Error("Falha ao criar job");
+
+      // Processa em chunks de 50 linhas
+      const CHUNK = 50;
+      let totalChunks = 0;
+
+      for (let i = 0; i < dataRows.length; i += CHUNK) {
+        const slice = dataRows.slice(i, i + CHUNK);
+        const content = slice
+          .map((row) => headers.map((h, idx) => `${h}: ${row[idx] ?? ""}`).join("\n"))
+          .join("\n\n---\n\n");
+
+        await supabase.from("rag_chunks").insert({
+          job_id: job.id,
+          instance_name: csvInstance,
+          chat_id: `csv-${csvFile.name}`,
+          contact_name: csvFile.name,
+          content,
+          message_count: slice.length,
+          chunk_index: Math.floor(i / CHUNK),
+        });
+        totalChunks++;
+        setCsvStatus(`Processando... ${Math.min(i + CHUNK, dataRows.length)} de ${dataRows.length} linhas`);
+      }
+
+      await supabase.from("rag_jobs").update({ status: "done", total_messages: dataRows.length, total_chunks: totalChunks, updated_at: new Date().toISOString() }).eq("id", job.id);
+
+      // Auto-cria/atualiza rag_bases
+      const { data: existing } = await supabase.from("rag_bases").select("document_count").eq("id", `rag-${csvInstance}`).maybeSingle();
+      const prevChunks = existing?.document_count ?? 0;
+      await supabase.from("rag_bases").upsert(
+        { id: `rag-${csvInstance}`, name: `Histórico ${csvInstance}`, origin: "whatsapp", document_count: prevChunks + totalChunks },
+        { onConflict: "id" }
+      );
+
+      setCsvStatus(`✅ Concluído! ${dataRows.length.toLocaleString()} linhas → ${totalChunks} chunks salvos.`);
+      setCsvFile(null);
+      setCsvPreview([]);
+      if (csvInputRef.current) csvInputRef.current.value = "";
+      loadRagJobs();
+    } catch (err) {
+      setCsvStatus(`❌ Erro: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
+    }
+    setCsvLoading(false);
   };
 
   // Carrega dados da seção de usuários
@@ -1535,6 +1630,91 @@ const SettingsPage = () => {
                     </div>
                   </div>
                 )}
+
+                {/* ── Upload CSV ── */}
+                <div className="surface-elevated p-6 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">Upload de Base de Conhecimento (CSV)</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Faça upload de um CSV com FAQs, scripts, produtos ou qualquer conteúdo. Cada linha vira um dado no RAG da instância.
+                  </p>
+                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
+                    <span>📄 CSV (vírgula, ponto-vírgula ou tab)</span><span>🔤 UTF-8</span><span>📦 50 linhas por chunk</span>
+                  </div>
+                </div>
+
+                <div className="surface-elevated p-6 space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Instância de destino</label>
+                    <select value={csvInstance} onChange={(e) => setCsvInstance(e.target.value)} className={inputCls}>
+                      <option value="">Selecione uma instância</option>
+                      {instances.map((i) => (
+                        <option key={i.instance.instanceName} value={i.instance.instanceName}>
+                          {i.instance.instanceName} {i.instance.status === "open" ? "🟢" : "🔴"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Arquivo CSV</label>
+                    <div
+                      className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                      onClick={() => csvInputRef.current?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleCsvFile(f); }}
+                    >
+                      <input ref={csvInputRef} type="file" accept=".csv,.txt" className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCsvFile(f); }} />
+                      {csvFile ? (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-foreground">📄 {csvFile.name}</p>
+                          <p className="text-xs text-muted-foreground">{(csvFile.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Arraste um CSV aqui ou clique para selecionar</p>
+                          <p className="text-xs text-muted-foreground">Separadores suportados: vírgula, ponto-vírgula, tab</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {csvPreview.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Pré-visualização (primeiras 5 linhas)</p>
+                      <div className="overflow-x-auto rounded-xl border border-border">
+                        <table className="text-xs w-full">
+                          <thead>
+                            <tr className="border-b border-border bg-secondary/50">
+                              {csvPreview[0]?.map((h, i) => (
+                                <th key={i} className="px-3 py-2 text-left font-medium text-foreground">{h || `Coluna ${i + 1}`}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {csvPreview.slice(1).map((row, ri) => (
+                              <tr key={ri} className="border-b border-border last:border-0">
+                                {row.map((cell, ci) => (
+                                  <td key={ci} className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{cell}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={handleProcessCsv} disabled={csvLoading || !csvFile || !csvInstance}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                    {csvLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {csvLoading ? "Processando CSV…" : "Processar e Salvar no RAG"}
+                  </button>
+                  {csvStatus && <p className="text-sm text-foreground">{csvStatus}</p>}
+                </div>
 
                 {/* ── Vectorstore ── */}
                 <div className="surface-elevated p-6 space-y-3">
