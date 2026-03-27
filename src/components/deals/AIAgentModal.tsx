@@ -138,13 +138,28 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
                 {config.welcomeMessageEnabled && (
                   <>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-                      <select value={config.welcomeMessageType} onChange={(e) => setConfig({ ...config, welcomeMessageType: e.target.value as "text" | "audio" | "image" })} className={selectCls}>
-                     <option value="text">📝 Texto</option>
-                        <option value="image">🖼️ Imagem</option>
-                        <option value="audio">🎵 Áudio</option>
-                        <option value="video">🎬 Vídeo</option>
-                      </select>
+                      <label className="text-xs text-muted-foreground mb-2 block">Tipo</label>
+                      <div className="flex gap-2">
+                        {([
+                          { value: "text", label: "Texto", icon: "📝" },
+                          { value: "image", label: "Imagem", icon: "🖼️" },
+                          { value: "audio", label: "Áudio", icon: "🎵" },
+                          { value: "video", label: "Vídeo", icon: "🎬" },
+                        ] as const).map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setConfig({ ...config, welcomeMessageType: opt.value })}
+                            className={cn(
+                              "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-colors",
+                              config.welcomeMessageType === opt.value
+                                ? "bg-primary/10 border-primary text-primary"
+                                : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <span>{opt.icon}</span> {opt.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <textarea value={config.welcomeMessageContent} onChange={(e) => setConfig({ ...config, welcomeMessageContent: e.target.value })} rows={2} className={textareaCls} />
                   </>
