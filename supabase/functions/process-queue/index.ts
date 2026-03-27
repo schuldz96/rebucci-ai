@@ -93,9 +93,19 @@ Deno.serve(async () => {
     });
   }
 
+  // Deduplica por telefone: só processa o item mais antigo por número nesta rodada.
+  // Itens extras do mesmo número são absorvidos dentro do loop, evitando respostas duplicadas.
+  const seenPhones = new Set<string>();
+  const uniqueItems = items.filter((item) => {
+    const key = `${item.instance_name}:${item.phone}`;
+    if (seenPhones.has(key)) return false;
+    seenPhones.add(key);
+    return true;
+  });
+
   let processed = 0;
 
-  for (const item of items) {
+  for (const item of uniqueItems) {
     try {
       // Atomic claim: só prossegue se esta instância conseguiu marcar como processada
       // Evita race condition entre múltiplas chamadas do pg_cron
