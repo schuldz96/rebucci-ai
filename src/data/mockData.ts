@@ -193,8 +193,8 @@ export const defaultAgentConfig: AgentConfig = {
   ragEnabled: true,
   ragMaxTurns: 10,
   followUps: [
-    { id: "fu-1", name: "Follow-up 1", triggers: 1, contents: 0 },
-    { id: "fu-2", name: "Follow-up 2", triggers: 0, contents: 0 },
+    { id: "fu-1", name: "Follow-up 1", triggers: [{ id: "ft-1", type: "time_after_stage", timeValue: 24, timeUnit: "hours" }], contents: [], allowResubscribe: false },
+    { id: "fu-2", name: "Follow-up 2", triggers: [], contents: [], allowResubscribe: false },
   ],
   transitions: [
     { id: "tr-1", trigger: "Boas-vindas enviada", destination: "Tentativa de Contato" },
