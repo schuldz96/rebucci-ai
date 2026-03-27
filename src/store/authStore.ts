@@ -17,6 +17,11 @@ interface AuthState {
   restoreSession: () => Promise<void>;
 }
 
+async function fetchCrmProfile(email: string): Promise<{ name?: string; role?: string }> {
+  const { data } = await supabase.from("crm_users").select("name, role").eq("email", email).maybeSingle();
+  return data ?? {};
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
@@ -26,12 +31,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (error || !data.user) return false;
 
     const u = data.user;
+    const profile = await fetchCrmProfile(u.email ?? "");
     set({
       user: {
         id: u.id,
         email: u.email ?? "",
-        name: u.user_metadata?.name ?? u.email?.split("@")[0] ?? "Usuário",
-        role: u.user_metadata?.role ?? "Usuário",
+        name: profile.name ?? u.user_metadata?.name ?? u.email?.split("@")[0] ?? "Usuário",
+        role: profile.role ?? u.user_metadata?.role ?? "Usuário",
         avatar: u.user_metadata?.avatar_url,
       },
       isAuthenticated: true,
@@ -48,12 +54,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { data } = await supabase.auth.getSession();
     if (data.session?.user) {
       const u = data.session.user;
+      const profile = await fetchCrmProfile(u.email ?? "");
       set({
         user: {
           id: u.id,
           email: u.email ?? "",
-          name: u.user_metadata?.name ?? u.email?.split("@")[0] ?? "Usuário",
-          role: u.user_metadata?.role ?? "Usuário",
+          name: profile.name ?? u.user_metadata?.name ?? u.email?.split("@")[0] ?? "Usuário",
+          role: profile.role ?? u.user_metadata?.role ?? "Usuário",
           avatar: u.user_metadata?.avatar_url,
         },
         isAuthenticated: true,
