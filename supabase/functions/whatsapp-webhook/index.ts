@@ -162,9 +162,9 @@ Deno.serve(async (req: Request) => {
       return new Response("ok", { status: 200 });
     }
 
-    // Delay em minutos → converte para ms e calcula scheduled_at
-    const delayMinutes = Number(agentConfig.response_delay ?? 0);
-    const scheduledAt = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
+    // Delay em segundos → converte para ms e calcula scheduled_at
+    const delaySeconds = Number(agentConfig.response_delay ?? 0);
+    const scheduledAt = new Date(Date.now() + delaySeconds * 1000).toISOString();
 
     // Enfileira mensagem para processamento futuro
     await supabase.from("response_queue").insert({

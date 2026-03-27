@@ -360,10 +360,10 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
                     <p className="text-xs text-muted-foreground mt-1">0s a 60s</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-1 block">Delay de resposta: {config.responseDelay} min</label>
-                    <p className="text-xs text-muted-foreground mb-2">Tempo de espera antes de enviar a resposta (simula digitação humana)</p>
-                    <input type="range" min={0} max={10} step={0.5} value={config.responseDelay} onChange={(e) => setConfig({ ...config, responseDelay: parseFloat(e.target.value) })} className="w-full accent-primary" />
-                    <p className="text-xs text-muted-foreground mt-1">0 a 10 minutos</p>
+                    <label className="text-sm font-medium text-foreground mb-1 block">Delay de resposta: {config.responseDelay}s</label>
+                    <p className="text-xs text-muted-foreground mb-2">Simula tempo de digitação antes de enviar a resposta</p>
+                    <input type="range" min={0} max={600} step={5} value={config.responseDelay} onChange={(e) => setConfig({ ...config, responseDelay: parseFloat(e.target.value) })} className="w-full accent-primary" />
+                    <p className="text-xs text-muted-foreground mt-1">0s a 600s (10 minutos)</p>
                   </div>
                 </>
               )}
