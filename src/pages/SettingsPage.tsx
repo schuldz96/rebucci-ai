@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
   Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2, Pencil, X,
-  Plus, Trash2, Shield, Tag, ChevronDown, Building2, Facebook,
+  Plus, Trash2, Shield, Tag, ChevronDown, Building2, Facebook, Kanban, GripVertical,
 } from "lucide-react";
+import { usePipelineStore } from "@/store/pipelineStore";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { evolutionApi, type EvoInstance } from "@/lib/evolutionApi";
@@ -13,7 +14,7 @@ import { evolutionApi, type EvoInstance } from "@/lib/evolutionApi";
 const SUPABASE_URL = "https://urrbpxrtdzurfdsucukb.supabase.co";
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
-type SettingsSection = "general" | "users" | "evolution" | "meta" | "prime";
+type SettingsSection = "general" | "users" | "pipelines" | "evolution" | "meta" | "prime";
 type EvoTab = "config" | "instances" | "rag";
 type UserTab = "users" | "teams";
 type ModalType = null | "user" | "team" | "perm" | "preset";
@@ -24,21 +25,179 @@ interface PermissionSet { id: string; name: string; description: string | null; 
 interface Preset { id: string; name: string; type: string; content: string | null; }
 
 const SECTION_MAP: Record<string, SettingsSection> = {
-  geral: "general", usuarios: "users", evolution: "evolution", meta: "meta", prime: "prime",
+  geral: "general", usuarios: "users", pipelines: "pipelines", evolution: "evolution", meta: "meta", prime: "prime",
 };
 const SECTION_SLUG: Record<SettingsSection, string> = {
-  general: "geral", users: "usuarios", evolution: "evolution", meta: "meta", prime: "prime",
+  general: "geral", users: "usuarios", pipelines: "pipelines", evolution: "evolution", meta: "meta", prime: "prime",
 };
 
 const menuSections = [
   { title: "Geral", items: [{ id: "general" as const, label: "Geral", icon: Building2 }] },
-  { title: "Gerenciamento de conta", items: [{ id: "users" as const, label: "Usuários", icon: Users }] },
+  { title: "Gerenciamento de conta", items: [
+    { id: "users" as const, label: "Usuários", icon: Users },
+    { id: "pipelines" as const, label: "Pipelines", icon: Kanban },
+  ]},
   { title: "Integrações", items: [
     { id: "evolution" as const, label: "EvolutionAPI", icon: Link2 },
     { id: "meta" as const, label: "Meta API", icon: Facebook },
     { id: "prime" as const, label: "Prime", icon: Zap },
   ]},
 ];
+
+// ─── Pipeline Settings Component ──────────────────────────────────────────────
+const STAGE_COLORS = [
+  { label: "Azul", value: "bg-blue-500" },
+  { label: "Roxo", value: "bg-purple-500" },
+  { label: "Verde", value: "bg-emerald-500" },
+  { label: "Ciano", value: "bg-cyan-500" },
+  { label: "Amarelo", value: "bg-yellow-500" },
+  { label: "Rosa", value: "bg-pink-500" },
+  { label: "Laranja", value: "bg-orange-500" },
+  { label: "Vermelho", value: "bg-red-500" },
+];
+
+const PipelinesSection = () => {
+  const { pipelines, selectedPipelineId, stages, loading, loadPipelines, selectPipeline, createPipeline, renamePipeline, deletePipeline, createStage, updateStage, deleteStage } = usePipelineStore();
+  const [newPipelineName, setNewPipelineName] = useState("");
+  const [addingPipeline, setAddingPipeline] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameVal, setRenameVal] = useState("");
+  const [newStageName, setNewStageName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { loadPipelines(); }, [loadPipelines]);
+
+  const handleCreatePipeline = async () => {
+    if (!newPipelineName.trim()) return;
+    setSaving(true);
+    const p = await createPipeline(newPipelineName.trim());
+    if (p) selectPipeline(p.id);
+    setNewPipelineName("");
+    setAddingPipeline(false);
+    setSaving(false);
+  };
+
+  const handleAddStage = async () => {
+    if (!newStageName.trim() || !selectedPipelineId) return;
+    await createStage(selectedPipelineId, newStageName.trim());
+    setNewStageName("");
+  };
+
+  return (
+    <div className="max-w-4xl space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center">
+          <Kanban className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Pipelines</h2>
+          <p className="text-sm text-muted-foreground">Configure os pipelines e etapas dos seus negócios</p>
+        </div>
+      </div>
+
+      {loading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+
+      {!loading && (
+        <div className="flex gap-6">
+          {/* Lista de pipelines */}
+          <div className="w-56 shrink-0 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pipelines</p>
+            {pipelines.map((p) => (
+              <div key={p.id} className={cn("group flex items-center gap-1 px-3 py-2 rounded-xl cursor-pointer transition-colors",
+                p.id === selectedPipelineId ? "bg-primary/10 text-primary font-medium" : "hover:bg-secondary text-foreground")}>
+                {renamingId === p.id ? (
+                  <input autoFocus value={renameVal} onChange={(e) => setRenameVal(e.target.value)}
+                    onBlur={async () => { await renamePipeline(p.id, renameVal || p.name); setRenamingId(null); }}
+                    onKeyDown={async (e) => { if (e.key === "Enter") { await renamePipeline(p.id, renameVal || p.name); setRenamingId(null); } if (e.key === "Escape") setRenamingId(null); }}
+                    className="flex-1 bg-transparent text-sm focus:outline-none border-b border-primary" />
+                ) : (
+                  <span className="flex-1 text-sm truncate" onClick={() => selectPipeline(p.id)}>{p.name}</span>
+                )}
+                <div className="opacity-0 group-hover:opacity-100 flex gap-0.5">
+                  <button onClick={() => { setRenamingId(p.id); setRenameVal(p.name); }} className="p-0.5 hover:text-foreground"><Pencil className="w-3 h-3" /></button>
+                  {pipelines.length > 1 && (
+                    <button onClick={() => deletePipeline(p.id)} className="p-0.5 hover:text-destructive"><Trash2 className="w-3 h-3" /></button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {addingPipeline ? (
+              <div className="flex gap-1 px-1">
+                <input autoFocus value={newPipelineName} onChange={(e) => setNewPipelineName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleCreatePipeline(); if (e.key === "Escape") setAddingPipeline(false); }}
+                  placeholder="Nome do pipeline" className="flex-1 text-xs px-2 py-1.5 rounded-lg bg-background border border-ring focus:outline-none" />
+                <button onClick={handleCreatePipeline} disabled={saving} className="p-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40">
+                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setAddingPipeline(true)}
+                className="w-full flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-muted-foreground hover:bg-secondary transition-colors">
+                <Plus className="w-3.5 h-3.5" /> Novo pipeline
+              </button>
+            )}
+          </div>
+
+          {/* Etapas do pipeline selecionado */}
+          <div className="flex-1 space-y-3">
+            <div className="border border-border rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/50">
+                    <th className="w-6 px-3 py-3"></th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da fase</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-32">Cor</th>
+                    <th className="px-4 py-3 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stages.map((stage) => (
+                    <tr key={stage.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                      <td className="px-3 py-3 text-muted-foreground cursor-grab"><GripVertical className="w-4 h-4" /></td>
+                      <td className="px-4 py-3">
+                        <input defaultValue={stage.name}
+                          onBlur={(e) => { if (e.target.value !== stage.name) updateStage(stage.id, { name: e.target.value }); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                          className="w-full bg-transparent text-sm text-foreground focus:outline-none border-b border-transparent focus:border-border px-1 py-0.5" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className={cn("w-4 h-4 rounded-full shrink-0", stage.color ?? "bg-primary")} />
+                          <select value={stage.color ?? "bg-primary"} onChange={(e) => updateStage(stage.id, { color: e.target.value })}
+                            className="text-xs bg-transparent text-muted-foreground focus:outline-none cursor-pointer">
+                            {STAGE_COLORS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => deleteStage(stage.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {stages.length === 0 && (
+                    <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhuma fase cadastrada</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {/* Adicionar fase */}
+            <div className="flex gap-2">
+              <input value={newStageName} onChange={(e) => setNewStageName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddStage(); }}
+                placeholder="Nome da nova fase..." className={inputCls} />
+              <button onClick={handleAddStage} disabled={!newStageName.trim() || !selectedPipelineId}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40 shrink-0">
+                <Plus className="w-4 h-4" /> Adicionar fase
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SettingsPage = () => {
   const { subsection } = useParams<{ subsection: string }>();
@@ -691,6 +850,9 @@ const SettingsPage = () => {
             )}
           </div>
         )}
+
+        {/* ═══════ PIPELINES ═══════ */}
+        {section === "pipelines" && <PipelinesSection />}
 
         {/* ═══════ EVOLUTION API ═══════ */}
         {section === "evolution" && (

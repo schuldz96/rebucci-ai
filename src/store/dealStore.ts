@@ -23,6 +23,7 @@ const mapRow = (r: Record<string, unknown>): Deal => ({
   phone: r.phone as string | undefined,
   responsibleUser: r.responsible_user as string | undefined,
   group: r.group as string | undefined,
+  pipelineId: r.pipeline_id as string | undefined,
 });
 
 export const useDealStore = create<DealState>((set) => ({
@@ -62,6 +63,7 @@ export const useDealStore = create<DealState>((set) => ({
         phone: deal.phone ?? null,
         responsible_user: deal.responsibleUser ?? null,
         group: deal.group ?? null,
+        pipeline_id: deal.pipelineId ?? null,
       })
       .select()
       .single();

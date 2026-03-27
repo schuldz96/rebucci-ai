@@ -53,6 +53,7 @@ export interface Deal {
   phone?: string;
   responsibleUser?: string;
   group?: string;
+  pipelineId?: string;
 }
 
 export interface RAGBase {

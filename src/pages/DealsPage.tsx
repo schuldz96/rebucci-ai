@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDealStore } from "@/store/dealStore";
 import { useContactStore } from "@/store/contactStore";
+import { usePipelineStore } from "@/store/pipelineStore";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus, User } from "lucide-react";
+import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus, User, Settings2, Check } from "lucide-react";
 import { cn, formatPhone } from "@/lib/utils";
 import AIAgentModal from "@/components/deals/AIAgentModal";
 import DealDetailPanel from "@/components/deals/DealDetailPanel";
@@ -57,13 +58,20 @@ const emptyForm: NewDealForm = {
 };
 
 const DealsPage = () => {
-  const { deals, stages, moveDeal, addDeal, updateDeal, loadDeals } = useDealStore();
+  const { deals, moveDeal, addDeal, updateDeal, loadDeals } = useDealStore();
   const { contacts, loadContacts } = useContactStore();
+  const { pipelines, selectedPipelineId, stages: pipelineStages, loading: pipelinesLoading, loadPipelines, selectPipeline } = usePipelineStore();
   const navigate = useNavigate();
   const { dealId } = useParams<{ dealId: string }>();
   const [aiModalStage, setAiModalStage] = useState<string | null>(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showPipelineDropdown, setShowPipelineDropdown] = useState(false);
+  const pipelineDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Stages do pipeline selecionado
+  const stages = pipelineStages.map((s) => s.name);
+  const selectedPipeline = pipelines.find((p) => p.id === selectedPipelineId);
 
   const selectedDeal = dealId ? (deals.find((d) => d.id === dealId) ?? null) : null;
   const [newDeal, setNewDeal] = useState<NewDealForm>(emptyForm);
@@ -76,7 +84,19 @@ const DealsPage = () => {
   useEffect(() => {
     loadDeals();
     loadContacts();
-  }, [loadDeals, loadContacts]);
+    loadPipelines();
+  }, [loadDeals, loadContacts, loadPipelines]);
+
+  // Fecha dropdown pipeline ao clicar fora
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (pipelineDropdownRef.current && !pipelineDropdownRef.current.contains(e.target as Node)) {
+        setShowPipelineDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -132,6 +152,7 @@ const DealsPage = () => {
         stage: newDeal.stage,
         contactId: newDeal.contactId,
         phone: newDeal.phone || undefined,
+        pipelineId: selectedPipelineId ?? undefined,
       });
       setNewDeal(emptyForm);
       setContactSearch("");
@@ -165,9 +186,33 @@ const DealsPage = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Pesquisar por título, telefone..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground cursor-pointer">
-            <span>Atendimento IA</span>
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          {/* Pipeline selector */}
+          <div className="relative" ref={pipelineDropdownRef}>
+            <button onClick={() => setShowPipelineDropdown(!showPipelineDropdown)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground hover:bg-secondary/80 transition-colors min-w-[160px]">
+              <span className="flex-1 text-left truncate">{pipelinesLoading ? "Carregando..." : (selectedPipeline?.name ?? "Selecionar pipeline")}</span>
+              <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform", showPipelineDropdown && "rotate-180")} />
+            </button>
+            {showPipelineDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-card border border-border rounded-xl shadow-xl z-30 overflow-hidden">
+                <div className="py-1">
+                  {pipelines.map((p) => (
+                    <button key={p.id} onClick={() => { selectPipeline(p.id); setShowPipelineDropdown(false); }}
+                      className={cn("w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-secondary transition-colors text-left",
+                        p.id === selectedPipelineId ? "text-primary font-medium" : "text-foreground")}>
+                      {p.name}
+                      {p.id === selectedPipelineId && <Check className="w-3.5 h-3.5 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t border-border p-2">
+                  <button onClick={() => { navigate("/settings/pipelines"); setShowPipelineDropdown(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-primary hover:bg-secondary transition-colors">
+                    <Settings2 className="w-3.5 h-3.5" /> Gerenciar pipelines
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors"><Filter className="w-4 h-4" /> Filtros</button>
