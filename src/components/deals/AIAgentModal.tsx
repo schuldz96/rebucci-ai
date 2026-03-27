@@ -44,6 +44,7 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
   const [configId, setConfigId] = useState<string | null>(null);
   const [instances, setInstances] = useState<SupabaseInstance[]>([]);
   const [ragBases, setRagBases] = useState<SupabaseRAGBase[]>([]);
+  const [hasOpenAIToken, setHasOpenAIToken] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -58,10 +59,11 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [configRes, instancesRes, ragRes] = await Promise.all([
+      const [configRes, instancesRes, ragRes, tokenRes] = await Promise.all([
         supabase.from("agent_configs").select("*").eq("stage", stage).maybeSingle(),
         supabase.from("instances").select("id, name, status").order("name"),
         supabase.from("rag_bases").select("id, name, document_count").order("name"),
+        supabase.from("api_tokens").select("id").ilike("provider", "openai").limit(1).maybeSingle(),
       ]);
 
       if (configRes.data) {
@@ -92,6 +94,7 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
 
       if (instancesRes.data) setInstances(instancesRes.data);
       if (ragRes.data) setRagBases(ragRes.data);
+      setHasOpenAIToken(!!tokenRes.data);
       setLoading(false);
     };
     load();
@@ -99,6 +102,10 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
 
   // ─── Save to Supabase ──────────────────────────────────────────────────────
   const handleSave = async () => {
+    if (config.active && !hasOpenAIToken) {
+      alert("Configure um token OpenAI em Configurações → Tokens antes de ativar a IA.");
+      return;
+    }
     setSaving(true);
     const payload = {
       stage,
@@ -246,6 +253,12 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
               {/* TAB 0: IA */}
               {activeTab === 0 && (
                 <>
+                  {!hasOpenAIToken && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-sm text-destructive">
+                      <span>⚠️</span>
+                      <span>Nenhum token OpenAI configurado. Acesse <strong>Configurações → Tokens</strong> para adicionar. A IA não responderá sem o token.</span>
+                    </div>
+                  )}
                   <InfoBanner>
                     <p className="font-medium">Modelo padrão: GPT-4o mini</p>
                     <p className="text-xs mt-1">O token de IA é configurado em <strong>Configurações → Tokens</strong></p>
