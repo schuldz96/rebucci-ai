@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { defaultAgentConfig, mockRAGBases, mockInstances, KANBAN_STAGES, type AgentConfig } from "@/data/mockData";
+import { defaultAgentConfig, mockRAGBases, type AgentConfig } from "@/data/mockData";
 import { motion } from "framer-motion";
 import { X, Plus, Trash2, GripVertical, Info, ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
