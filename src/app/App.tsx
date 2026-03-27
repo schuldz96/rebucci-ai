@@ -50,7 +50,8 @@ const AppRoutes = () => {
         <Route path="/contacts/:contactId" element={<ContactsPage />} />
         <Route path="/deals" element={<DealsPage />} />
         <Route path="/deals/:dealId" element={<DealsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings" element={<Navigate to="/settings/geral" replace />} />
+        <Route path="/settings/:subsection" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

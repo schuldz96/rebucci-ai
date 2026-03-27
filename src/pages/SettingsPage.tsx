@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
@@ -22,8 +23,15 @@ interface Team { id: string; name: string; description: string | null; }
 interface PermissionSet { id: string; name: string; description: string | null; }
 interface Preset { id: string; name: string; type: string; content: string | null; }
 
+const SECTION_MAP: Record<string, SettingsSection> = {
+  geral: "general", usuarios: "users", evolution: "evolution", meta: "meta",
+};
+const SECTION_SLUG: Record<SettingsSection, string> = {
+  general: "geral", users: "usuarios", evolution: "evolution", meta: "meta",
+};
+
 const menuSections = [
-  { title: "Geral", items: [{ id: "general" as const, label: "Informações básicas", icon: Building2 }] },
+  { title: "Geral", items: [{ id: "general" as const, label: "Geral", icon: Building2 }] },
   { title: "Gerenciamento de conta", items: [{ id: "users" as const, label: "Usuários", icon: Users }] },
   { title: "Integrações", items: [
     { id: "evolution" as const, label: "EvolutionAPI", icon: Link2 },
@@ -32,8 +40,19 @@ const menuSections = [
 ];
 
 const SettingsPage = () => {
-  const [section, setSection] = useState<SettingsSection>("general");
+  const { subsection } = useParams<{ subsection: string }>();
+  const navigate = useNavigate();
+  const section: SettingsSection = SECTION_MAP[subsection ?? "geral"] ?? "general";
+  const setSection = (s: SettingsSection) => navigate(`/settings/${SECTION_SLUG[s]}`);
   const [evoTab, setEvoTab] = useState<EvoTab>("config");
+
+  // General section state
+  const [companyName, setCompanyName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [companyPhone, setCompanyPhone] = useState("");
+  const [timezone, setTimezone] = useState("America/Sao_Paulo");
+  const [savingGeneral, setSavingGeneral] = useState(false);
+  const [generalMsg, setGeneralMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Config state
   const [apiUrl, setApiUrl] = useState("");
@@ -90,6 +109,36 @@ const SettingsPage = () => {
     };
     load();
   }, []);
+
+  // Load & save general settings
+  useEffect(() => {
+    supabase.from("company_settings").select("*").limit(1).maybeSingle().then(({ data }) => {
+      if (data) {
+        setCompanyName(data.company_name ?? "");
+        setContactEmail(data.contact_email ?? "");
+        setCompanyPhone(data.phone ?? "");
+        setTimezone(data.timezone ?? "America/Sao_Paulo");
+      }
+    });
+  }, []);
+
+  const handleSaveGeneral = async () => {
+    setSavingGeneral(true);
+    setGeneralMsg(null);
+    try {
+      const { data: existing } = await supabase.from("company_settings").select("id").limit(1).maybeSingle();
+      const payload = { company_name: companyName, contact_email: contactEmail, phone: companyPhone, timezone };
+      if (existing?.id) {
+        await supabase.from("company_settings").update(payload).eq("id", existing.id);
+      } else {
+        await supabase.from("company_settings").insert(payload);
+      }
+      setGeneralMsg({ ok: true, text: "Configurações salvas com sucesso." });
+    } catch {
+      setGeneralMsg({ ok: false, text: "Erro ao salvar configurações." });
+    }
+    setSavingGeneral(false);
+  };
 
   // Load RAG jobs
   const loadRagJobs = useCallback(async () => {
@@ -390,33 +439,43 @@ const SettingsPage = () => {
                 <Building2 className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">Informações básicas</h2>
+                <h2 className="text-xl font-bold text-foreground">Geral</h2>
                 <p className="text-sm text-muted-foreground">Dados gerais da sua conta</p>
               </div>
             </div>
             <div className="surface-elevated p-6 space-y-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da empresa</label>
-                <input placeholder="Ex: RebucciAI" className={inputCls} />
+                <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ex: RebucciAI" className={inputCls} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email de contato</label>
-                <input type="email" placeholder="contato@empresa.com" className={inputCls} />
+                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contato@empresa.com" className={inputCls} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Telefone</label>
-                <input placeholder="+55 42 99999-0000" className={inputCls} />
+                <input value={companyPhone} onChange={(e) => setCompanyPhone(e.target.value)} placeholder="+55 42 99999-0000" className={inputCls} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fuso horário</label>
-                <select className={inputCls}>
+                <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className={inputCls}>
                   <option value="America/Sao_Paulo">America/Sao_Paulo (UTC-3)</option>
                   <option value="America/Manaus">America/Manaus (UTC-4)</option>
                   <option value="America/Belem">America/Belem (UTC-3)</option>
+                  <option value="America/Fortaleza">America/Fortaleza (UTC-3)</option>
+                  <option value="America/Recife">America/Recife (UTC-3)</option>
+                  <option value="America/Cuiaba">America/Cuiaba (UTC-4)</option>
+                  <option value="America/Porto_Velho">America/Porto_Velho (UTC-4)</option>
+                  <option value="America/Boa_Vista">America/Boa_Vista (UTC-4)</option>
+                  <option value="America/Rio_Branco">America/Rio_Branco (UTC-5)</option>
                 </select>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-                <Save className="w-4 h-4" /> Salvar alterações
+              {generalMsg && (
+                <p className={cn("text-xs", generalMsg.ok ? "text-emerald-500" : "text-destructive")}>{generalMsg.text}</p>
+              )}
+              <button onClick={handleSaveGeneral} disabled={savingGeneral}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                {savingGeneral ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Salvar alterações
               </button>
             </div>
           </div>
