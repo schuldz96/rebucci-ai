@@ -241,7 +241,7 @@ class EvolutionAPIService {
       .filter((i): i is EvoInstance => i !== null);
   }
 
-  async fetchChats(instanceName: string, limit = 100): Promise<EvoChat[]> {
+  async fetchChats(instanceName: string, limit = 1000): Promise<EvoChat[]> {
     const toArray = (data: unknown): unknown[] => {
       if (Array.isArray(data)) return data;
       const d = data as Record<string, unknown>;

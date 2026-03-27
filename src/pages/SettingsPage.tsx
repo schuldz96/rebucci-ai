@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -496,6 +496,12 @@ const SettingsPage = () => {
   const [ragLoading, setRagLoading] = useState(false);
   const [ragStatus, setRagStatus] = useState<string | null>(null);
   const [ragJobs, setRagJobs] = useState<{ id: string; instance_name: string; status: string; total_messages: number | null; total_chunks: number | null; created_at: string }[]>([]);
+  const ragCancelRef = React.useRef(false);
+
+  // Vectorstore state
+  const [vsInstance, setVsInstance] = useState("");
+  const [vsLoading, setVsLoading] = useState(false);
+  const [vsStatuses, setVsStatuses] = useState<{ instance_name: string; total_chunks: number; embedded: number; status: string; error_message?: string | null }[]>([]);
 
   // Users section state
   const [userTab, setUserTab] = useState<UserTab>("users");
@@ -601,12 +607,112 @@ const SettingsPage = () => {
     if (data) setRagJobs(data);
   }, []);
 
+  const loadVsStatus = useCallback(async () => {
+    const { data } = await supabase.from("vectorstore_status").select("*").order("instance_name");
+    if (data) setVsStatuses(data);
+  }, []);
+
+  const handleGenerateEmbeddings = async () => {
+    if (!vsInstance) return;
+    setVsLoading(true);
+    try {
+      const { data: tokenRow } = await supabase
+        .from("api_tokens")
+        .select("token")
+        .ilike("provider", "openai")
+        .limit(1)
+        .maybeSingle();
+
+      if (!tokenRow?.token) {
+        alert("Token OpenAI não encontrado. Adicione em Configurações → Tokens com provedor 'openai'.");
+        return;
+      }
+
+      const { count: totalCount } = await supabase
+        .from("rag_chunks")
+        .select("id", { count: "exact", head: true })
+        .eq("instance_name", vsInstance);
+
+      const total = totalCount ?? 0;
+
+      const { count: doneCount } = await supabase
+        .from("rag_chunks")
+        .select("id", { count: "exact", head: true })
+        .eq("instance_name", vsInstance)
+        .not("embedding", "is", null);
+
+      const now = new Date().toISOString();
+      await supabase.from("vectorstore_status").upsert(
+        { instance_name: vsInstance, total_chunks: total, embedded: doneCount ?? 0, status: "processing", last_run: now, updated_at: now },
+        { onConflict: "instance_name" }
+      );
+      await loadVsStatus();
+
+      let processed = doneCount ?? 0;
+      const BATCH = 100;
+
+      while (true) {
+        const { data: chunks } = await supabase
+          .from("rag_chunks")
+          .select("id, content")
+          .eq("instance_name", vsInstance)
+          .is("embedding", null)
+          .limit(BATCH);
+
+        if (!chunks || chunks.length === 0) break;
+
+        const res = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
+          body: JSON.stringify({ model: "text-embedding-3-small", input: chunks.map((c) => c.content.slice(0, 8000)) }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error?.message ?? "Erro na API OpenAI");
+        }
+
+        const json = await res.json();
+        const embeddings: number[][] = json.data.map((d: { embedding: number[] }) => d.embedding);
+        const embeddedAt = new Date().toISOString();
+
+        await Promise.all(
+          chunks.map((chunk, i) =>
+            supabase.from("rag_chunks").update({ embedding: JSON.stringify(embeddings[i]), embedded_at: embeddedAt }).eq("id", chunk.id)
+          )
+        );
+
+        processed += chunks.length;
+        await supabase.from("vectorstore_status").upsert(
+          { instance_name: vsInstance, total_chunks: total, embedded: processed, status: "processing", updated_at: new Date().toISOString() },
+          { onConflict: "instance_name" }
+        );
+        await loadVsStatus();
+      }
+
+      await supabase.from("vectorstore_status").upsert(
+        { instance_name: vsInstance, total_chunks: total, embedded: processed, status: "done", updated_at: new Date().toISOString() },
+        { onConflict: "instance_name" }
+      );
+      await loadVsStatus();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      await supabase.from("vectorstore_status").upsert(
+        { instance_name: vsInstance, status: "error", error_message: msg, updated_at: new Date().toISOString() },
+        { onConflict: "instance_name" }
+      );
+      await loadVsStatus();
+    } finally {
+      setVsLoading(false);
+    }
+  };
+
   // Carregar instâncias ao mudar para aba que precisar delas
   useEffect(() => {
     if ((evoTab === "instances" || evoTab === "rag") && isConfigured && instances.length === 0) {
       loadInstances();
     }
-    if (evoTab === "rag") loadRagJobs();
+    if (evoTab === "rag") { loadRagJobs(); loadVsStatus(); }
   }, [evoTab, isConfigured]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaveConfig = async () => {
@@ -717,23 +823,26 @@ const SettingsPage = () => {
       }).select().single();
       if (!job) throw new Error("Falha ao criar job");
 
+      ragCancelRef.current = false;
       setRagStatus("Buscando conversas...");
-      const chats = await evolutionApi.fetchChats(ragInstance);
-      const activeChats = chats.slice(0, 200); // máx 200 chats
+      const chats = await evolutionApi.fetchChats(ragInstance, 1000);
+      const activeChats = chats.slice(0, 1000);
 
       const msgsPerChat = Math.max(10, Math.floor(ragMessageLimit / Math.max(activeChats.length, 1)));
       let totalMessages = 0;
       let totalChunks = 0;
-      const CHUNK_SIZE = 50; // mensagens por chunk
+      const CHUNK_SIZE = 50;
 
-      setRagStatus(`Processando ${activeChats.length} conversas...`);
+      for (let ci = 0; ci < activeChats.length; ci++) {
+        if (ragCancelRef.current) break;
+        const chat = activeChats[ci];
+        setRagStatus(`Processando conversa ${ci + 1} de ${activeChats.length}…`);
 
-      for (const chat of activeChats) {
         const msgs = await evolutionApi.fetchMessages(ragInstance, chat.remoteJid, msgsPerChat);
         if (msgs.length === 0) continue;
 
-        // Dividir em chunks de CHUNK_SIZE mensagens
         for (let i = 0; i < msgs.length; i += CHUNK_SIZE) {
+          if (ragCancelRef.current) break;
           const slice = msgs.slice(i, i + CHUNK_SIZE);
           const content = slice
             .map((m) => {
@@ -758,6 +867,7 @@ const SettingsPage = () => {
         totalMessages += msgs.length;
       }
 
+      const cancelled = ragCancelRef.current;
       await supabase.from("rag_jobs").update({
         status: "done",
         total_messages: totalMessages,
@@ -765,11 +875,14 @@ const SettingsPage = () => {
         updated_at: new Date().toISOString(),
       }).eq("id", job.id);
 
-      setRagStatus(`✅ Concluído! ${totalMessages.toLocaleString()} mensagens → ${totalChunks} chunks`);
+      setRagStatus(cancelled
+        ? `⚠️ Cancelado. ${totalMessages.toLocaleString()} msgs → ${totalChunks} chunks salvos.`
+        : `✅ Concluído! ${totalMessages.toLocaleString()} mensagens → ${totalChunks} chunks`);
       loadRagJobs();
     } catch (err) {
       setRagStatus(`❌ Erro: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
     }
+    ragCancelRef.current = false;
     setRagLoading(false);
   };
 
@@ -1373,10 +1486,18 @@ const SettingsPage = () => {
                       ))}
                     </div>
                   </div>
-                  <button onClick={handleGenerateRag} disabled={ragLoading || !ragInstance}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                    {ragLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "▶"} Gerar RAG
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button onClick={handleGenerateRag} disabled={ragLoading || !ragInstance}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {ragLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "▶"} Gerar RAG
+                    </button>
+                    {ragLoading && (
+                      <button onClick={() => { ragCancelRef.current = true; }}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-destructive text-destructive text-sm font-medium hover:bg-destructive/10 transition-colors">
+                        <X className="w-4 h-4" /> Cancelar
+                      </button>
+                    )}
+                  </div>
                   {ragStatus && <p className="text-sm text-foreground">{ragStatus}</p>}
                 </div>
 
@@ -1405,6 +1526,83 @@ const SettingsPage = () => {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Vectorstore ── */}
+                <div className="surface-elevated p-6 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">Vectorstore (Busca Semântica)</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Gera embeddings dos chunks via OpenAI e habilita busca por similaridade semântica. Um vectorstore por instância.
+                  </p>
+                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
+                    <span>🔑 Token OpenAI</span><span>🧮 text-embedding-3-small</span><span>📐 1536 dimensões</span><span>🔍 HNSW cosine</span>
+                  </div>
+                </div>
+
+                <div className="surface-elevated p-6 space-y-4">
+                  <h3 className="text-base font-semibold text-foreground">Gerar Embeddings</h3>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Instância</label>
+                    <select value={vsInstance} onChange={(e) => setVsInstance(e.target.value)} className={inputCls}>
+                      <option value="">Selecione uma instância</option>
+                      {instances.map((i) => (
+                        <option key={i.instance.instanceName} value={i.instance.instanceName}>
+                          {i.instance.instanceName} {i.instance.status === "open" ? "🟢" : "🔴"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleGenerateEmbeddings}
+                    disabled={vsLoading || !vsInstance}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {vsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    {vsLoading ? "Gerando embeddings…" : "Gerar Embeddings"}
+                  </button>
+                  <p className="text-xs text-muted-foreground">
+                    Processa apenas chunks sem embedding. Pode ser executado novamente para novos chunks.
+                  </p>
+                </div>
+
+                {/* Status por instância */}
+                {vsStatuses.length > 0 && (
+                  <div className="surface-elevated p-6 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-foreground">Status por instância</h3>
+                      <button onClick={loadVsStatus} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                        <RefreshCw className="w-3 h-3" /> Atualizar
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {vsStatuses.map((vs) => {
+                        const pct = vs.total_chunks > 0 ? Math.round((vs.embedded / vs.total_chunks) * 100) : 0;
+                        return (
+                          <div key={vs.instance_name} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium text-foreground">{vs.instance_name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">{vs.embedded.toLocaleString()} / {vs.total_chunks.toLocaleString()} chunks</span>
+                                <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium",
+                                  vs.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
+                                  vs.status === "processing" ? "bg-primary/20 text-primary" :
+                                  vs.status === "error" ? "bg-destructive/20 text-destructive" :
+                                  "bg-secondary text-muted-foreground"
+                                )}>{vs.status === "done" ? "✓ Pronto" : vs.status === "processing" ? "⚙ Processando" : vs.status === "error" ? "✗ Erro" : "idle"}</span>
+                              </div>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
+                              <div className={cn("h-full rounded-full transition-all", vs.status === "done" ? "bg-emerald-500" : vs.status === "error" ? "bg-destructive" : "bg-primary")} style={{ width: `${pct}%` }} />
+                            </div>
+                            {vs.error_message && <p className="text-xs text-destructive">{vs.error_message}</p>}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
