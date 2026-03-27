@@ -175,12 +175,6 @@ const DealsPage = () => {
     <div className="p-6 lg:p-8 space-y-4 h-screen flex flex-col">
       {/* Top bar */}
       <div className="shrink-0 space-y-4">
-        <div className="flex items-center justify-between">
-          <div />
-          <button onClick={() => openNewDeal()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-            <Plus className="w-4 h-4" /> Criar registro
-          </button>
-        </div>
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -218,6 +212,9 @@ const DealsPage = () => {
             <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors"><Filter className="w-4 h-4" /> Filtros</button>
             <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors"><ArrowDownUp className="w-4 h-4" /> Classificar</button>
             <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors"><BarChart3 className="w-4 h-4" /> Métrica</button>
+            <button onClick={() => openNewDeal()} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+              <Plus className="w-4 h-4" /> Criar registro
+            </button>
           </div>
         </div>
       </div>

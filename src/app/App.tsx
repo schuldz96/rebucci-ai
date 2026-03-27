@@ -52,7 +52,6 @@ const AppRoutes = () => {
         <Route path="/deals/:dealId" element={<DealsPage />} />
         <Route path="/settings" element={<Navigate to="/settings/geral" replace />} />
         <Route path="/settings/:subsection" element={<SettingsPage />} />
-        <Route path="/settings/pipelines" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
