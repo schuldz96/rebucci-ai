@@ -155,17 +155,7 @@ const DealsPage = () => {
       {/* Top bar */}
       <div className="shrink-0 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground cursor-pointer">
-              <Bot className="w-4 h-4" />
-              <span>Pipeline IA</span>
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-            </div>
-            <div className="flex items-center gap-1 px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground">
-              <span>Todos os registros</span>
-              <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-semibold">{deals.length}</span>
-            </div>
-          </div>
+          <div />
           <button onClick={() => openNewDeal()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
             <Plus className="w-4 h-4" /> Criar registro
           </button>
