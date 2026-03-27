@@ -741,7 +741,7 @@ const SettingsPage = () => {
             job_id: job.id,
             instance_name: ragInstance,
             chat_id: chat.remoteJid,
-            contact_name: chat.pushName ?? chat.name ?? chat.remoteJid.split("@")[0],
+            contact_name: chat.name ?? chat.remoteJid.split("@")[0],
             content,
             message_count: slice.length,
             chunk_index: Math.floor(i / CHUNK_SIZE),
