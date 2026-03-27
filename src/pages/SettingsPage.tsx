@@ -660,6 +660,13 @@ const SettingsPage = () => {
       }
       setWebhooks(newWebhooks);
       setDisplayNames(newDisplayNames);
+
+      // Sincroniza instâncias para a tabela instances (usada pelo AIAgentModal)
+      for (const inst of raw) {
+        const name = inst.instance.instanceName;
+        const status = inst.instance.connectionStatus === "open" ? "online" : "offline";
+        await supabase.from("instances").upsert({ name, phone: '', status }, { onConflict: "name", ignoreDuplicates: false });
+      }
     } catch {
       /* silencioso */
     }
