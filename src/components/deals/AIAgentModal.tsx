@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { defaultAgentConfig, mockRAGBases, mockInstances, KANBAN_STAGES, type AgentConfig } from "@/data/mockData";
+import { defaultAgentConfig, mockRAGBases, type AgentConfig } from "@/data/mockData";
 import { motion } from "framer-motion";
 import { X, Plus, Trash2, GripVertical, Info, ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ const InfoBanner = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const AIAgentModal = ({ stage, onClose }: { stage: string; onClose: () => void }) => {
+const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: () => void; onRemove?: () => void }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [config, setConfig] = useState<AgentConfig>({
     ...defaultAgentConfig,
@@ -64,7 +64,7 @@ const AIAgentModal = ({ stage, onClose }: { stage: string; onClose: () => void }
       <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="surface-elevated w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-5 border-b border-border flex items-center justify-between shrink-0">
-          <h3 className="text-lg font-semibold text-foreground">Agente: {stage}</h3>
+          <h3 className="text-lg font-semibold text-foreground">IA: {stage}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
 
@@ -88,12 +88,12 @@ const AIAgentModal = ({ stage, onClose }: { stage: string; onClose: () => void }
           {/* TAB 0: Agente */}
           {activeTab === 0 && (
             <>
-              <InfoBanner>
-                <p className="font-medium">Modelo IA Configurado Globalmente</p>
-                <p className="text-xs mt-1">O modelo padrão é configurado em <strong>Admin → Configurações de Agentes</strong></p>
+               <InfoBanner>
+                <p className="font-medium">Modelo padrão: GPT-4o mini</p>
+                <p className="text-xs mt-1">O token de IA é configurado em <strong>Configurações → Tokens</strong></p>
               </InfoBanner>
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Nome do Agente</label>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Nome da IA</label>
                 <input value={config.name} onChange={(e) => setConfig({ ...config, name: e.target.value })} className={inputCls} />
               </div>
               <div>
@@ -138,12 +138,28 @@ const AIAgentModal = ({ stage, onClose }: { stage: string; onClose: () => void }
                 {config.welcomeMessageEnabled && (
                   <>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-                      <select value={config.welcomeMessageType} onChange={(e) => setConfig({ ...config, welcomeMessageType: e.target.value as "text" | "audio" | "image" })} className={selectCls}>
-                        <option value="text">Texto</option>
-                        <option value="audio">Áudio</option>
-                        <option value="image">Imagem</option>
-                      </select>
+                      <label className="text-xs text-muted-foreground mb-2 block">Tipo</label>
+                      <div className="flex gap-2">
+                        {([
+                          { value: "text", label: "Texto", icon: "📝" },
+                          { value: "image", label: "Imagem", icon: "🖼️" },
+                          { value: "audio", label: "Áudio", icon: "🎵" },
+                          { value: "video", label: "Vídeo", icon: "🎬" },
+                        ] as const).map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setConfig({ ...config, welcomeMessageType: opt.value })}
+                            className={cn(
+                              "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-colors",
+                              config.welcomeMessageType === opt.value
+                                ? "bg-primary/10 border-primary text-primary"
+                                : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <span>{opt.icon}</span> {opt.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <textarea value={config.welcomeMessageContent} onChange={(e) => setConfig({ ...config, welcomeMessageContent: e.target.value })} rows={2} className={textareaCls} />
                   </>
@@ -293,7 +309,7 @@ const AIAgentModal = ({ stage, onClose }: { stage: string; onClose: () => void }
 
         {/* Footer */}
         <div className="p-5 border-t border-border space-y-3 shrink-0">
-          <button className="w-full py-2.5 rounded-xl border border-destructive/50 text-destructive text-sm font-medium hover:bg-destructive/10 transition-colors">Remover agente desta etapa</button>
+          <button onClick={onRemove} className="w-full py-2.5 rounded-xl border border-destructive/50 text-destructive text-sm font-medium hover:bg-destructive/10 transition-colors">Remover IA desta etapa</button>
           <div className="flex gap-3">
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors">Cancelar</button>
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">Salvar</button>

@@ -27,14 +27,14 @@ const stageColors: Record<string, string> = {
   "Fechado": "bg-pink-500",
 };
 
-const agentNames: Record<string, string> = {
+const aiNames: Record<string, string | null> = {
   "Novo Lead": "Marco Rebucci",
   "Tentativa de Contato": "Marco Rebucci",
   "Conectado": "Marco Rebucci",
-  "Qualificado": "Agente",
-  "Reunião Agendada": "Agente",
-  "No-Show": "Agente",
-  "Fechado": "Agente",
+  "Qualificado": null,
+  "Reunião Agendada": null,
+  "No-Show": null,
+  "Fechado": null,
 };
 
 interface NewDealForm {
@@ -224,20 +224,25 @@ const DealsPage = () => {
           {stages.map((stage) => {
             const q = searchQuery.toLowerCase();
             const stageDeals = deals.filter((d) => d.stage === stage && (!q || d.title.toLowerCase().includes(q) || d.contactName.toLowerCase().includes(q)));
-            const agentName = agentNames[stage] || "Agente";
+            const aiName = aiNames[stage] ?? null;
             const colorBar = stageColors[stage] || "bg-primary";
             return (
               <Droppable key={stage} droppableId={stage}>
                 {(provided, snapshot) => (
                   <div ref={provided.innerRef} {...provided.droppableProps} className={cn("w-[260px] shrink-0 rounded-2xl border border-border flex flex-col transition-colors", snapshot.isDraggingOver ? "bg-secondary/80" : "bg-card/50")}>
                     <div className="px-3 pt-3 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-secondary border border-border text-[10px] font-medium text-foreground">
-                        <Bot className="w-3 h-3" />
-                        {agentName}
-                      </div>
-                      <button onClick={() => setAiModalStage(stage)} className="p-1 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors" title="Configurar IA">
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
+                      {aiName ? (
+                        <button onClick={() => setAiModalStage(stage)} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-secondary border border-border text-[10px] font-medium text-foreground hover:bg-secondary/80 transition-colors">
+                          <Bot className="w-3 h-3" />
+                          {aiName}
+                          <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                      ) : (
+                        <button onClick={() => setAiModalStage(stage)} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-secondary border border-border text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors">
+                          <Bot className="w-3 h-3" />
+                          IA
+                        </button>
+                      )}
                     </div>
                     <div className="px-3 pt-2 pb-2 space-y-1.5">
                       <div className="flex items-center gap-2">
