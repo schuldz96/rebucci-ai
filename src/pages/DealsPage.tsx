@@ -5,7 +5,7 @@ import { useContactStore } from "@/store/contactStore";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus, User } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone } from "@/lib/utils";
 import AIAgentModal from "@/components/deals/AIAgentModal";
 import DealDetailPanel from "@/components/deals/DealDetailPanel";
 import { type Deal, type Contact } from "@/data/mockData";
@@ -223,7 +223,7 @@ const DealsPage = () => {
                                 <p className="text-sm font-semibold text-primary truncate">{deal.title}</p>
                                 <Star className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                               </div>
-                              <p className="text-xs text-muted-foreground mt-1">Tel: {deal.contactName}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{deal.phone ? `Tel: ${formatPhone(deal.phone)}` : deal.contactName}</p>
                               <div className="flex items-center gap-2 mt-2">
                                 <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", priorityColors[deal.priority])}>
                                   {deal.priority === "high" ? "Alta" : deal.priority === "medium" ? "Média" : "Baixa"}
