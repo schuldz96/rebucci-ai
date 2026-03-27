@@ -65,7 +65,6 @@ function phoneVariants(raw: string): string[] {
   return Array.from(set);
 }
 
-/** Busca contexto relevante na vectorstore para a mensagem recebida */
 async function searchVectorstore(
   supabase: ReturnType<typeof createClient>,
   openaiToken: string,
@@ -92,17 +91,14 @@ async function searchVectorstore(
 
     if (!matches || matches.length === 0) return "";
 
-    const context = (matches as { content: string; similarity: number }[])
+    return (matches as { content: string; similarity: number }[])
       .map((m, i) => `[Trecho ${i + 1}] ${m.content.slice(0, 800)}`)
       .join("\n\n");
-
-    return context;
   } catch {
     return "";
   }
 }
 
-/** Busca histórico de conversa do número */
 async function fetchConversationHistory(
   supabase: ReturnType<typeof createClient>,
   instanceName: string,
@@ -119,14 +115,12 @@ async function fetchConversationHistory(
       .limit(limit);
 
     if (!data || data.length === 0) return [];
-    // Inverter para ordem cronológica
     return (data as { role: "user" | "assistant"; content: string }[]).reverse();
   } catch {
     return [];
   }
 }
 
-/** Salva mensagens no histórico */
 async function saveConversationHistory(
   supabase: ReturnType<typeof createClient>,
   instanceName: string,
@@ -135,26 +129,17 @@ async function saveConversationHistory(
   aiResponse: string,
 ): Promise<void> {
   try {
-    const now = new Date().toISOString();
     await supabase.from("ai_conversation_history").insert([
-      { instance_name: instanceName, phone, role: "user", content: userMessage, created_at: now },
-      { instance_name: instanceName, phone, role: "assistant", content: aiResponse, created_at: new Date(Date.now() + 1).toISOString() },
+      { instance_name: instanceName, phone, role: "user", content: userMessage },
+      { instance_name: instanceName, phone, role: "assistant", content: aiResponse },
     ]);
   } catch {
     // silencioso
   }
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method !== "POST") return new Response("ok", { status: 200 });
-
-  const url = new URL(req.url);
-  const token = url.searchParams.get("token");
-  if (!token) return new Response("unauthorized", { status: 401 });
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-  const log = async (status: string, extra: Record<string, string> = {}) => {
+function makeLog(supabase: ReturnType<typeof createClient>) {
+  return async (status: string, extra: Record<string, string> = {}) => {
     try {
       await supabase.from("webhook_logs").insert({
         instance_name: extra.instance ?? "",
@@ -166,6 +151,135 @@ Deno.serve(async (req: Request) => {
       });
     } catch (_) { /* silencioso */ }
   };
+}
+
+/** Processamento em background: delay + IA + envio */
+async function processInBackground(params: {
+  supabase: ReturnType<typeof createClient>;
+  instanceName: string;
+  remoteJid: string;
+  rawPhone: string;
+  messageText: string;
+  agentConfig: Record<string, unknown>;
+  delayMs: number;
+}) {
+  const { supabase, instanceName, remoteJid, rawPhone, messageText, agentConfig, delayMs } = params;
+  const log = makeLog(supabase);
+
+  try {
+    // Delay configurado (até 10 minutos)
+    if (delayMs > 0) {
+      await log("delay_start", { instance: instanceName, jid: remoteJid, details: `${delayMs}ms` });
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    // Token OpenAI
+    const { data: tokenRow } = await supabase.from("api_tokens").select("token").ilike("provider", "openai").limit(1).maybeSingle();
+    if (!tokenRow?.token) {
+      await log("no_openai_token", { instance: instanceName });
+      return;
+    }
+
+    // Config Evolution API
+    const { data: evoConfig } = await supabase.from("evolution_config").select("api_url, api_token").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (!evoConfig) {
+      await log("no_evo_config", { instance: instanceName });
+      return;
+    }
+
+    // RAG e histórico em paralelo
+    const [ragContext, conversationHistory] = await Promise.all([
+      searchVectorstore(supabase, tokenRow.token, instanceName, messageText),
+      fetchConversationHistory(supabase, instanceName, rawPhone),
+    ]);
+
+    // Monta system prompt
+    const promptParts: string[] = [];
+    if (agentConfig.system_prompt) promptParts.push(agentConfig.system_prompt as string);
+    if (agentConfig.prompt_complement) promptParts.push(agentConfig.prompt_complement as string);
+
+    if (ragContext) {
+      promptParts.push(
+        `\n\nCONTEXTO RELEVANTE DO HISTÓRICO DE ATENDIMENTOS:\n${ragContext}\n\nUse o contexto acima para embasar sua resposta quando relevante. Priorize as informações do contexto sobre conhecimento genérico.`
+      );
+      await log("rag_context_found", { instance: instanceName, jid: remoteJid, details: `${ragContext.length} chars` });
+    }
+
+    const systemPrompt = promptParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda em português.";
+    await log("system_prompt_preview", { instance: instanceName, jid: remoteJid, details: systemPrompt.slice(0, 300) });
+
+    const messages: { role: string; content: string }[] = [
+      { role: "system", content: systemPrompt },
+      ...conversationHistory,
+      { role: "user", content: messageText },
+    ];
+
+    if (conversationHistory.length > 0) {
+      await log("history_loaded", { instance: instanceName, jid: remoteJid, details: `${conversationHistory.length} msgs` });
+    }
+
+    // OpenAI
+    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 600,
+        temperature: 0.7,
+      }),
+    });
+    const aiJson = await aiRes.json();
+    const aiResponse: string = (aiJson.choices?.[0]?.message?.content ?? "").trim();
+
+    if (!aiResponse) {
+      await log("openai_empty", { instance: instanceName, details: JSON.stringify(aiJson).slice(0, 300) });
+      return;
+    }
+
+    await log("ai_response_ready", { instance: instanceName, msg: aiResponse.slice(0, 200) });
+
+    // Envia via Evolution API
+    const sendInstance = (agentConfig.instance_name as string) || instanceName;
+    const sendRes = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
+      body: JSON.stringify({ number: rawPhone, text: aiResponse }),
+    });
+    const sendJson = await sendRes.json().catch(() => ({}));
+
+    await log("sent", {
+      instance: instanceName,
+      jid: remoteJid,
+      msg: aiResponse.slice(0, 200),
+      details: JSON.stringify(sendJson).slice(0, 300),
+    });
+
+    // Salva histórico
+    await saveConversationHistory(supabase, instanceName, rawPhone, messageText, aiResponse);
+
+  } catch (err) {
+    try {
+      await supabase.from("webhook_logs").insert({
+        instance_name: instanceName,
+        event: "exception",
+        remote_jid: remoteJid,
+        status: "bg_error",
+        details: String(err).slice(0, 500),
+      });
+    } catch (_) { /* silencioso */ }
+  }
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== "POST") return new Response("ok", { status: 200 });
+
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token");
+  if (!token) return new Response("unauthorized", { status: 401 });
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const log = makeLog(supabase);
 
   try {
     const { data: webhookRow, error: tokenErr } = await supabase
@@ -193,7 +307,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const data = extractMessageData(body);
-    if (!data) { await log("no_data", { instance: instanceName, event }); return new Response("ok", { status: 200 }); }
+    if (!data) return new Response("ok", { status: 200 });
 
     const key = data.key as Record<string, unknown> | undefined;
     if (key?.fromMe === true) return new Response("ok", { status: 200 });
@@ -244,96 +358,29 @@ Deno.serve(async (req: Request) => {
 
     await log("agent_matched", { instance: instanceName, jid: remoteJid, details: `stage=${matchedDeal.stage}` });
 
-    // Token OpenAI
-    const { data: tokenRow } = await supabase.from("api_tokens").select("token").ilike("provider", "openai").limit(1).maybeSingle();
-    if (!tokenRow?.token) {
-      await log("no_openai_token", { instance: instanceName });
-      return new Response("ok", { status: 200 });
-    }
+    // Delay em minutos (convertido para ms), máximo 10 minutos
+    const delayMinutes = Number(agentConfig.response_delay ?? 0);
+    const delayMs = Math.min(delayMinutes * 60 * 1000, 10 * 60 * 1000);
 
-    // Config Evolution API
-    const { data: evoConfig } = await supabase.from("evolution_config").select("api_url, api_token").order("created_at", { ascending: false }).limit(1).maybeSingle();
-    if (!evoConfig) {
-      await log("no_evo_config", { instance: instanceName });
-      return new Response("ok", { status: 200 });
-    }
-
-    // Busca contexto da vectorstore e histórico em paralelo
-    const [ragContext, conversationHistory] = await Promise.all([
-      searchVectorstore(supabase, tokenRow.token, instanceName, messageText),
-      fetchConversationHistory(supabase, instanceName, rawPhone),
-    ]);
-
-    // Monta system prompt
-    const promptParts: string[] = [];
-    if (agentConfig.system_prompt) promptParts.push(agentConfig.system_prompt as string);
-    if (agentConfig.prompt_complement) promptParts.push(agentConfig.prompt_complement as string);
-
-    if (ragContext) {
-      promptParts.push(
-        `\n\nCONTEXTO RELEVANTE DO HISTÓRICO DE ATENDIMENTOS:\n${ragContext}\n\nUse o contexto acima para embasar sua resposta quando relevante. Priorize as informações do contexto sobre conhecimento genérico.`
-      );
-      await log("rag_context_found", { instance: instanceName, jid: remoteJid, details: `${ragContext.length} chars de contexto` });
-    }
-
-    const systemPrompt = promptParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda em português.";
-
-    await log("system_prompt_preview", { instance: instanceName, jid: remoteJid, details: systemPrompt.slice(0, 300) });
-
-    // Monta messages com histórico + mensagem atual
-    const messages: { role: string; content: string }[] = [
-      { role: "system", content: systemPrompt },
-      ...conversationHistory,
-      { role: "user", content: messageText },
-    ];
-
-    if (conversationHistory.length > 0) {
-      await log("history_loaded", { instance: instanceName, jid: remoteJid, details: `${conversationHistory.length} msgs no histórico` });
-    }
-
-    // OpenAI
-    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-        max_tokens: 600,
-        temperature: 0.7,
-      }),
-    });
-    const aiJson = await aiRes.json();
-    const aiResponse: string = (aiJson.choices?.[0]?.message?.content ?? "").trim();
-
-    if (!aiResponse) {
-      await log("openai_empty", { instance: instanceName, details: JSON.stringify(aiJson).slice(0, 300) });
-      return new Response("ok", { status: 200 });
-    }
-
-    await log("ai_response_ready", { instance: instanceName, msg: aiResponse.slice(0, 200) });
-
-    // Delay
-    const delayMs = Math.min(Number(agentConfig.response_delay ?? 1) * 1000, 10000);
-    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-
-    // Envia via Evolution API
-    const sendInstance = (agentConfig.instance_name as string) || instanceName;
-    const sendRes = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
-      body: JSON.stringify({ number: rawPhone, text: aiResponse }),
-    });
-    const sendJson = await sendRes.json().catch(() => ({}));
-
-    await log("sent", {
-      instance: instanceName,
-      jid: remoteJid,
-      msg: aiResponse.slice(0, 200),
-      details: JSON.stringify(sendJson).slice(0, 300),
+    // Dispara processamento em background e retorna 200 imediatamente
+    const bgTask = processInBackground({
+      supabase,
+      instanceName,
+      remoteJid,
+      rawPhone,
+      messageText,
+      agentConfig,
+      delayMs,
     });
 
-    // Salva histórico de conversa
-    await saveConversationHistory(supabase, instanceName, rawPhone, messageText, aiResponse);
+    // EdgeRuntime.waitUntil mantém o processo vivo após retornar a resposta
+    const ctx = (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime;
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(bgTask);
+    } else {
+      // fallback: aguarda normalmente (sem delay longo)
+      await bgTask;
+    }
 
   } catch (err) {
     try {
