@@ -4,7 +4,7 @@ import { useContactStore } from "@/store/contactStore";
 import { useDealStore } from "@/store/dealStore";
 import { evolutionApi, isFromMe, type EvoInstance } from "@/lib/evolutionApi";
 import { supabase } from "@/lib/supabase";
-import { X, ChevronLeft, Send, Sparkles, Plus, UserPlus, Pencil, Check, Loader2, RefreshCw } from "lucide-react";
+import { X, ChevronLeft, Send, Plus, UserPlus, Pencil, Check, Loader2, RefreshCw } from "lucide-react";
 import { cn, formatPhone, stripPhone, getPhoneVariants } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -431,12 +431,6 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
                 className="p-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-40" title="Recarregar chat">
                 <RefreshCw className={cn("w-3.5 h-3.5", loadingChat && "animate-spin")} />
               </button>
-              <button className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3" /> Resumir
-              </button>
-              <button className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors">Fechar conversa</button>
-              <button className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors">Colocar em espera</button>
-              <span className="text-[10px] px-2 py-1 rounded-lg border border-primary/30 text-primary font-mono">Conversa Nº A4060{deal.id}</span>
             </div>
           </div>
 
