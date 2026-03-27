@@ -983,32 +983,62 @@ const SettingsPage = () => {
       }).select().single();
       if (!job) throw new Error("Falha ao criar job");
 
-      // Insere 1 chunk por conversa (máx 200 mensagens por chunk, divide se maior)
-      const MAX_MSGS_PER_CHUNK = 200;
-      const INSERT_BATCH = 20; // insere 20 chunks por vez no Supabase
+      // Estratégia de chunking:
+      // - Conversas com < 5 msgs → agrupa até 20 contatos por chunk (resumo compacto)
+      // - Conversas com 5-500 msgs → 1 chunk por conversa
+      // - Conversas com > 500 msgs → divide em partes de 500 msgs
+      const MIN_MSGS_STANDALONE = 5;
+      const MAX_MSGS_PER_CHUNK = 500;
+      const SHORT_CONVS_PER_CHUNK = 20;
+      const INSERT_BATCH = 20;
       let totalChunks = 0;
       let processed = 0;
 
       const pending: object[] = [];
+      const shortConvBuffer: string[] = [];
+
+      const flushShortConvs = () => {
+        if (shortConvBuffer.length === 0) return;
+        const content = shortConvBuffer.join("\n\n---\n\n");
+        pending.push({
+          job_id: job.id,
+          instance_name: csvInstance,
+          chat_id: `short-convs-${totalChunks}`,
+          contact_name: "múltiplos contatos",
+          content,
+          message_count: shortConvBuffer.length,
+          chunk_index: totalChunks,
+        });
+        shortConvBuffer.length = 0;
+        totalChunks++;
+      };
 
       for (const [jid, lines] of convMap) {
         const phone = jid.split("@")[0];
-        // Divide conversas longas em sub-chunks
-        for (let start = 0; start < lines.length; start += MAX_MSGS_PER_CHUNK) {
-          const slice = lines.slice(start, start + MAX_MSGS_PER_CHUNK);
-          const chunkIdx = Math.floor(start / MAX_MSGS_PER_CHUNK);
-          const content = `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`;
-          pending.push({
-            job_id: job.id,
-            instance_name: csvInstance,
-            chat_id: jid,
-            contact_name: phone,
-            content,
-            message_count: slice.length,
-            chunk_index: totalChunks,
-          });
-          totalChunks++;
+
+        if (lines.length < MIN_MSGS_STANDALONE) {
+          // Conversa curta → acumula no buffer
+          shortConvBuffer.push(`Conversa com ${phone}:\n${lines.join("\n")}`);
+          if (shortConvBuffer.length >= SHORT_CONVS_PER_CHUNK) flushShortConvs();
+        } else {
+          // Conversa normal → 1 chunk por bloco de MAX_MSGS_PER_CHUNK mensagens
+          for (let start = 0; start < lines.length; start += MAX_MSGS_PER_CHUNK) {
+            const slice = lines.slice(start, start + MAX_MSGS_PER_CHUNK);
+            const chunkIdx = Math.floor(start / MAX_MSGS_PER_CHUNK);
+            const content = `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`;
+            pending.push({
+              job_id: job.id,
+              instance_name: csvInstance,
+              chat_id: jid,
+              contact_name: phone,
+              content,
+              message_count: slice.length,
+              chunk_index: totalChunks,
+            });
+            totalChunks++;
+          }
         }
+
         processed++;
 
         // Flush a cada INSERT_BATCH chunks
@@ -1020,6 +1050,9 @@ const SettingsPage = () => {
 
         if (csvCancelRef.current) break;
       }
+
+      // Flush conversas curtas restantes
+      flushShortConvs();
 
       // Flush restante
       if (pending.length > 0) {
