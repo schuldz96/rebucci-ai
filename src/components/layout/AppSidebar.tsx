@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import ProfileModal from "./ProfileModal";
+import { AnimatePresence } from "framer-motion";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
@@ -25,6 +27,7 @@ const AppSidebar = () => {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   return (
     <aside
@@ -70,7 +73,8 @@ const AppSidebar = () => {
       {/* Footer */}
       <div className="border-t border-sidebar-border p-3 space-y-2">
         {user && (
-          <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+          <button onClick={() => setShowProfile(true)}
+            className={cn("flex items-center gap-3 w-full rounded-xl px-1 py-1 hover:bg-sidebar-accent/50 transition-colors text-left", collapsed && "justify-center")}>
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0">
               {user.name.charAt(0)}
             </div>
@@ -80,8 +84,11 @@ const AppSidebar = () => {
                 <p className="text-xs text-muted-foreground">{user.role}</p>
               </div>
             )}
-          </div>
+          </button>
         )}
+        <AnimatePresence>
+          {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+        </AnimatePresence>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setCollapsed(!collapsed)}
