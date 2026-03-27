@@ -72,7 +72,7 @@ export interface AgentConfig {
   systemPrompt: string;
   promptComplement: string;
   welcomeMessageEnabled: boolean;
-  welcomeMessageType: "text" | "audio" | "image";
+  welcomeMessageType: "text" | "audio" | "image" | "video";
   welcomeMessageContent: string;
   conversationStart: "on_create" | "wait_first_message";
   groupingDelay: number;
