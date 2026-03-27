@@ -13,7 +13,7 @@ import { evolutionApi, type EvoInstance } from "@/lib/evolutionApi";
 const SUPABASE_URL = "https://urrbpxrtdzurfdsucukb.supabase.co";
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
-type SettingsSection = "general" | "users" | "evolution" | "meta";
+type SettingsSection = "general" | "users" | "evolution" | "meta" | "prime";
 type EvoTab = "config" | "instances" | "rag";
 type UserTab = "users" | "teams";
 type ModalType = null | "user" | "team" | "perm" | "preset";
@@ -24,10 +24,10 @@ interface PermissionSet { id: string; name: string; description: string | null; 
 interface Preset { id: string; name: string; type: string; content: string | null; }
 
 const SECTION_MAP: Record<string, SettingsSection> = {
-  geral: "general", usuarios: "users", evolution: "evolution", meta: "meta",
+  geral: "general", usuarios: "users", evolution: "evolution", meta: "meta", prime: "prime",
 };
 const SECTION_SLUG: Record<SettingsSection, string> = {
-  general: "geral", users: "usuarios", evolution: "evolution", meta: "meta",
+  general: "geral", users: "usuarios", evolution: "evolution", meta: "meta", prime: "prime",
 };
 
 const menuSections = [
@@ -36,6 +36,7 @@ const menuSections = [
   { title: "Integrações", items: [
     { id: "evolution" as const, label: "EvolutionAPI", icon: Link2 },
     { id: "meta" as const, label: "Meta API", icon: Facebook },
+    { id: "prime" as const, label: "Prime", icon: Zap },
   ]},
 ];
 
@@ -45,6 +46,15 @@ const SettingsPage = () => {
   const section: SettingsSection = SECTION_MAP[subsection ?? "geral"] ?? "general";
   const setSection = (s: SettingsSection) => navigate(`/settings/${SECTION_SLUG[s]}`);
   const [evoTab, setEvoTab] = useState<EvoTab>("config");
+
+  // Prime section state
+  const [primeEndpoints, setPrimeEndpoints] = useState<{ id: string; name: string; url: string; method: string; description: string; auth_token: string }[]>([]);
+  const [primeLoading, setPrimeLoading] = useState(false);
+  const [primeModal, setPrimeModal] = useState(false);
+  const [primeForm, setPrimeForm] = useState({ name: "", url: "", method: "GET", description: "", auth_token: "" });
+  const [primeSaving, setPrimeSaving] = useState(false);
+  const [primeTesting, setPrimeTesting] = useState<string | null>(null);
+  const [primeTestResult, setPrimeTestResult] = useState<Record<string, { ok: boolean; msg: string }>>({});
 
   // General section state
   const [companyName, setCompanyName] = useState("");
@@ -138,6 +148,47 @@ const SettingsPage = () => {
       setGeneralMsg({ ok: false, text: "Erro ao salvar configurações." });
     }
     setSavingGeneral(false);
+  };
+
+  // Load Prime endpoints
+  useEffect(() => {
+    if (section !== "prime") return;
+    setPrimeLoading(true);
+    supabase.from("prime_endpoints").select("*").order("created_at").then(({ data }) => {
+      if (data) setPrimeEndpoints(data);
+      setPrimeLoading(false);
+    });
+  }, [section]);
+
+  const handleSavePrimeEndpoint = async () => {
+    if (!primeForm.name || !primeForm.url) return;
+    setPrimeSaving(true);
+    const { data } = await supabase.from("prime_endpoints").insert({
+      name: primeForm.name, url: primeForm.url, method: primeForm.method,
+      description: primeForm.description || null, auth_token: primeForm.auth_token || null,
+    }).select().single();
+    if (data) setPrimeEndpoints((prev) => [...prev, data]);
+    setPrimeForm({ name: "", url: "", method: "GET", description: "", auth_token: "" });
+    setPrimeModal(false);
+    setPrimeSaving(false);
+  };
+
+  const handleDeletePrimeEndpoint = async (id: string) => {
+    await supabase.from("prime_endpoints").delete().eq("id", id);
+    setPrimeEndpoints((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const handleTestPrimeEndpoint = async (endpoint: { id: string; url: string; method: string; auth_token: string }) => {
+    setPrimeTesting(endpoint.id);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (endpoint.auth_token) headers["Authorization"] = `Bearer ${endpoint.auth_token}`;
+      const res = await fetch(endpoint.url, { method: endpoint.method, headers });
+      setPrimeTestResult((prev) => ({ ...prev, [endpoint.id]: { ok: res.ok, msg: `${res.status} ${res.statusText}` } }));
+    } catch (e) {
+      setPrimeTestResult((prev) => ({ ...prev, [endpoint.id]: { ok: false, msg: e instanceof Error ? e.message : "Erro" } }));
+    }
+    setPrimeTesting(null);
   };
 
   // Load RAG jobs
@@ -526,6 +577,118 @@ const SettingsPage = () => {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ═══════ PRIME ═══════ */}
+        {section === "prime" && (
+          <div className="max-w-3xl space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-yellow-500/20 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-yellow-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Prime</h2>
+                <p className="text-sm text-muted-foreground">Gerencie os endpoints da sua API para integração</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button onClick={() => setPrimeModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+                <Plus className="w-4 h-4" /> Novo endpoint
+              </button>
+            </div>
+
+            {primeLoading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+
+            {!primeLoading && primeEndpoints.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground text-sm">Nenhum endpoint cadastrado</div>
+            )}
+
+            {!primeLoading && primeEndpoints.length > 0 && (
+              <div className="space-y-3">
+                {primeEndpoints.map((ep) => (
+                  <div key={ep.id} className="surface-elevated p-4 rounded-xl border border-border space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded font-mono",
+                            ep.method === "GET" ? "bg-emerald-500/20 text-emerald-500" :
+                            ep.method === "POST" ? "bg-blue-500/20 text-blue-500" :
+                            ep.method === "PUT" ? "bg-yellow-500/20 text-yellow-500" :
+                            "bg-destructive/20 text-destructive"
+                          )}>{ep.method}</span>
+                          <p className="text-sm font-semibold text-foreground">{ep.name}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono mt-1 truncate">{ep.url}</p>
+                        {ep.description && <p className="text-xs text-muted-foreground mt-1">{ep.description}</p>}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => handleTestPrimeEndpoint(ep)} disabled={primeTesting === ep.id}
+                          className="p-1.5 rounded-lg border border-border text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-40" title="Testar">
+                          {primeTesting === ep.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                        </button>
+                        <button onClick={() => handleDeletePrimeEndpoint(ep.id)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    {primeTestResult[ep.id] && (
+                      <p className={cn("text-xs px-2 py-1 rounded-lg", primeTestResult[ep.id].ok ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive")}>
+                        {primeTestResult[ep.id].msg}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Modal novo endpoint */}
+            {primeModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setPrimeModal(false)}>
+                <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-foreground">Novo endpoint</h3>
+                    <button onClick={() => setPrimeModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Nome *</label>
+                      <input value={primeForm.name} onChange={(e) => setPrimeForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Criar Lead" className={inputCls} />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="space-y-1 w-28 shrink-0">
+                        <label className="text-xs text-muted-foreground">Método</label>
+                        <select value={primeForm.method} onChange={(e) => setPrimeForm((f) => ({ ...f, method: e.target.value }))} className={inputCls}>
+                          {["GET","POST","PUT","PATCH","DELETE"].map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <label className="text-xs text-muted-foreground">URL *</label>
+                        <input value={primeForm.url} onChange={(e) => setPrimeForm((f) => ({ ...f, url: e.target.value }))} placeholder="https://api.exemplo.com/v1/..." className={inputCls} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Descrição</label>
+                      <input value={primeForm.description} onChange={(e) => setPrimeForm((f) => ({ ...f, description: e.target.value }))} placeholder="Para que serve este endpoint?" className={inputCls} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Token de autenticação (Bearer)</label>
+                      <input type="password" value={primeForm.auth_token} onChange={(e) => setPrimeForm((f) => ({ ...f, auth_token: e.target.value }))} placeholder="sk-..." className={inputCls} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => setPrimeModal(false)} className="flex-1 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors">Cancelar</button>
+                    <button onClick={handleSavePrimeEndpoint} disabled={primeSaving || !primeForm.name || !primeForm.url}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40">
+                      {primeSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Salvar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
