@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (!tokenRow?.token) {
-      return json({ error: "Token OpenAI não encontrado" }, 400);
+      return json({ error: "Token OpenAI não encontrado" });
     }
 
     // Conta total e já embeddados
@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
       .is("embedding", null)
       .limit(BATCH_SIZE);
 
-    if (fetchErr) return json({ error: fetchErr.message }, 500);
+    if (fetchErr) return json({ error: fetchErr.message });
     if (!chunks || chunks.length === 0) {
       // Tudo pronto — atualiza status
       await supabase.from("vectorstore_status").upsert(
@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
 
     if (!oaRes.ok) {
       const errJson = await oaRes.json().catch(() => ({}));
-      return json({ error: `OpenAI ${oaRes.status}: ${JSON.stringify(errJson).slice(0, 300)}` }, 500);
+      return json({ error: `OpenAI ${oaRes.status}: ${JSON.stringify(errJson).slice(0, 300)}` });
     }
 
     const oaJson = await oaRes.json();
@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
       remaining: Math.max(0, remaining),
     });
   } catch (err) {
-    return json({ error: String(err) }, 500);
+    return json({ error: String(err) });
   }
 });
 
