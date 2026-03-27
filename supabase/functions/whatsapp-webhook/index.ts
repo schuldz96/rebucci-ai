@@ -41,24 +41,28 @@ function extractMessageData(body: Record<string, unknown>): Record<string, unkno
 }
 
 function phoneVariants(raw: string): string[] {
-  const set = new Set<string>([raw, `+${raw}`]);
+  // Nunca incluir variantes com "+" — o sinal causa bug de URL encoding no PostgREST
+  const set = new Set<string>([raw]);
   if (raw.startsWith("55") && raw.length === 13) {
+    // Formato com 9: 55 + DD + 9XXXXXXXX (13 dígitos)
     const sem55 = raw.slice(2);
     set.add(sem55);
     const area = raw.slice(2, 4);
-    const resto = raw.slice(4);
+    const resto = raw.slice(4); // 9XXXXXXXX
     if (resto.startsWith("9") && resto.length === 9) {
+      // Variante sem o 9 extra
       const sem9 = `55${area}${resto.slice(1)}`;
       set.add(sem9);
-      set.add(`+${sem9}`);
       set.add(`${area}${resto.slice(1)}`);
+      set.add(`${area}${resto}`);
     }
   } else if (raw.startsWith("55") && raw.length === 12) {
+    // Formato sem 9: 55 + DD + 8 dígitos (12 dígitos)
     const area = raw.slice(2, 4);
-    const resto = raw.slice(4);
+    const resto = raw.slice(4); // 8 dígitos
+    // Variante com 9 inserido
     const com9 = `55${area}9${resto}`;
     set.add(com9);
-    set.add(`+${com9}`);
     set.add(`${area}${resto}`);
     set.add(`${area}9${resto}`);
   }
