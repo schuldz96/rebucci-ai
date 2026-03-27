@@ -14,7 +14,7 @@ const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-borde
 
 type SettingsSection = "general" | "users" | "evolution" | "meta";
 type EvoTab = "config" | "instances" | "rag";
-type UserTab = "users" | "licenses" | "teams" | "permissions" | "presets";
+type UserTab = "users" | "teams";
 type ModalType = null | "user" | "team" | "perm" | "preset";
 
 interface CrmUser { id: string; name: string; email: string; role: string; team_id: string | null; permission_set_id: string | null; status: "active" | "inactive"; created_at: string; }
@@ -783,10 +783,7 @@ const SettingsPage = () => {
             <div className="flex gap-1 border-b border-border">
               {([
                 { key: "users" as const, label: "Usuários" },
-                { key: "licenses" as const, label: "Licenças" },
                 { key: "teams" as const, label: "Equipes" },
-                { key: "permissions" as const, label: "Conjuntos de permissões" },
-                { key: "presets" as const, label: "Pré-definições" },
               ]).map((t) => (
                 <button key={t.key} onClick={() => setUserTab(t.key)}
                   className={cn("px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px whitespace-nowrap",
@@ -864,29 +861,6 @@ const SettingsPage = () => {
               </motion.div>
             )}
 
-            {/* ── Licenças ── */}
-            {!usersLoading && userTab === "licenses" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div className="surface-elevated p-6 rounded-xl border border-border space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-semibold text-foreground">Plano Pro</h3>
-                      <p className="text-sm text-muted-foreground mt-0.5">Licença ativa — acesso completo ao CRM e integrações</p>
-                    </div>
-                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-500 text-xs font-medium">Ativa</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border">
-                    <div><p className="text-2xl font-bold text-foreground">{crmUsers.length}</p><p className="text-xs text-muted-foreground">Usuários ativos</p></div>
-                    <div><p className="text-2xl font-bold text-foreground">Ilimitado</p><p className="text-xs text-muted-foreground">Conversas</p></div>
-                    <div><p className="text-2xl font-bold text-foreground">∞</p><p className="text-xs text-muted-foreground">Instâncias WhatsApp</p></div>
-                  </div>
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/50 border border-border text-sm text-muted-foreground">
-                    <Shield className="w-4 h-4 shrink-0 text-primary" />
-                    <span>Para alterar o plano ou adicionar licenças, entre em contato com o suporte.</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
 
             {/* ── Equipes ── */}
             {!usersLoading && userTab === "teams" && (
@@ -930,86 +904,6 @@ const SettingsPage = () => {
               </motion.div>
             )}
 
-            {/* ── Conjuntos de permissões ── */}
-            {!usersLoading && userTab === "permissions" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div className="flex justify-end">
-                  <button onClick={() => openModal("perm")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
-                    <Plus className="w-4 h-4" /> Novo conjunto
-                  </button>
-                </div>
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border bg-secondary/50">
-                        {["Nome", "Descrição", "Usuários", ""].map((h) => (
-                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {permSets.map((p) => {
-                        const users = crmUsers.filter(u => u.permission_set_id === p.id).length;
-                        return (
-                          <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2"><Shield className="w-4 h-4 text-primary" />{p.name}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{p.description ?? "--"}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{users}</td>
-                            <td className="px-4 py-3">
-                              <button onClick={() => handleDeletePerm(p.id)} className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {permSets.length === 0 && (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum conjunto de permissão criado</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            )}
-
-            {/* ── Pré-definições ── */}
-            {!usersLoading && userTab === "presets" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div className="flex justify-end">
-                  <button onClick={() => openModal("preset")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
-                    <Plus className="w-4 h-4" /> Nova pré-definição
-                  </button>
-                </div>
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border bg-secondary/50">
-                        {["Nome", "Tipo", "Conteúdo", ""].map((h) => (
-                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {presets.map((p) => (
-                        <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                          <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2"><Tag className="w-4 h-4 text-primary" />{p.name}</td>
-                          <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{p.type}</span></td>
-                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{p.content ?? "--"}</td>
-                          <td className="px-4 py-3">
-                            <button onClick={() => handleDeletePreset(p.id)} className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {presets.length === 0 && (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhuma pré-definição criada</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            )}
 
             {/* ── Modal de criação ── */}
             {modalType && (
