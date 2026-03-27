@@ -513,7 +513,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
             {!loadingChat && chatError && (
               <div className="flex flex-col items-center justify-center h-full gap-2">
                 <p className="text-sm text-muted-foreground text-center max-w-xs">{chatError}</p>
-                <button onClick={findAndLoadChat} className="text-xs text-primary hover:underline">Tentar novamente</button>
+                <button onClick={() => findAndLoadChat()} className="text-xs text-primary hover:underline">Tentar novamente</button>
               </div>
             )}
             {!loadingChat && !chatError && chatMessages.length === 0 && (

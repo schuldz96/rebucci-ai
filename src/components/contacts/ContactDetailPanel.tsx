@@ -7,7 +7,7 @@ import { cn, formatPhone } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
-type EditKey = keyof Omit<Contact, "id" | "createdAt">;
+type EditKey = keyof Omit<Contact, "id">;
 
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success",
