@@ -82,7 +82,14 @@ export interface AgentConfig {
   ragBaseId: string | null;
   ragEnabled: boolean;
   ragMaxTurns: number;
-  followUps: { id: string; name: string; triggers: number; contents: number }[];
+  followUps: {
+    id: string;
+    name: string;
+    expanded?: boolean;
+    triggers: { id: string; type: string; timeValue: number; timeUnit: "minutes" | "hours" | "days" }[];
+    contents: { id: string; type: "text" | "image" | "audio" | "video"; content: string }[];
+    allowResubscribe: boolean;
+  }[];
   transitions: { id: string; trigger: string; destination: string }[];
 }
 
