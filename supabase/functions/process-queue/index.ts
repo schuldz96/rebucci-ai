@@ -262,17 +262,19 @@ Deno.serve(async () => {
       }
 
       // Log completo: entrada, resposta e contexto RAG
-      await supabase.from("ai_logs").insert({
-        instance_name: instanceName,
-        phone,
-        remote_jid: remoteJid,
-        user_message: messageText,
-        ai_response: aiResponse,
-        rag_context: ragContext || null,
-        rag_base: ragContext ? ragSearchName : null,
-        model: "gpt-4o-mini",
-        parts_sent: parts.length,
-      }).catch(() => {});
+      try {
+        await supabase.from("ai_logs").insert({
+          instance_name: instanceName,
+          phone,
+          remote_jid: remoteJid,
+          user_message: messageText,
+          ai_response: aiResponse,
+          rag_context: ragContext || null,
+          rag_base: ragContext ? ragSearchName : null,
+          model: "gpt-4o-mini",
+          parts_sent: parts.length,
+        });
+      } catch (_) { /* log falhou, não bloqueia fluxo */ }
 
       // Salva histórico
       await supabase.from("ai_conversation_history").insert([
