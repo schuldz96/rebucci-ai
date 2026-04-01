@@ -1775,10 +1775,19 @@ const SettingsPage = () => {
                                   <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium",
                                     vs.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
                                     vs.status === "processing" ? "bg-primary/20 text-primary" :
+                                    vs.status === "paused" ? "bg-yellow-500/20 text-yellow-500" :
                                     "bg-destructive/20 text-destructive"
                                   )}>
-                                    {vs.status === "done" ? "✓ Pronto" : vs.status === "processing" ? `⚙ ${vs.embedded ?? 0}/${vs.total_chunks ?? 0}` : "✗ Erro"}
+                                    {vs.status === "done" ? "✓ Pronto" : vs.status === "processing" ? `⚙ ${vs.embedded ?? 0}/${vs.total_chunks ?? 0}` : vs.status === "paused" ? `⏸ ${vs.embedded ?? 0}/${vs.total_chunks ?? 0}` : "✗ Erro"}
                                   </span>
+                                  {(vs.status === "paused" || vs.status === "error") && (
+                                    <button onClick={async () => {
+                                      await supabase.from("vectorstore_status").update({ status: "processing", error_message: null, updated_at: new Date().toISOString() }).eq("instance_name", vs.instance_name);
+                                      loadVsStatus();
+                                    }} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors font-medium" title="Continuar processamento">
+                                      ▶ Continuar
+                                    </button>
+                                  )}
                                   <button onClick={() => handleDeleteBase(vs.instance_name)} className="text-muted-foreground hover:text-destructive transition-colors" title="Remover base">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
