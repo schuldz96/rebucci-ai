@@ -4,7 +4,7 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const BATCH_SIZE = 200;
-const MAX_BATCHES_PER_CALL = 5; // Processa até 1000 chunks por invocação (~50s)
+const MAX_BATCHES_TOTAL = 5; // ~1000 chunks por invocação
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -19,36 +19,26 @@ Deno.serve(async (req: Request) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let instance_name: string | null = null;
+    // Lê instance_name do body (opcional)
+    let targetBase: string | null = null;
     try {
       const body = await req.json();
-      instance_name = body?.instance_name ?? null;
+      targetBase = body?.instance_name ?? null;
     } catch { /* body vazio ok */ }
 
-    // Busca todas as bases com status "processing" (processa múltiplas)
-    if (!instance_name) {
+    // Busca TODAS as bases com status "processing"
+    let bases: string[] = [];
+    if (targetBase) {
+      bases = [targetBase];
+    } else {
       const { data: pending } = await supabase
         .from("vectorstore_status")
         .select("instance_name")
-        .eq("status", "processing")
-        .limit(1)
-        .maybeSingle();
-
-      if (!pending) {
+        .eq("status", "processing");
+      if (!pending || pending.length === 0) {
         return json({ done: true, message: "Nenhuma base pendente" });
       }
-      instance_name = pending.instance_name;
-    }
-
-    // Verifica se está pausado — não processa
-    const { data: statusRow } = await supabase
-      .from("vectorstore_status")
-      .select("status")
-      .eq("instance_name", instance_name)
-      .maybeSingle();
-
-    if (statusRow?.status === "paused") {
-      return json({ paused: true, message: "Base pausada. Use 'Continuar' para retomar." });
+      bases = pending.map((p) => p.instance_name);
     }
 
     // Busca token OpenAI
@@ -63,105 +53,94 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Token OpenAI não encontrado" });
     }
 
-    // Conta total
-    const { count: total } = await supabase
-      .from("rag_chunks")
-      .select("id", { count: "exact", head: true })
-      .eq("instance_name", instance_name);
+    let batchesUsed = 0;
+    const results: Record<string, { processed: number; total: number; embedded: number; status: string }> = {};
 
-    const totalChunks = total ?? 0;
-    let totalProcessed = 0;
+    for (const baseName of bases) {
+      if (batchesUsed >= MAX_BATCHES_TOTAL) break;
 
-    // Loop: processa múltiplos batches por chamada
-    for (let batch = 0; batch < MAX_BATCHES_PER_CALL; batch++) {
-      // Busca próximo lote sem embedding
-      const { data: chunks, error: fetchErr } = await supabase
-        .from("rag_chunks")
-        .select("id, content")
-        .eq("instance_name", instance_name)
-        .is("embedding", null)
-        .limit(BATCH_SIZE);
-
-      if (fetchErr) {
-        await setStatus(supabase, instance_name, totalChunks, "error", fetchErr.message);
-        return json({ error: fetchErr.message });
-      }
-
-      // Sem mais chunks — concluído
-      if (!chunks || chunks.length === 0) {
-        await setStatus(supabase, instance_name, totalChunks, "done");
-        return json({ done: true, total: totalChunks, processed: totalProcessed });
-      }
-
-      // Chama OpenAI Embeddings
-      const inputs = chunks.map((c) => c.content.slice(0, 6000));
-      const oaRes = await fetch("https://api.openai.com/v1/embeddings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
-        body: JSON.stringify({ model: "text-embedding-3-small", input: inputs }),
-      });
-
-      if (!oaRes.ok) {
-        const errJson = await oaRes.json().catch(() => ({}));
-        const errMsg = `OpenAI ${oaRes.status}: ${JSON.stringify(errJson).slice(0, 300)}`;
-
-        // Rate limit (429) ou quota (402/429 insufficient_quota) → PAUSA em vez de erro
-        const isQuota = oaRes.status === 429 || oaRes.status === 402 ||
-          JSON.stringify(errJson).includes("insufficient_quota") ||
-          JSON.stringify(errJson).includes("rate_limit");
-
-        if (isQuota) {
-          await setStatus(supabase, instance_name, totalChunks, "paused", `Pausado: ${errMsg}`);
-          return json({ paused: true, processed: totalProcessed, error: errMsg });
-        }
-
-        await setStatus(supabase, instance_name, totalChunks, "error", errMsg);
-        return json({ error: errMsg, processed: totalProcessed });
-      }
-
-      const oaJson = await oaRes.json();
-      const embeddings: number[][] = oaJson.data.map((d: { embedding: number[] }) => d.embedding);
-
-      // Salva embeddings no banco (parallel)
-      const now = new Date().toISOString();
-      await Promise.all(
-        chunks.map((chunk, i) =>
-          supabase
-            .from("rag_chunks")
-            .update({ embedding: JSON.stringify(embeddings[i]), embedded_at: now })
-            .eq("id", chunk.id)
-        )
-      );
-
-      totalProcessed += chunks.length;
-
-      // Atualiza progresso
-      const { count: embeddedNow } = await supabase
+      // Conta total
+      const { count: total } = await supabase
         .from("rag_chunks")
         .select("id", { count: "exact", head: true })
-        .eq("instance_name", instance_name)
-        .not("embedding", "is", null);
+        .eq("instance_name", baseName);
 
-      const embedded = embeddedNow ?? 0;
-      const remaining = totalChunks - embedded;
+      const totalChunks = total ?? 0;
+      let baseProcessed = 0;
 
-      await supabase.from("vectorstore_status").upsert(
-        {
-          instance_name,
-          total_chunks: totalChunks,
-          embedded,
-          status: remaining <= 0 ? "done" : "processing",
-          updated_at: now,
-        },
-        { onConflict: "instance_name" }
-      );
+      // Loop de batches para esta base
+      while (batchesUsed < MAX_BATCHES_TOTAL) {
+        const { data: chunks, error: fetchErr } = await supabase
+          .from("rag_chunks")
+          .select("id, content")
+          .eq("instance_name", baseName)
+          .is("embedding", null)
+          .limit(BATCH_SIZE);
 
-      if (remaining <= 0) {
-        return json({ done: true, total: totalChunks, processed: totalProcessed });
+        if (fetchErr) {
+          await setStatus(supabase, baseName, totalChunks, "error", fetchErr.message);
+          break;
+        }
+
+        if (!chunks || chunks.length === 0) {
+          await setStatus(supabase, baseName, totalChunks, "done");
+          break;
+        }
+
+        // OpenAI Embeddings
+        const inputs = chunks.map((c) => c.content.slice(0, 6000));
+        const oaRes = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
+          body: JSON.stringify({ model: "text-embedding-3-small", input: inputs }),
+        });
+
+        if (!oaRes.ok) {
+          const errJson = await oaRes.json().catch(() => ({}));
+          const errMsg = `OpenAI ${oaRes.status}: ${JSON.stringify(errJson).slice(0, 300)}`;
+          const isQuota = oaRes.status === 429 || oaRes.status === 402 ||
+            JSON.stringify(errJson).includes("insufficient_quota") ||
+            JSON.stringify(errJson).includes("rate_limit");
+
+          // Pausa TODAS as bases em processamento se for quota/rate limit
+          if (isQuota) {
+            for (const b of bases) {
+              const { count: bTotal } = await supabase.from("rag_chunks").select("id", { count: "exact", head: true }).eq("instance_name", b);
+              await setStatus(supabase, b, bTotal ?? 0, "paused", `Pausado: ${errMsg}`);
+            }
+            return json({ paused: true, error: errMsg });
+          }
+
+          await setStatus(supabase, baseName, totalChunks, "error", errMsg);
+          break;
+        }
+
+        const oaJson = await oaRes.json();
+        const embeddings: number[][] = oaJson.data.map((d: { embedding: number[] }) => d.embedding);
+
+        const now = new Date().toISOString();
+        await Promise.all(
+          chunks.map((chunk, i) =>
+            supabase
+              .from("rag_chunks")
+              .update({ embedding: JSON.stringify(embeddings[i]), embedded_at: now })
+              .eq("id", chunk.id)
+          )
+        );
+
+        baseProcessed += chunks.length;
+        batchesUsed++;
+
+        // Atualiza progresso
+        await setStatus(supabase, baseName, totalChunks, "processing");
       }
+
+      // Resultado desta base
+      const { count: embNow } = await supabase.from("rag_chunks").select("id", { count: "exact", head: true }).eq("instance_name", baseName).not("embedding", "is", null);
+      results[baseName] = { processed: baseProcessed, total: totalChunks, embedded: embNow ?? 0, status: baseProcessed > 0 ? "ok" : "skipped" };
     }
 
-    return json({ done: false, processed: totalProcessed, total: totalChunks });
+    return json({ results, batches_used: batchesUsed });
   } catch (err) {
     return json({ error: String(err) });
   }
@@ -174,7 +153,7 @@ async function setStatus(
   status: string,
   error_message?: string,
 ) {
-  const { count: embeddedNow } = await supabase
+  const { count: embNow } = await supabase
     .from("rag_chunks")
     .select("id", { count: "exact", head: true })
     .eq("instance_name", instance_name)
@@ -184,7 +163,7 @@ async function setStatus(
     {
       instance_name,
       total_chunks,
-      embedded: embeddedNow ?? 0,
+      embedded: embNow ?? 0,
       status,
       error_message: error_message ?? null,
       updated_at: new Date().toISOString(),
