@@ -994,7 +994,8 @@ const SettingsPage = () => {
           const fromMe = idxFromMe >= 0 ? (row[idxFromMe] ?? "") : "";
           const msg = idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ");
           if (!msg.trim()) continue;
-          const speaker = String(fromMe).toLowerCase() === "true" || fromMe === "1" ? "Atendente" : "Aluno";
+          const fm = String(fromMe).toLowerCase().trim();
+          const speaker = fm === "true" || fm === "1" || fm === "atendente" ? "Atendente" : "Aluno";
           if (!convMap.has(jid)) convMap.set(jid, []);
           convMap.get(jid)!.push(`${speaker}: ${msg.trim()}`);
         }
