@@ -226,21 +226,25 @@ Deno.serve(async () => {
         await new Promise((r) => setTimeout(r, typingSeconds * 1000));
       }
 
-      // Divide a resposta em partes naturais para envio em múltiplas mensagens
-      const rawParts = aiResponse.split(/\n/).map((p) => p.trim()).filter((p) => p.length > 0);
+      // Divide a resposta em partes — cada parágrafo (separado por \n\n) vira uma mensagem separada
+      // Se não houver \n\n, quebra por frases (. ! ?) para não mandar textão
+      let parts: string[] = aiResponse.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
 
-      // Agrupa linhas curtas consecutivas (ex: listas) e quebra blocos grandes por frase
-      const parts: string[] = [];
-      let buffer = "";
-      for (const line of rawParts) {
-        if (buffer && (buffer.length + line.length > 350 || buffer.endsWith("?") || buffer.endsWith("!"))) {
-          parts.push(buffer);
-          buffer = line;
-        } else {
-          buffer = buffer ? `${buffer}\n${line}` : line;
+      // Se ficou tudo em 1 bloco e é grande, quebra por frases
+      if (parts.length === 1 && parts[0].length > 200) {
+        const sentences: string[] = [];
+        let buf = "";
+        for (const seg of parts[0].split(/(?<=[.!?])\s+/)) {
+          if (buf && buf.length + seg.length > 200) {
+            sentences.push(buf.trim());
+            buf = seg;
+          } else {
+            buf = buf ? `${buf} ${seg}` : seg;
+          }
         }
+        if (buf) sentences.push(buf.trim());
+        if (sentences.length > 1) parts = sentences;
       }
-      if (buffer) parts.push(buffer);
 
       let lastSendJson = {};
       for (let i = 0; i < parts.length; i++) {
@@ -262,19 +266,20 @@ Deno.serve(async () => {
       }
 
       // Log completo: entrada, resposta e contexto RAG
-      try {
-        await supabase.from("ai_logs").insert({
-          instance_name: instanceName,
-          phone,
-          remote_jid: remoteJid,
-          user_message: messageText,
-          ai_response: aiResponse,
-          rag_context: ragContext || null,
-          rag_base: ragContext ? ragSearchName : null,
-          model: "gpt-4o-mini",
-          parts_sent: parts.length,
-        });
-      } catch (_) { /* log falhou, não bloqueia fluxo */ }
+      const { error: logErr } = await supabase.from("ai_logs").insert({
+        instance_name: instanceName,
+        phone,
+        remote_jid: remoteJid,
+        user_message: messageText,
+        ai_response: aiResponse,
+        rag_context: ragContext || null,
+        rag_base: ragContext ? ragSearchName : null,
+        model: "gpt-4o-mini",
+        parts_sent: parts.length,
+      });
+      if (logErr) {
+        await log(supabase, "ai_log_error", { instance: instanceName, details: logErr.message });
+      }
 
       // Salva histórico
       await supabase.from("ai_conversation_history").insert([
