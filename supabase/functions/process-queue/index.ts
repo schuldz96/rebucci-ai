@@ -6,7 +6,7 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 async function searchVectorstore(
   supabase: ReturnType<typeof createClient>,
   openaiToken: string,
-  instanceName: string,
+  baseNames: string[],
   query: string,
 ): Promise<string> {
   try {
@@ -20,17 +20,24 @@ async function searchVectorstore(
     const queryEmbedding: number[] = embJson.data?.[0]?.embedding;
     if (!queryEmbedding) return "";
 
-    const { data: matches } = await supabase.rpc("match_documents", {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.3,
-      match_count: 5,
-      p_instance_name: instanceName,
-    });
+    // Busca em todas as bases configuradas, 10 resultados no total
+    const allMatches: { content: string; similarity: number; instance_name: string }[] = [];
+    for (const baseName of baseNames) {
+      const { data: matches } = await supabase.rpc("match_documents", {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.25,
+        match_count: 10,
+        p_instance_name: baseName,
+      });
+      if (matches) allMatches.push(...(matches as { content: string; similarity: number; instance_name: string }[]));
+    }
 
-    if (!matches || matches.length === 0) return "";
+    if (allMatches.length === 0) return "";
 
-    return (matches as { content: string; similarity: number }[])
-      .map((m, i) => `[Trecho ${i + 1}] ${m.content.slice(0, 800)}`)
+    // Ordena por similaridade e pega top 10
+    allMatches.sort((a, b) => b.similarity - a.similarity);
+    return allMatches.slice(0, 10)
+      .map((m, i) => `[Trecho ${i + 1}] ${m.content.slice(0, 1200)}`)
       .join("\n\n");
   } catch {
     return "";
@@ -167,14 +174,31 @@ Deno.serve(async () => {
         continue;
       }
 
-      // Usa rag_base_id do agente se configurado; caso contrário usa instanceName
-      const ragSearchName = agentConfig.rag_enabled && agentConfig.rag_base_id
-        ? String(agentConfig.rag_base_id).replace(/^rag-/, "")
-        : instanceName;
+      // Busca todas as bases com embeddings para este agente
+      const ragBaseNames: string[] = [];
+      if (agentConfig.rag_enabled) {
+        // Base principal configurada no agente
+        if (agentConfig.rag_base_id) {
+          ragBaseNames.push(String(agentConfig.rag_base_id).replace(/^rag-/, ""));
+        }
+        // Busca todas as bases com status "done" ou "processing" (parcialmente pronta)
+        const { data: allBases } = await supabase
+          .from("vectorstore_status")
+          .select("instance_name")
+          .in("status", ["done", "processing"]);
+        if (allBases) {
+          for (const b of allBases) {
+            if (!ragBaseNames.includes(b.instance_name)) ragBaseNames.push(b.instance_name);
+          }
+        }
+      }
+      const ragSearchName = ragBaseNames[0] || instanceName;
 
       // RAG e histórico em paralelo
       const [ragContext, conversationHistory] = await Promise.all([
-        searchVectorstore(supabase, tokenRow.token, ragSearchName, messageText),
+        ragBaseNames.length > 0
+          ? searchVectorstore(supabase, tokenRow.token, ragBaseNames, messageText)
+          : Promise.resolve(""),
         fetchConversationHistory(supabase, instanceName, phone),
       ]);
 
