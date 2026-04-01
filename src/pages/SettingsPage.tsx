@@ -1038,27 +1038,14 @@ const SettingsPage = () => {
       if (csvCancelled) {
         setCsvStatus(`⚠️ Cancelado. ${totalChunks} chunks salvos.`);
       } else {
-        // ── Dispara geração de embeddings no servidor (fire-and-forget) ───────
+        // ── Registra status e aguarda pg_cron processar os embeddings ─────────
         const now = new Date().toISOString();
         await supabase.from("vectorstore_status").upsert(
-          { instance_name: baseName, status: "processing", last_run: now, updated_at: now },
+          { instance_name: baseName, status: "processing", total_chunks: totalChunks, embedded: 0, last_run: now, updated_at: now },
           { onConflict: "instance_name" }
         );
         await loadVsStatus();
         setCsvStatus(`✅ ${totalChunks} chunks salvos. Embeddings sendo gerados em background…`);
-
-        // Chama a edge function uma única vez — ela faz o loop internamente
-        // Não aguardamos a resposta (fire-and-forget) para não bloquear a UI
-        supabase.functions.invoke("generate-embeddings", {
-          body: { instance_name: baseName },
-        }).then(({ data, error }) => {
-          if (error || data?.error) {
-            supabase.from("vectorstore_status").upsert(
-              { instance_name: baseName, status: "error", error_message: error?.message ?? data?.error, updated_at: new Date().toISOString() },
-              { onConflict: "instance_name" }
-            );
-          }
-        });
       }
 
       setCsvFile(null);

@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const BATCH_SIZE = 50; // chunks por chamada à OpenAI
+const BATCH_SIZE = 50;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -16,12 +16,30 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { instance_name } = await req.json();
-    if (!instance_name) {
-      return json({ error: "instance_name obrigatório" }, 400);
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Lê instance_name do body (opcional — se não fornecido, busca qualquer base pendente)
+    let instance_name: string | null = null;
+    try {
+      const body = await req.json();
+      instance_name = body?.instance_name ?? null;
+    } catch { /* body vazio ok */ }
+
+    // Se não veio instance_name, busca a próxima base com status "processing"
+    if (!instance_name) {
+      const { data: pending } = await supabase
+        .from("vectorstore_status")
+        .select("instance_name")
+        .eq("status", "processing")
+        .limit(1)
+        .maybeSingle();
+
+      if (!pending) {
+        // Nada a processar
+        return json({ done: true, message: "Nenhuma base pendente" });
+      }
+      instance_name = pending.instance_name;
+    }
 
     // Busca token OpenAI
     const { data: tokenRow } = await supabase
@@ -66,7 +84,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: fetchErr.message });
     }
 
-    // Sem mais chunks — concluído
+    // Sem mais chunks pendentes — concluído
     if (!chunks || chunks.length === 0) {
       await supabase.from("vectorstore_status").upsert(
         { instance_name, total_chunks: totalChunks, embedded: totalChunks, status: "done", updated_at: new Date().toISOString() },
@@ -110,7 +128,7 @@ Deno.serve(async (req: Request) => {
     const newEmbedded = embedded + chunks.length;
     const remaining = totalChunks - newEmbedded;
 
-    // Atualiza status de progresso
+    // Atualiza status — pg_cron vai chamar novamente se ainda houver pendentes
     await supabase.from("vectorstore_status").upsert(
       {
         instance_name,
@@ -121,20 +139,6 @@ Deno.serve(async (req: Request) => {
       },
       { onConflict: "instance_name" }
     );
-
-    // Se ainda há chunks, auto-invoca a próxima rodada (fire-and-forget)
-    // Cada chamada processa 50 chunks — sem timeout de loop longo
-    if (remaining > 0) {
-      fetch(`${supabaseUrl}/functions/v1/generate-embeddings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabaseServiceKey}`,
-          "apikey": supabaseServiceKey,
-        },
-        body: JSON.stringify({ instance_name }),
-      }).catch(() => {}); // fire-and-forget
-    }
 
     return json({
       done: remaining <= 0,
