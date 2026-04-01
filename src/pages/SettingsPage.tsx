@@ -5,6 +5,7 @@ import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
   Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2, Pencil, X,
   Plus, Trash2, Shield, Tag, ChevronDown, Building2, Facebook, Kanban, GripVertical, Key,
+  ScrollText, ChevronUp, ChevronRight, Database,
 } from "lucide-react";
 import { usePipelineStore } from "@/store/pipelineStore";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ const SUPABASE_URL = "https://urrbpxrtdzurfdsucukb.supabase.co";
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
 type SettingsSection = "general" | "users" | "pipelines" | "properties" | "tokens" | "evolution" | "meta" | "prime";
-type EvoTab = "config" | "instances" | "rag";
+type EvoTab = "config" | "instances" | "rag" | "logs";
 type UserTab = "users" | "teams";
 type ModalType = null | "user" | "team" | "perm" | "preset";
 
@@ -516,6 +517,20 @@ const SettingsPage = () => {
   const [csvStatus, setCsvStatus] = useState<string | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
 
+  // AI Logs state
+  interface AiLog { id: string; instance_name: string; phone: string; user_message: string; ai_response: string; rag_context: string | null; rag_base: string | null; model: string; parts_sent: number; created_at: string; }
+  const [aiLogs, setAiLogs] = useState<AiLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [logsFilter, setLogsFilter] = useState("");
+
+  const loadAiLogs = useCallback(async () => {
+    setLogsLoading(true);
+    const { data } = await supabase.from("ai_logs").select("*").order("created_at", { ascending: false }).limit(50);
+    if (data) setAiLogs(data as AiLog[]);
+    setLogsLoading(false);
+  }, []);
+
   // Users section state
   const [userTab, setUserTab] = useState<UserTab>("users");
   const [userSearch, setUserSearch] = useState("");
@@ -684,6 +699,7 @@ const SettingsPage = () => {
       loadInstances();
     }
     if (evoTab === "rag") { loadRagJobs(); loadVsStatus(); }
+    if (evoTab === "logs") { loadAiLogs(); }
   }, [evoTab, isConfigured]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Polling: atualiza status das bases a cada 3s enquanto houver alguma "processando"
@@ -1420,7 +1436,7 @@ const SettingsPage = () => {
 
             {/* Tabs */}
             <div className="flex gap-1 border-b border-border">
-              {([{ id: "config" as const, label: "Configuração" }, { id: "instances" as const, label: "Instâncias" }, { id: "rag" as const, label: "RAG / Histórico" }]).map((t) => (
+              {([{ id: "config" as const, label: "Configuração" }, { id: "instances" as const, label: "Instâncias" }, { id: "rag" as const, label: "RAG / Histórico" }, { id: "logs" as const, label: "Logs IA" }]).map((t) => (
                 <button key={t.id} onClick={() => setEvoTab(t.id)}
                   className={cn("px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px",
                     evoTab === t.id ? "text-primary border-primary font-medium" : "text-muted-foreground border-transparent hover:text-foreground"
@@ -1745,6 +1761,94 @@ const SettingsPage = () => {
                     </div>
                   )}
                 </div>
+              </motion.div>
+            )}
+
+            {/* ── Logs IA ── */}
+            {evoTab === "logs" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ScrollText className="w-5 h-5 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">Logs de Conversação IA</h2>
+                  </div>
+                  <button onClick={loadAiLogs} disabled={logsLoading}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50">
+                    <RefreshCw className={cn("w-3 h-3", logsLoading && "animate-spin")} /> Atualizar
+                  </button>
+                </div>
+
+                {/* Filtro */}
+                <div className="relative max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input value={logsFilter} onChange={(e) => setLogsFilter(e.target.value)} placeholder="Filtrar por telefone ou instância..." className={cn(inputCls, "pl-9")} />
+                </div>
+
+                {logsLoading && <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+
+                {!logsLoading && aiLogs.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground text-sm">Nenhum log encontrado. Logs aparecem quando a IA responde mensagens.</div>
+                )}
+
+                {!logsLoading && aiLogs.filter((l) => !logsFilter || l.phone.includes(logsFilter) || l.instance_name.toLowerCase().includes(logsFilter.toLowerCase())).map((log) => {
+                  const isExpanded = expandedLog === log.id;
+                  const time = new Date(log.created_at);
+                  const timeStr = time.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+                  return (
+                    <div key={log.id} className="surface-elevated border border-border rounded-xl overflow-hidden">
+                      {/* Header clicável */}
+                      <button onClick={() => setExpandedLog(isExpanded ? null : log.id)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/30 transition-colors">
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{log.instance_name}</span>
+                            <span className="text-xs text-muted-foreground font-mono">{log.phone}</span>
+                            <span className="text-[10px] text-muted-foreground">{timeStr}</span>
+                            {log.rag_base && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center gap-1">
+                                <Database className="w-2.5 h-2.5" /> {log.rag_base}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">{log.parts_sent} msg</span>
+                          </div>
+                          <p className="text-sm text-foreground truncate mt-0.5">{log.user_message}</p>
+                        </div>
+                      </button>
+
+                      {/* Conteúdo expandido */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+                          {/* Mensagem do usuário */}
+                          <div>
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Entrada do usuário</p>
+                            <div className="p-3 rounded-lg bg-secondary/50 text-sm text-foreground whitespace-pre-wrap">{log.user_message}</div>
+                          </div>
+
+                          {/* Resposta da IA */}
+                          <div>
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Resposta da IA <span className="text-muted-foreground font-normal">({log.model} · {log.parts_sent} parte{log.parts_sent > 1 ? "s" : ""})</span></p>
+                            <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 text-sm text-foreground whitespace-pre-wrap">{log.ai_response}</div>
+                          </div>
+
+                          {/* Contexto RAG */}
+                          {log.rag_context && (
+                            <div>
+                              <p className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <Database className="w-3 h-3" /> Contexto RAG utilizado <span className="text-muted-foreground font-normal">(base: {log.rag_base})</span>
+                              </p>
+                              <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-xs text-muted-foreground whitespace-pre-wrap max-h-48 overflow-auto">{log.rag_context}</div>
+                            </div>
+                          )}
+
+                          {!log.rag_context && (
+                            <p className="text-xs text-muted-foreground italic">Nenhum contexto RAG foi utilizado nesta resposta.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </motion.div>
             )}
           </div>

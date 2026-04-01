@@ -187,7 +187,6 @@ Deno.serve(async () => {
         promptParts.push(
           `\n\nCONTEXTO RELEVANTE DO HISTÓRICO DE ATENDIMENTOS:\n${ragContext}\n\nUse o contexto acima para embasar sua resposta quando relevante.`
         );
-        await log(supabase, "rag_context_found", { instance: instanceName, jid: remoteJid, details: `${ragContext.length} chars` });
       }
 
       const systemPrompt = promptParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda em português.";
@@ -227,8 +226,21 @@ Deno.serve(async () => {
         await new Promise((r) => setTimeout(r, typingSeconds * 1000));
       }
 
-      // Divide a resposta em partes (quebra por linha em branco)
-      const parts = aiResponse.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
+      // Divide a resposta em partes naturais para envio em múltiplas mensagens
+      const rawParts = aiResponse.split(/\n/).map((p) => p.trim()).filter((p) => p.length > 0);
+
+      // Agrupa linhas curtas consecutivas (ex: listas) e quebra blocos grandes por frase
+      const parts: string[] = [];
+      let buffer = "";
+      for (const line of rawParts) {
+        if (buffer && (buffer.length + line.length > 350 || buffer.endsWith("?") || buffer.endsWith("!"))) {
+          parts.push(buffer);
+          buffer = line;
+        } else {
+          buffer = buffer ? `${buffer}\n${line}` : line;
+        }
+      }
+      if (buffer) parts.push(buffer);
 
       let lastSendJson = {};
       for (let i = 0; i < parts.length; i++) {
@@ -249,12 +261,18 @@ Deno.serve(async () => {
         lastSendJson = await res.json().catch(() => ({}));
       }
 
-      await log(supabase, "sent", {
-        instance: instanceName,
-        jid: remoteJid,
-        msg: aiResponse.slice(0, 200),
-        details: JSON.stringify(lastSendJson).slice(0, 300),
-      });
+      // Log completo: entrada, resposta e contexto RAG
+      await supabase.from("ai_logs").insert({
+        instance_name: instanceName,
+        phone,
+        remote_jid: remoteJid,
+        user_message: messageText,
+        ai_response: aiResponse,
+        rag_context: ragContext || null,
+        rag_base: ragContext ? ragSearchName : null,
+        model: "gpt-4o-mini",
+        parts_sent: parts.length,
+      }).catch(() => {});
 
       // Salva histórico
       await supabase.from("ai_conversation_history").insert([
