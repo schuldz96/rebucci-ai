@@ -506,6 +506,7 @@ const SettingsPage = () => {
 
   // CSV upload state
   const [csvInstance, setCsvInstance] = useState("");
+  const [csvBaseName, setCsvBaseName] = useState("");
   const [csvMode, setCsvMode] = useState<"faq" | "whatsapp">("faq");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvPreview, setCsvPreview] = useState<string[][]>([]);
@@ -894,7 +895,8 @@ const SettingsPage = () => {
   };
 
   const handleProcessCsv = async () => {
-    if (!csvFile || !csvInstance) return;
+    const baseName = csvBaseName.trim();
+    if (!csvFile || !baseName) return;
     setCsvLoading(true);
     csvCancelRef.current = false;
     setCsvStatus("Lendo arquivo...");
@@ -908,7 +910,7 @@ const SettingsPage = () => {
 
       // Cria job
       const { data: job } = await supabase.from("rag_jobs").insert({
-        instance_name: csvInstance,
+        instance_name: baseName,
         message_limit: dataRows.length,
         status: "processing",
       }).select().single();
@@ -937,7 +939,7 @@ const SettingsPage = () => {
 
           pending.push({
             job_id: job.id,
-            instance_name: csvInstance,
+            instance_name: baseName,
             chat_id: `faq-${i}`,
             contact_name: "FAQ",
             content,
@@ -979,7 +981,7 @@ const SettingsPage = () => {
 
         const flushShortConvs = () => {
           if (shortConvBuffer.length === 0) return;
-          pending.push({ job_id: job.id, instance_name: csvInstance, chat_id: `short-convs-${totalChunks}`, contact_name: "múltiplos contatos", content: shortConvBuffer.join("\n\n---\n\n"), message_count: shortConvBuffer.length, chunk_index: totalChunks });
+          pending.push({ job_id: job.id, instance_name: baseName, chat_id: `short-convs-${totalChunks}`, contact_name: "múltiplos contatos", content: shortConvBuffer.join("\n\n---\n\n"), message_count: shortConvBuffer.length, chunk_index: totalChunks });
           shortConvBuffer.length = 0;
           totalChunks++;
         };
@@ -994,7 +996,7 @@ const SettingsPage = () => {
             for (let start = 0; start < lines.length; start += MAX_MSGS_PER_CHUNK) {
               const slice = lines.slice(start, start + MAX_MSGS_PER_CHUNK);
               const chunkIdx = Math.floor(start / MAX_MSGS_PER_CHUNK);
-              pending.push({ job_id: job.id, instance_name: csvInstance, chat_id: jid, contact_name: phone, content: `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`, message_count: slice.length, chunk_index: totalChunks });
+              pending.push({ job_id: job.id, instance_name: baseName, chat_id: jid, contact_name: phone, content: `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`, message_count: slice.length, chunk_index: totalChunks });
               totalChunks++;
             }
           }
@@ -1017,10 +1019,10 @@ const SettingsPage = () => {
       await supabase.from("rag_jobs").update({ status: csvCancelled ? "cancelled" : "done", total_messages: dataRows.length, total_chunks: totalChunks, updated_at: new Date().toISOString() }).eq("id", job.id);
 
       // Atualiza rag_bases
-      const { data: existing } = await supabase.from("rag_bases").select("document_count").eq("id", `rag-${csvInstance}`).maybeSingle();
+      const { data: existing } = await supabase.from("rag_bases").select("document_count").eq("id", `rag-${baseName}`).maybeSingle();
       const prevChunks = existing?.document_count ?? 0;
       await supabase.from("rag_bases").upsert(
-        { id: `rag-${csvInstance}`, name: csvMode === "faq" ? `FAQ ${csvInstance}` : `Histórico ${csvInstance}`, origin: csvMode === "faq" ? "faq" : "whatsapp", document_count: prevChunks + totalChunks },
+        { id: `rag-${baseName}`, name: baseName, origin: "faq", document_count: prevChunks + totalChunks },
         { onConflict: "id" }
       );
 
@@ -1031,7 +1033,7 @@ const SettingsPage = () => {
         setCsvStatus(`✅ ${totalChunks} chunks salvos. Gerando embeddings...`);
         const now = new Date().toISOString();
         await supabase.from("vectorstore_status").upsert(
-          { instance_name: csvInstance, status: "processing", last_run: now, updated_at: now },
+          { instance_name: baseName, status: "processing", last_run: now, updated_at: now },
           { onConflict: "instance_name" }
         );
         await loadVsStatus();
@@ -1039,7 +1041,7 @@ const SettingsPage = () => {
         let embeddedCount = 0;
         while (true) {
           const { data: embData, error: embErr } = await supabase.functions.invoke("generate-embeddings", {
-            body: { instance_name: csvInstance },
+            body: { instance_name: baseName },
           });
           if (embErr || embData?.error) {
             setCsvStatus(`⚠️ Chunks salvos mas embeddings falharam: ${embErr?.message ?? embData?.error}`);
@@ -1064,6 +1066,14 @@ const SettingsPage = () => {
       setCsvStatus(`❌ Erro: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
     }
     setCsvLoading(false);
+  };
+
+  const handleDeleteBase = async (baseName: string) => {
+    if (!confirm(`Remover a base "${baseName}" e todos os seus chunks?`)) return;
+    await supabase.from("rag_chunks").delete().eq("instance_name", baseName);
+    await supabase.from("rag_bases").delete().eq("id", `rag-${baseName}`);
+    await supabase.from("vectorstore_status").delete().eq("instance_name", baseName);
+    loadVsStatus();
   };
 
   // Carrega dados da seção de usuários
@@ -1611,175 +1621,29 @@ const SettingsPage = () => {
                 <div className="surface-elevated p-6 space-y-3">
                   <div className="flex items-center gap-2">
                     <Brain className="w-5 h-5 text-primary" />
-                    <h2 className="text-base font-semibold text-foreground">Base de Conhecimento (RAG)</h2>
+                    <h2 className="text-base font-semibold text-foreground">Vector Store</h2>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Processa o histórico de conversas do WhatsApp, divide em chunks estruturados e salva no banco para uso por IAs.
+                    Suba um CSV com perguntas e respostas. A IA usará essa base para responder com mais precisão.
                   </p>
-                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                    <span>📥 Busca chats</span><span>💬 Amostra mensagens</span><span>✂️ Divide em chunks</span><span>💾 Salva no banco</span>
-                  </div>
                 </div>
 
+                {/* ── Nova base ── */}
                 <div className="surface-elevated p-6 space-y-4">
-                  <h3 className="text-base font-semibold text-foreground">Gerar RAG</h3>
+                  <h3 className="text-base font-semibold text-foreground">Adicionar base</h3>
+
+                  {/* Nome da base */}
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Instância</label>
-                    <select value={ragInstance} onChange={(e) => setRagInstance(e.target.value)} className={inputCls}>
-                      <option value="">Selecione uma instância</option>
-                      {instances.map((i) => (
-                        <option key={i.instance.instanceName} value={i.instance.instanceName}>
-                          {i.instance.instanceName} {i.instance.status === "open" ? "🟢" : "🔴"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">
-                      Limite de mensagens
-                      <span className="text-xs text-muted-foreground ml-2">(distribuído entre as conversas)</span>
-                    </label>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Nome da base</label>
                     <input
-                      type="number"
-                      value={ragMessageLimit}
-                      onChange={(e) => setRagMessageLimit(Math.max(1, parseInt(e.target.value) || 1))}
-                      min={100}
-                      max={1000000}
-                      step={1000}
+                      value={csvBaseName}
+                      onChange={(e) => setCsvBaseName(e.target.value)}
+                      placeholder="Ex: faq-geral, produtos, objecoes..."
                       className={inputCls}
-                      placeholder="Ex: 10000"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Suporta até 1.000.000 mensagens. Cada chunk contém ~50 mensagens.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Frequência</label>
-                    <div className="flex gap-3">
-                      {(["once", "daily"] as const).map((f) => (
-                        <button key={f} onClick={() => setRagFreq(f)}
-                          className={cn("flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors",
-                            ragFreq === f ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-secondary"
-                          )}>
-                          {f === "once" ? "⚡ Gerar uma vez" : "📅 Gerar diariamente"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button onClick={handleGenerateRag} disabled={ragLoading || !ragInstance}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                      {ragLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "▶"} Gerar RAG
-                    </button>
-                    {ragLoading && (
-                      <button onClick={() => { ragCancelRef.current = true; }}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-destructive text-destructive text-sm font-medium hover:bg-destructive/10 transition-colors">
-                        <X className="w-4 h-4" /> Cancelar
-                      </button>
-                    )}
-                  </div>
-                  {ragStatus && <p className="text-sm text-foreground">{ragStatus}</p>}
-                </div>
-
-                {/* Jobs histórico */}
-                {ragJobs.length > 0 && (
-                  <div className="surface-elevated p-6 space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">Histórico de gerações</h3>
-                    <div className="space-y-2">
-                      {ragJobs.map((job) => (
-                        <div key={job.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 border border-border text-sm">
-                          <div>
-                            <p className="font-medium text-foreground">{job.instance_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {job.total_messages?.toLocaleString() ?? "—"} msgs • {job.total_chunks ?? "—"} chunks
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              <span className={cn("text-xs px-2 py-1 rounded-full font-medium",
-                                job.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
-                                  job.status === "cancelled" ? "bg-yellow-500/20 text-yellow-500" :
-                                    job.status === "error" ? "bg-destructive/20 text-destructive" :
-                                      "bg-primary/20 text-primary"
-                              )}>{job.status}</span>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(job.created_at).toLocaleDateString("pt-BR")}
-                              </p>
-                            </div>
-                            {job.status === "processing" && (
-                              <button
-                                onClick={() => handleCancelJob(job.id)}
-                                title="Pausar processamento"
-                                className="p-1.5 rounded-lg hover:bg-yellow-500/20 text-yellow-500 transition-colors"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteJob(job.id)}
-                              title="Excluir job e chunks"
-                              className="p-1.5 rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Upload CSV ── */}
-                <div className="surface-elevated p-6 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Plus className="w-5 h-5 text-primary" />
-                    <h2 className="text-base font-semibold text-foreground">Upload de Base de Conhecimento (CSV)</h2>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Faça upload de um CSV com FAQs, scripts, produtos ou qualquer conteúdo. Cada linha vira um dado no RAG da instância.
-                  </p>
-                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                    <span>📄 CSV (vírgula, ponto-vírgula ou tab)</span><span>🔤 UTF-8</span><span>📦 50 linhas por chunk</span>
-                  </div>
-                </div>
-
-                <div className="surface-elevated p-6 space-y-4">
-                  {/* Modo de processamento */}
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Tipo de conteúdo</label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setCsvMode("faq")}
-                        className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${csvMode === "faq" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}
-                      >
-                        📋 FAQ / Perguntas e Respostas
-                      </button>
-                      <button
-                        onClick={() => setCsvMode("whatsapp")}
-                        className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${csvMode === "whatsapp" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}
-                      >
-                        💬 Histórico WhatsApp
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      {csvMode === "faq"
-                        ? "Cada linha do CSV vira um chunk. Embeddings gerados automaticamente."
-                        : "Mensagens agrupadas por contato. Ideal para histórico exportado do WhatsApp."}
-                    </p>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Instância de destino</label>
-                    <select value={csvInstance} onChange={(e) => setCsvInstance(e.target.value)} className={inputCls}>
-                      <option value="">Selecione uma instância</option>
-                      {instances.map((i) => (
-                        <option key={i.instance.instanceName} value={i.instance.instanceName}>
-                          {i.instance.instanceName} {i.instance.status === "open" ? "🟢" : "🔴"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
+                  {/* Upload CSV */}
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1.5 block">Arquivo CSV</label>
                     <div
@@ -1793,45 +1657,19 @@ const SettingsPage = () => {
                       {csvFile ? (
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-foreground">📄 {csvFile.name}</p>
-                          <p className="text-xs text-muted-foreground">{(csvFile.size / 1024).toFixed(1)} KB</p>
+                          <p className="text-xs text-muted-foreground">{(csvFile.size / 1024).toFixed(1)} KB · {(csvPreview.length - 1)} linhas</p>
                         </div>
                       ) : (
                         <div className="space-y-1">
                           <p className="text-sm text-muted-foreground">Arraste um CSV aqui ou clique para selecionar</p>
-                          <p className="text-xs text-muted-foreground">Separadores suportados: vírgula, ponto-vírgula, tab</p>
+                          <p className="text-xs text-muted-foreground">Separadores: vírgula, ponto-vírgula ou tab</p>
                         </div>
                       )}
                     </div>
                   </div>
 
+                  {/* Seletor de colunas */}
                   {csvPreview.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Pré-visualização (primeiras 5 linhas)</p>
-                      <div className="overflow-x-auto rounded-xl border border-border">
-                        <table className="text-xs w-full">
-                          <thead>
-                            <tr className="border-b border-border bg-secondary/50">
-                              {csvPreview[0]?.map((h, i) => (
-                                <th key={i} className="px-3 py-2 text-left font-medium text-foreground">{h || `Coluna ${i + 1}`}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {csvPreview.slice(1).map((row, ri) => (
-                              <tr key={ri} className="border-b border-border last:border-0">
-                                {row.map((cell, ci) => (
-                                  <td key={ci} className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{cell}</td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Seletor de colunas — só no modo FAQ com arquivo carregado */}
-                  {csvMode === "faq" && csvPreview.length > 0 && (
                     <div className="space-y-3 p-4 rounded-xl bg-secondary/50 border border-border">
                       <p className="text-xs font-semibold text-foreground">Selecionar colunas</p>
                       <div className="grid grid-cols-2 gap-3">
@@ -1839,24 +1677,20 @@ const SettingsPage = () => {
                           <label className="text-xs text-muted-foreground mb-1 block">Coluna de Pergunta</label>
                           <select value={csvColPergunta} onChange={(e) => setCsvColPergunta(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
                             <option value="">— nenhuma —</option>
-                            {(csvPreview[0] ?? []).map((h) => (
-                              <option key={h} value={h}>{h}</option>
-                            ))}
+                            {(csvPreview[0] ?? []).map((h) => <option key={h} value={h}>{h}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground mb-1 block">Coluna de Resposta</label>
                           <select value={csvColResposta} onChange={(e) => setCsvColResposta(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
                             <option value="">— nenhuma —</option>
-                            {(csvPreview[0] ?? []).map((h) => (
-                              <option key={h} value={h}>{h}</option>
-                            ))}
+                            {(csvPreview[0] ?? []).map((h) => <option key={h} value={h}>{h}</option>)}
                           </select>
                         </div>
                       </div>
                       {csvColPergunta && csvColResposta && csvPreview[1] && (
                         <div className="text-xs text-muted-foreground p-2 rounded-lg bg-background border border-border space-y-0.5">
-                          <p className="text-foreground font-medium">Prévia do chunk:</p>
+                          <p className="text-foreground font-medium text-[11px]">Prévia do chunk:</p>
                           <p><span className="text-primary">P:</span> {csvPreview[1][csvPreview[0].indexOf(csvColPergunta)] ?? "—"}</p>
                           <p><span className="text-primary">R:</span> {csvPreview[1][csvPreview[0].indexOf(csvColResposta)] ?? "—"}</p>
                         </div>
@@ -1864,90 +1698,63 @@ const SettingsPage = () => {
                     </div>
                   )}
 
-                  <button onClick={handleProcessCsv} disabled={csvLoading || !csvFile || !csvInstance}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-                    {csvLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    {csvLoading ? "Processando…" : csvMode === "faq" ? "Processar FAQ e Gerar Vector Store" : "Processar e Salvar no RAG"}
-                  </button>
-                  {csvStatus && <p className="text-sm text-foreground">{csvStatus}</p>}
-                </div>
-
-                {/* ── Vectorstore ── */}
-                <div className="surface-elevated p-6 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-primary" />
-                    <h2 className="text-base font-semibold text-foreground">Vectorstore (Busca Semântica)</h2>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Gera embeddings dos chunks via OpenAI e habilita busca por similaridade semântica. Um vectorstore por instância.
-                  </p>
-                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                    <span>🔑 Token OpenAI</span><span>🧮 text-embedding-3-small</span><span>📐 1536 dimensões</span><span>🔍 HNSW cosine</span>
-                  </div>
-                </div>
-
-                <div className="surface-elevated p-6 space-y-4">
-                  <h3 className="text-base font-semibold text-foreground">Gerar Embeddings</h3>
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Instância</label>
-                    <select value={vsInstance} onChange={(e) => setVsInstance(e.target.value)} className={inputCls}>
-                      <option value="">Selecione uma instância</option>
-                      {instances.map((i) => (
-                        <option key={i.instance.instanceName} value={i.instance.instanceName}>
-                          {i.instance.instanceName} {i.instance.status === "open" ? "🟢" : "🔴"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
                   <button
-                    onClick={handleGenerateEmbeddings}
-                    disabled={vsLoading || !vsInstance}
+                    onClick={handleProcessCsv}
+                    disabled={csvLoading || !csvFile || !csvBaseName.trim()}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                   >
-                    {vsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    {vsLoading ? "Gerando embeddings…" : "Gerar Embeddings"}
+                    {csvLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    {csvLoading ? "Processando…" : "Gerar Vector Store"}
                   </button>
-                  <p className="text-xs text-muted-foreground">
-                    Processa apenas chunks sem embedding. Pode ser executado novamente para novos chunks.
-                  </p>
-                </div>
+                  {csvStatus && (
+                    <p className={`text-sm ${csvStatus.startsWith("❌") ? "text-destructive" : csvStatus.startsWith("⚠️") ? "text-warning" : "text-foreground"}`}>
+                      {csvStatus}
+                    </p>
+                  )}
 
-                {/* Status por instância */}
-                {vsStatuses.length > 0 && (
-                  <div className="surface-elevated p-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-foreground">Status por instância</h3>
-                      <button onClick={loadVsStatus} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                        <RefreshCw className="w-3 h-3" /> Atualizar
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {vsStatuses.map((vs) => {
-                        const pct = vs.total_chunks > 0 ? Math.round((vs.embedded / vs.total_chunks) * 100) : 0;
-                        return (
-                          <div key={vs.instance_name} className="space-y-1.5">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium text-foreground">{vs.instance_name}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">{vs.embedded.toLocaleString()} / {vs.total_chunks.toLocaleString()} chunks</span>
-                                <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium",
-                                  vs.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
-                                  vs.status === "processing" ? "bg-primary/20 text-primary" :
-                                  vs.status === "error" ? "bg-destructive/20 text-destructive" :
-                                  "bg-secondary text-muted-foreground"
-                                )}>{vs.status === "done" ? "✓ Pronto" : vs.status === "processing" ? "⚙ Processando" : vs.status === "error" ? "✗ Erro" : "idle"}</span>
+                  {/* Histórico de bases */}
+                  {vsStatuses.length > 0 && (
+                    <div className="pt-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bases existentes</p>
+                        <button onClick={loadVsStatus} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3" /> Atualizar
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {vsStatuses.map((vs) => {
+                          const pct = vs.total_chunks > 0 ? Math.round((vs.embedded / vs.total_chunks) * 100) : 0;
+                          return (
+                            <div key={vs.instance_name} className="p-3 rounded-xl bg-secondary border border-border space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-foreground">{vs.instance_name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">{vs.embedded.toLocaleString()} chunks</span>
+                                  <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                    vs.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
+                                    vs.status === "processing" ? "bg-primary/20 text-primary" :
+                                    "bg-destructive/20 text-destructive"
+                                  )}>
+                                    {vs.status === "done" ? "✓ Pronto" : vs.status === "processing" ? "⚙ Processando" : "✗ Erro"}
+                                  </span>
+                                  <button onClick={() => handleDeleteBase(vs.instance_name)} className="text-muted-foreground hover:text-destructive transition-colors" title="Remover base">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
+                              {vs.status !== "done" && vs.total_chunks > 0 && (
+                                <div className="w-full h-1 rounded-full bg-background overflow-hidden">
+                                  <div className={cn("h-full rounded-full transition-all", vs.status === "done" ? "bg-emerald-500" : "bg-primary")} style={{ width: `${pct}%` }} />
+                                </div>
+                              )}
+                              {vs.error_message && <p className="text-xs text-destructive">{vs.error_message}</p>}
                             </div>
-                            <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
-                              <div className={cn("h-full rounded-full transition-all", vs.status === "done" ? "bg-emerald-500" : vs.status === "error" ? "bg-destructive" : "bg-primary")} style={{ width: `${pct}%` }} />
-                            </div>
-                            {vs.error_message && <p className="text-xs text-destructive">{vs.error_message}</p>}
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </motion.div>
             )}
           </div>

@@ -167,9 +167,14 @@ Deno.serve(async () => {
         continue;
       }
 
+      // Usa rag_base_id do agente se configurado; caso contrário usa instanceName
+      const ragSearchName = agentConfig.rag_enabled && agentConfig.rag_base_id
+        ? String(agentConfig.rag_base_id).replace(/^rag-/, "")
+        : instanceName;
+
       // RAG e histórico em paralelo
       const [ragContext, conversationHistory] = await Promise.all([
-        searchVectorstore(supabase, tokenRow.token, instanceName, messageText),
+        searchVectorstore(supabase, tokenRow.token, ragSearchName, messageText),
         fetchConversationHistory(supabase, instanceName, phone),
       ]);
 
