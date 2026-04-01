@@ -222,19 +222,33 @@ Deno.serve(async () => {
         await new Promise((r) => setTimeout(r, typingSeconds * 1000));
       }
 
-      // Envia a mensagem
-      const sendRes = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
-        body: JSON.stringify({ number: phone, text: aiResponse }),
-      });
-      const sendJson = await sendRes.json().catch(() => ({}));
+      // Divide a resposta em partes (quebra por linha em branco)
+      const parts = aiResponse.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
+
+      let lastSendJson = {};
+      for (let i = 0; i < parts.length; i++) {
+        // Typing proporcional ao tamanho da parte (mín 1s, máx 4s)
+        const partTyping = Math.min(4, Math.max(1, Math.round(parts[i].length / 60)));
+        await fetch(`${evoConfig.api_url}/chat/sendPresence/${sendInstance}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
+          body: JSON.stringify({ number: phone, presence: "composing", delay: partTyping * 1000 }),
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, partTyping * 1000));
+
+        const res = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
+          body: JSON.stringify({ number: phone, text: parts[i] }),
+        });
+        lastSendJson = await res.json().catch(() => ({}));
+      }
 
       await log(supabase, "sent", {
         instance: instanceName,
         jid: remoteJid,
         msg: aiResponse.slice(0, 200),
-        details: JSON.stringify(sendJson).slice(0, 300),
+        details: JSON.stringify(lastSendJson).slice(0, 300),
       });
 
       // Salva histórico
