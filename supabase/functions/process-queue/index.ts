@@ -145,7 +145,10 @@ Deno.serve(async () => {
         await supabase.from("response_queue")
           .update({ processed_at: new Date().toISOString() })
           .in("id", ids);
-        messageText = [messageText, ...pending.map((p: { message_text: string }) => p.message_text)].join("\n");
+        // Concatena mensagens pendentes, removendo duplicatas exatas
+        const allMsgs = [messageText, ...pending.map((p: { message_text: string }) => p.message_text)];
+        const uniqueMsgs = [...new Set(allMsgs)];
+        messageText = uniqueMsgs.join("\n");
       }
 
       // Token OpenAI
@@ -209,7 +212,7 @@ Deno.serve(async () => {
 
       if (ragContext) {
         promptParts.push(
-          `\n\nCONTEXTO RELEVANTE DO HISTÓRICO DE ATENDIMENTOS:\n${ragContext}\n\nUse o contexto acima para embasar sua resposta quando relevante.`
+          `\n\nCONTEXTO DA BASE DE CONHECIMENTO (RAG):\n${ragContext}\n\nIMPORTANTE: O histórico de conversa com este aluno (mensagens acima) tem PRIORIDADE sobre o RAG. Se o aluno acabou de dizer algo, responda no contexto da conversa atual. O RAG é referência complementar, não substitui a conversa em andamento.`
         );
       }
 

@@ -987,20 +987,36 @@ const SettingsPage = () => {
 
         setCsvStatus("Agrupando conversas por contato...");
 
-        // Agrupa mensagens por telefone
+        // Agrupa mensagens por telefone, filtra lixo
         const convMap = new Map<string, string[]>();
+        const msgFreq = new Map<string, number>(); // detecta mensagens repetidas (broadcast)
+
+        // Primeira passada: conta frequência de cada mensagem
+        for (const row of dataRows) {
+          const msg = (idxMsg >= 0 ? (row[idxMsg] ?? "") : "").trim();
+          if (msg) msgFreq.set(msg, (msgFreq.get(msg) ?? 0) + 1);
+        }
+
+        // Segunda passada: agrupa, ignorando mensagens que aparecem >50x (broadcast/spam)
+        let skippedSpam = 0;
         for (const row of dataRows) {
           const jid = idxJid >= 0 ? (row[idxJid] ?? "desconhecido") : "desconhecido";
           const fromMe = idxFromMe >= 0 ? (row[idxFromMe] ?? "") : "";
-          const msg = idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ");
-          if (!msg.trim()) continue;
+          const msg = (idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ")).trim();
+          if (!msg) continue;
+
+          // Filtra broadcast: mensagem idêntica enviada >50x
+          if ((msgFreq.get(msg) ?? 0) > 50) { skippedSpam++; continue; }
+          // Filtra JIDs que não são telefones reais (emojis, asteriscos, etc)
+          if (/[*️⃣🔢📸]/.test(jid) || jid.length < 8) { skippedSpam++; continue; }
+
           const fm = String(fromMe).toLowerCase().trim();
           const speaker = fm === "true" || fm === "1" || fm === "atendente" ? "Atendente" : "Aluno";
           if (!convMap.has(jid)) convMap.set(jid, []);
-          convMap.get(jid)!.push(`${speaker}: ${msg.trim()}`);
+          convMap.get(jid)!.push(`${speaker}: ${msg}`);
         }
 
-        setCsvStatus(`${convMap.size.toLocaleString()} contatos encontrados. Criando chunks...`);
+        setCsvStatus(`${convMap.size.toLocaleString()} contatos encontrados (${skippedSpam.toLocaleString()} msgs de broadcast filtradas). Criando chunks...`);
 
         const MSGS_PER_CHUNK = 25; // chunks menores = busca semântica mais precisa
         let processed = 0;
