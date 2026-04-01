@@ -506,6 +506,7 @@ const SettingsPage = () => {
 
   // CSV upload state
   const [csvInstance, setCsvInstance] = useState("");
+  const [csvMode, setCsvMode] = useState<"faq" | "whatsapp">("faq");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvPreview, setCsvPreview] = useState<string[][]>([]);
   const [csvLoading, setCsvLoading] = useState(false);
@@ -658,6 +659,9 @@ const SettingsPage = () => {
         await loadVsStatus();
 
         if (data?.done) break;
+
+        // Pausa entre lotes para evitar rate limit da OpenAI/Supabase
+        await new Promise((r) => setTimeout(r, 800));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
@@ -892,31 +896,6 @@ const SettingsPage = () => {
       const headers = rows[0];
       const dataRows = rows.slice(1);
 
-      // Detecta índices das colunas relevantes
-      const idxJid = headers.findIndex(h => /remote.?jid|contato|contact|phone|numero/i.test(h));
-      const idxFromMe = headers.findIndex(h => /from.?me|enviado|sent/i.test(h));
-      const idxMsg = headers.findIndex(h => /mensagem|message|texto|text|body|conteudo/i.test(h));
-
-      setCsvStatus("Agrupando conversas por contato...");
-
-      // Agrupa mensagens por remote_jid
-      const convMap = new Map<string, string[]>();
-      for (const row of dataRows) {
-        const jid = idxJid >= 0 ? (row[idxJid] ?? "desconhecido") : "desconhecido";
-        const fromMe = idxFromMe >= 0 ? (row[idxFromMe] ?? "") : "";
-        const msg = idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ");
-        if (!msg.trim()) continue;
-
-        const speaker = String(fromMe).toLowerCase() === "true" || fromMe === "1" ? "[Atendente]" : "[Cliente]";
-        const line = `${speaker} ${msg.trim()}`;
-
-        if (!convMap.has(jid)) convMap.set(jid, []);
-        convMap.get(jid)!.push(line);
-      }
-
-      const uniqueContacts = convMap.size;
-      setCsvStatus(`${uniqueContacts.toLocaleString()} conversas únicas encontradas. Criando job...`);
-
       // Cria job
       const { data: job } = await supabase.from("rag_jobs").insert({
         instance_name: csvInstance,
@@ -925,76 +904,95 @@ const SettingsPage = () => {
       }).select().single();
       if (!job) throw new Error("Falha ao criar job");
 
-      // Estratégia de chunking:
-      // - Conversas com < 5 msgs → agrupa até 20 contatos por chunk (resumo compacto)
-      // - Conversas com 5-500 msgs → 1 chunk por conversa
-      // - Conversas com > 500 msgs → divide em partes de 500 msgs
-      const MIN_MSGS_STANDALONE = 5;
-      const MAX_MSGS_PER_CHUNK = 500;
-      const SHORT_CONVS_PER_CHUNK = 20;
-      const INSERT_BATCH = 20;
-      let totalChunks = 0;
-      let processed = 0;
-
+      const INSERT_BATCH = 50;
       const pending: object[] = [];
-      const shortConvBuffer: string[] = [];
+      let totalChunks = 0;
 
-      const flushShortConvs = () => {
-        if (shortConvBuffer.length === 0) return;
-        const content = shortConvBuffer.join("\n\n---\n\n");
-        pending.push({
-          job_id: job.id,
-          instance_name: csvInstance,
-          chat_id: `short-convs-${totalChunks}`,
-          contact_name: "múltiplos contatos",
-          content,
-          message_count: shortConvBuffer.length,
-          chunk_index: totalChunks,
-        });
-        shortConvBuffer.length = 0;
-        totalChunks++;
-      };
+      if (csvMode === "faq") {
+        // ── Modo FAQ: cada linha → 1 chunk ──────────────────────────────────
+        setCsvStatus("Processando linhas do FAQ...");
 
-      for (const [jid, lines] of convMap) {
-        const phone = jid.split("@")[0];
+        for (let i = 0; i < dataRows.length; i++) {
+          if (csvCancelRef.current) break;
+          const row = dataRows[i];
+          const content = headers
+            .map((h, idx) => `${h}: ${(row[idx] ?? "").trim()}`)
+            .filter((line) => !line.endsWith(": "))
+            .join("\n");
+          if (!content.trim()) continue;
 
-        if (lines.length < MIN_MSGS_STANDALONE) {
-          // Conversa curta → acumula no buffer
-          shortConvBuffer.push(`Conversa com ${phone}:\n${lines.join("\n")}`);
-          if (shortConvBuffer.length >= SHORT_CONVS_PER_CHUNK) flushShortConvs();
-        } else {
-          // Conversa normal → 1 chunk por bloco de MAX_MSGS_PER_CHUNK mensagens
-          for (let start = 0; start < lines.length; start += MAX_MSGS_PER_CHUNK) {
-            const slice = lines.slice(start, start + MAX_MSGS_PER_CHUNK);
-            const chunkIdx = Math.floor(start / MAX_MSGS_PER_CHUNK);
-            const content = `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`;
-            pending.push({
-              job_id: job.id,
-              instance_name: csvInstance,
-              chat_id: jid,
-              contact_name: phone,
-              content,
-              message_count: slice.length,
-              chunk_index: totalChunks,
-            });
-            totalChunks++;
+          pending.push({
+            job_id: job.id,
+            instance_name: csvInstance,
+            chat_id: `faq-${i}`,
+            contact_name: "FAQ",
+            content,
+            message_count: 1,
+            chunk_index: totalChunks,
+          });
+          totalChunks++;
+
+          if (pending.length >= INSERT_BATCH) {
+            await supabase.from("rag_chunks").insert([...pending]);
+            pending.length = 0;
+            setCsvStatus(`Salvando... ${totalChunks} chunks`);
           }
         }
+      } else {
+        // ── Modo WhatsApp: agrupa por contato ────────────────────────────────
+        const idxJid = headers.findIndex(h => /remote.?jid|contato|contact|phone|numero/i.test(h));
+        const idxFromMe = headers.findIndex(h => /from.?me|enviado|sent/i.test(h));
+        const idxMsg = headers.findIndex(h => /mensagem|message|texto|text|body|conteudo/i.test(h));
 
-        processed++;
+        setCsvStatus("Agrupando conversas por contato...");
 
-        // Flush a cada INSERT_BATCH chunks
-        if (pending.length >= INSERT_BATCH) {
-          await supabase.from("rag_chunks").insert([...pending]);
-          pending.length = 0;
-          setCsvStatus(`Salvando... ${processed.toLocaleString()} de ${uniqueContacts.toLocaleString()} conversas (${totalChunks} chunks)`);
+        const convMap = new Map<string, string[]>();
+        for (const row of dataRows) {
+          const jid = idxJid >= 0 ? (row[idxJid] ?? "desconhecido") : "desconhecido";
+          const fromMe = idxFromMe >= 0 ? (row[idxFromMe] ?? "") : "";
+          const msg = idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ");
+          if (!msg.trim()) continue;
+          const speaker = String(fromMe).toLowerCase() === "true" || fromMe === "1" ? "[Atendente]" : "[Cliente]";
+          if (!convMap.has(jid)) convMap.set(jid, []);
+          convMap.get(jid)!.push(`${speaker} ${msg.trim()}`);
         }
 
-        if (csvCancelRef.current) break;
-      }
+        const MIN_MSGS_STANDALONE = 5;
+        const MAX_MSGS_PER_CHUNK = 500;
+        const SHORT_CONVS_PER_CHUNK = 20;
+        let processed = 0;
+        const shortConvBuffer: string[] = [];
 
-      // Flush conversas curtas restantes
-      flushShortConvs();
+        const flushShortConvs = () => {
+          if (shortConvBuffer.length === 0) return;
+          pending.push({ job_id: job.id, instance_name: csvInstance, chat_id: `short-convs-${totalChunks}`, contact_name: "múltiplos contatos", content: shortConvBuffer.join("\n\n---\n\n"), message_count: shortConvBuffer.length, chunk_index: totalChunks });
+          shortConvBuffer.length = 0;
+          totalChunks++;
+        };
+
+        for (const [jid, lines] of convMap) {
+          if (csvCancelRef.current) break;
+          const phone = jid.split("@")[0];
+          if (lines.length < MIN_MSGS_STANDALONE) {
+            shortConvBuffer.push(`Conversa com ${phone}:\n${lines.join("\n")}`);
+            if (shortConvBuffer.length >= SHORT_CONVS_PER_CHUNK) flushShortConvs();
+          } else {
+            for (let start = 0; start < lines.length; start += MAX_MSGS_PER_CHUNK) {
+              const slice = lines.slice(start, start + MAX_MSGS_PER_CHUNK);
+              const chunkIdx = Math.floor(start / MAX_MSGS_PER_CHUNK);
+              pending.push({ job_id: job.id, instance_name: csvInstance, chat_id: jid, contact_name: phone, content: `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`, message_count: slice.length, chunk_index: totalChunks });
+              totalChunks++;
+            }
+          }
+          processed++;
+          if (pending.length >= INSERT_BATCH) {
+            await supabase.from("rag_chunks").insert([...pending]);
+            pending.length = 0;
+            setCsvStatus(`Salvando... ${processed.toLocaleString()} conversas (${totalChunks} chunks)`);
+          }
+        }
+        flushShortConvs();
+      }
 
       // Flush restante
       if (pending.length > 0) {
@@ -1004,17 +1002,46 @@ const SettingsPage = () => {
       const csvCancelled = csvCancelRef.current;
       await supabase.from("rag_jobs").update({ status: csvCancelled ? "cancelled" : "done", total_messages: dataRows.length, total_chunks: totalChunks, updated_at: new Date().toISOString() }).eq("id", job.id);
 
-      // Auto-cria/atualiza rag_bases
+      // Atualiza rag_bases
       const { data: existing } = await supabase.from("rag_bases").select("document_count").eq("id", `rag-${csvInstance}`).maybeSingle();
       const prevChunks = existing?.document_count ?? 0;
       await supabase.from("rag_bases").upsert(
-        { id: `rag-${csvInstance}`, name: `Histórico ${csvInstance}`, origin: "whatsapp", document_count: prevChunks + totalChunks },
+        { id: `rag-${csvInstance}`, name: csvMode === "faq" ? `FAQ ${csvInstance}` : `Histórico ${csvInstance}`, origin: csvMode === "faq" ? "faq" : "whatsapp", document_count: prevChunks + totalChunks },
         { onConflict: "id" }
       );
 
-      setCsvStatus(csvCancelled
-        ? `⚠️ Cancelado. ${processed.toLocaleString()} conversas → ${totalChunks} chunks salvos.`
-        : `✅ Concluído! ${dataRows.length.toLocaleString()} mensagens → ${uniqueContacts.toLocaleString()} conversas → ${totalChunks} chunks salvos.`);
+      if (csvCancelled) {
+        setCsvStatus(`⚠️ Cancelado. ${totalChunks} chunks salvos.`);
+      } else {
+        // ── Auto-gera embeddings após salvar chunks ──────────────────────────
+        setCsvStatus(`✅ ${totalChunks} chunks salvos. Gerando embeddings...`);
+        const now = new Date().toISOString();
+        await supabase.from("vectorstore_status").upsert(
+          { instance_name: csvInstance, status: "processing", last_run: now, updated_at: now },
+          { onConflict: "instance_name" }
+        );
+        await loadVsStatus();
+
+        let embeddedCount = 0;
+        while (true) {
+          const { data: embData, error: embErr } = await supabase.functions.invoke("generate-embeddings", {
+            body: { instance_name: csvInstance },
+          });
+          if (embErr || embData?.error) {
+            setCsvStatus(`⚠️ Chunks salvos mas embeddings falharam: ${embErr?.message ?? embData?.error}`);
+            break;
+          }
+          embeddedCount = embData?.embedded ?? embeddedCount;
+          await loadVsStatus();
+          if (embData?.done) {
+            setCsvStatus(`✅ Concluído! ${totalChunks} chunks salvos e ${embeddedCount} embeddings gerados.`);
+            break;
+          }
+          setCsvStatus(`Gerando embeddings... ${embeddedCount} / ${totalChunks}`);
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
+
       setCsvFile(null);
       setCsvPreview([]);
       if (csvInputRef.current) csvInputRef.current.value = "";
@@ -1703,6 +1730,30 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="surface-elevated p-6 space-y-4">
+                  {/* Modo de processamento */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Tipo de conteúdo</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCsvMode("faq")}
+                        className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${csvMode === "faq" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                      >
+                        📋 FAQ / Perguntas e Respostas
+                      </button>
+                      <button
+                        onClick={() => setCsvMode("whatsapp")}
+                        className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${csvMode === "whatsapp" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                      >
+                        💬 Histórico WhatsApp
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      {csvMode === "faq"
+                        ? "Cada linha do CSV vira um chunk. Embeddings gerados automaticamente."
+                        : "Mensagens agrupadas por contato. Ideal para histórico exportado do WhatsApp."}
+                    </p>
+                  </div>
+
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1.5 block">Instância de destino</label>
                     <select value={csvInstance} onChange={(e) => setCsvInstance(e.target.value)} className={inputCls}>
@@ -1768,7 +1819,7 @@ const SettingsPage = () => {
                   <button onClick={handleProcessCsv} disabled={csvLoading || !csvFile || !csvInstance}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
                     {csvLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    {csvLoading ? "Processando CSV…" : "Processar e Salvar no RAG"}
+                    {csvLoading ? "Processando…" : csvMode === "faq" ? "Processar FAQ e Gerar Vector Store" : "Processar e Salvar no RAG"}
                   </button>
                   {csvStatus && <p className="text-sm text-foreground">{csvStatus}</p>}
                 </div>
