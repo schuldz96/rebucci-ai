@@ -248,8 +248,8 @@ Deno.serve(async () => {
 
       let lastSendJson = {};
       for (let i = 0; i < parts.length; i++) {
-        // Typing proporcional ao tamanho da parte (mín 1s, máx 4s)
-        const partTyping = Math.min(4, Math.max(1, Math.round(parts[i].length / 60)));
+        // Typing proporcional ao tamanho (~50 chars/s de leitura humana, mín 3s, máx 8s)
+        const partTyping = Math.min(8, Math.max(3, Math.round(parts[i].length / 30)));
         await fetch(`${evoConfig.api_url}/chat/sendPresence/${sendInstance}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
