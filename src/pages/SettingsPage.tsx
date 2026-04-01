@@ -980,59 +980,62 @@ const SettingsPage = () => {
           }
         }
       } else {
-        // ── Modo WhatsApp: agrupa por contato ────────────────────────────────
+        // ── Modo Conversas WhatsApp: agrupa por contato, chunks de ~25 msgs ──
         const idxJid = headers.findIndex(h => /remote.?jid|contato|contact|phone|numero/i.test(h));
         const idxFromMe = headers.findIndex(h => /from.?me|enviado|sent/i.test(h));
         const idxMsg = headers.findIndex(h => /mensagem|message|texto|text|body|conteudo/i.test(h));
 
         setCsvStatus("Agrupando conversas por contato...");
 
+        // Agrupa mensagens por telefone
         const convMap = new Map<string, string[]>();
         for (const row of dataRows) {
           const jid = idxJid >= 0 ? (row[idxJid] ?? "desconhecido") : "desconhecido";
           const fromMe = idxFromMe >= 0 ? (row[idxFromMe] ?? "") : "";
           const msg = idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ");
           if (!msg.trim()) continue;
-          const speaker = String(fromMe).toLowerCase() === "true" || fromMe === "1" ? "[Atendente]" : "[Cliente]";
+          const speaker = String(fromMe).toLowerCase() === "true" || fromMe === "1" ? "Atendente" : "Aluno";
           if (!convMap.has(jid)) convMap.set(jid, []);
-          convMap.get(jid)!.push(`${speaker} ${msg.trim()}`);
+          convMap.get(jid)!.push(`${speaker}: ${msg.trim()}`);
         }
 
-        const MIN_MSGS_STANDALONE = 5;
-        const MAX_MSGS_PER_CHUNK = 500;
-        const SHORT_CONVS_PER_CHUNK = 20;
-        let processed = 0;
-        const shortConvBuffer: string[] = [];
+        setCsvStatus(`${convMap.size.toLocaleString()} contatos encontrados. Criando chunks...`);
 
-        const flushShortConvs = () => {
-          if (shortConvBuffer.length === 0) return;
-          pending.push({ job_id: job.id, instance_name: baseName, chat_id: `short-convs-${totalChunks}`, contact_name: "múltiplos contatos", content: shortConvBuffer.join("\n\n---\n\n"), message_count: shortConvBuffer.length, chunk_index: totalChunks });
-          shortConvBuffer.length = 0;
-          totalChunks++;
-        };
+        const MSGS_PER_CHUNK = 25; // chunks menores = busca semântica mais precisa
+        let processed = 0;
 
         for (const [jid, lines] of convMap) {
           if (csvCancelRef.current) break;
           const phone = jid.split("@")[0];
-          if (lines.length < MIN_MSGS_STANDALONE) {
-            shortConvBuffer.push(`Conversa com ${phone}:\n${lines.join("\n")}`);
-            if (shortConvBuffer.length >= SHORT_CONVS_PER_CHUNK) flushShortConvs();
-          } else {
-            for (let start = 0; start < lines.length; start += MAX_MSGS_PER_CHUNK) {
-              const slice = lines.slice(start, start + MAX_MSGS_PER_CHUNK);
-              const chunkIdx = Math.floor(start / MAX_MSGS_PER_CHUNK);
-              pending.push({ job_id: job.id, instance_name: baseName, chat_id: jid, contact_name: phone, content: `Conversa com ${phone}${chunkIdx > 0 ? ` (parte ${chunkIdx + 1})` : ""}:\n${slice.join("\n")}`, message_count: slice.length, chunk_index: totalChunks });
-              totalChunks++;
-            }
+
+          // Pula conversas com menos de 3 mensagens (pouco valor)
+          if (lines.length < 3) { processed++; continue; }
+
+          // Divide conversa em chunks de MSGS_PER_CHUNK mensagens
+          for (let start = 0; start < lines.length; start += MSGS_PER_CHUNK) {
+            const slice = lines.slice(start, start + MSGS_PER_CHUNK);
+            const partLabel = lines.length > MSGS_PER_CHUNK ? ` (parte ${Math.floor(start / MSGS_PER_CHUNK) + 1})` : "";
+            pending.push({
+              job_id: job.id,
+              instance_name: baseName,
+              chat_id: jid,
+              contact_name: phone,
+              content: `Conversa com aluno ${phone}${partLabel}:\n${slice.join("\n")}`,
+              message_count: slice.length,
+              chunk_index: totalChunks,
+            });
+            totalChunks++;
           }
+
           processed++;
           if (pending.length >= INSERT_BATCH) {
             await supabase.from("rag_chunks").insert([...pending]);
             pending.length = 0;
-            setCsvStatus(`Salvando... ${processed.toLocaleString()} conversas (${totalChunks} chunks)`);
+            if (processed % 100 === 0) {
+              setCsvStatus(`Salvando... ${processed.toLocaleString()}/${convMap.size.toLocaleString()} contatos (${totalChunks.toLocaleString()} chunks)`);
+            }
           }
         }
-        flushShortConvs();
       }
 
       // Flush restante
@@ -1630,7 +1633,7 @@ const SettingsPage = () => {
                     <h2 className="text-base font-semibold text-foreground">Vector Store</h2>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Suba um CSV com perguntas e respostas. A IA usará essa base para responder com mais precisão.
+                    Suba um CSV para alimentar a base de conhecimento da IA.
                   </p>
                 </div>
 
@@ -1638,13 +1641,30 @@ const SettingsPage = () => {
                 <div className="surface-elevated p-6 space-y-4">
                   <h3 className="text-base font-semibold text-foreground">Adicionar base</h3>
 
+                  {/* Tipo de base */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Tipo de base</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => setCsvMode("faq")}
+                        className={cn("p-3 rounded-xl border text-left transition-colors", csvMode === "faq" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30")}>
+                        <p className="text-sm font-medium text-foreground">Perguntas e Respostas</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">CSV com colunas de pergunta e resposta</p>
+                      </button>
+                      <button onClick={() => setCsvMode("whatsapp")}
+                        className={cn("p-3 rounded-xl border text-left transition-colors", csvMode === "whatsapp" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30")}>
+                        <p className="text-sm font-medium text-foreground">Conversas WhatsApp</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">CSV com remote_jid, from_me, mensagem</p>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Nome da base */}
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1.5 block">Nome da base</label>
                     <input
                       value={csvBaseName}
                       onChange={(e) => setCsvBaseName(e.target.value)}
-                      placeholder="Ex: faq-geral, produtos, objecoes..."
+                      placeholder={csvMode === "faq" ? "Ex: faq-geral, produtos..." : "Ex: conversas-2024, historico..."}
                       className={inputCls}
                     />
                   </div>
@@ -1674,8 +1694,8 @@ const SettingsPage = () => {
                     </div>
                   </div>
 
-                  {/* Seletor de colunas */}
-                  {csvPreview.length > 0 && (
+                  {/* Seletor de colunas — só no modo FAQ */}
+                  {csvPreview.length > 0 && csvMode === "faq" && (
                     <div className="space-y-3 p-4 rounded-xl bg-secondary/50 border border-border">
                       <p className="text-xs font-semibold text-foreground">Selecionar colunas</p>
                       <div className="grid grid-cols-2 gap-3">
@@ -1701,6 +1721,21 @@ const SettingsPage = () => {
                           <p><span className="text-primary">R:</span> {csvPreview[1][csvPreview[0].indexOf(csvColResposta)] ?? "—"}</p>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Prévia — modo Conversas */}
+                  {csvPreview.length > 0 && csvMode === "whatsapp" && (
+                    <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-2">
+                      <p className="text-xs font-semibold text-foreground">Colunas detectadas</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {(csvPreview[0] ?? []).map((h) => (
+                          <span key={h} className={cn("text-xs px-2 py-1 rounded-full border",
+                            /remote.?jid|from.?me|mensagem|message/i.test(h) ? "border-emerald-500/30 text-emerald-500 bg-emerald-500/10" : "border-border text-muted-foreground"
+                          )}>{h}</span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{(csvPreview.length - 1).toLocaleString()}+ linhas na prévia · Conversas serão agrupadas por telefone em chunks de 25 msgs</p>
                     </div>
                   )}
 
