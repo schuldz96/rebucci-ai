@@ -509,6 +509,8 @@ const SettingsPage = () => {
   const [csvMode, setCsvMode] = useState<"faq" | "whatsapp">("faq");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvPreview, setCsvPreview] = useState<string[][]>([]);
+  const [csvColPergunta, setCsvColPergunta] = useState("");
+  const [csvColResposta, setCsvColResposta] = useState("");
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvStatus, setCsvStatus] = useState<string | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
@@ -874,11 +876,19 @@ const SettingsPage = () => {
   const handleCsvFile = (file: File) => {
     setCsvFile(file);
     setCsvStatus(null);
+    setCsvColPergunta("");
+    setCsvColResposta("");
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = (e.target?.result as string) ?? "";
       const rows = parseCSV(text);
       setCsvPreview(rows.slice(0, 5));
+      // Auto-detecta colunas de pergunta/resposta pelo nome do cabeçalho
+      const headers = rows[0] ?? [];
+      const autoP = headers.find(h => /pergunta|question|p[eê]rg|quest/i.test(h)) ?? "";
+      const autoR = headers.find(h => /resposta|answer|resp|reply/i.test(h)) ?? "";
+      setCsvColPergunta(autoP || headers[0] || "");
+      setCsvColResposta(autoR || headers[1] || "");
     };
     reader.readAsText(file, "utf-8");
   };
@@ -912,13 +922,17 @@ const SettingsPage = () => {
         // ── Modo FAQ: cada linha → 1 chunk ──────────────────────────────────
         setCsvStatus("Processando linhas do FAQ...");
 
+        const idxP = csvColPergunta ? headers.indexOf(csvColPergunta) : 0;
+        const idxR = csvColResposta ? headers.indexOf(csvColResposta) : 1;
+
         for (let i = 0; i < dataRows.length; i++) {
           if (csvCancelRef.current) break;
           const row = dataRows[i];
-          const content = headers
-            .map((h, idx) => `${h}: ${(row[idx] ?? "").trim()}`)
-            .filter((line) => !line.endsWith(": "))
-            .join("\n");
+          const pergunta = (row[idxP] ?? "").trim();
+          const resposta = (row[idxR] ?? "").trim();
+          if (!pergunta && !resposta) continue;
+          const content = [pergunta && `Pergunta: ${pergunta}`, resposta && `Resposta: ${resposta}`]
+            .filter(Boolean).join("\n");
           if (!content.trim()) continue;
 
           pending.push({
@@ -1813,6 +1827,40 @@ const SettingsPage = () => {
                           </tbody>
                         </table>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Seletor de colunas — só no modo FAQ com arquivo carregado */}
+                  {csvMode === "faq" && csvPreview.length > 0 && (
+                    <div className="space-y-3 p-4 rounded-xl bg-secondary/50 border border-border">
+                      <p className="text-xs font-semibold text-foreground">Selecionar colunas</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Coluna de Pergunta</label>
+                          <select value={csvColPergunta} onChange={(e) => setCsvColPergunta(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
+                            <option value="">— nenhuma —</option>
+                            {(csvPreview[0] ?? []).map((h) => (
+                              <option key={h} value={h}>{h}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Coluna de Resposta</label>
+                          <select value={csvColResposta} onChange={(e) => setCsvColResposta(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
+                            <option value="">— nenhuma —</option>
+                            {(csvPreview[0] ?? []).map((h) => (
+                              <option key={h} value={h}>{h}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      {csvColPergunta && csvColResposta && csvPreview[1] && (
+                        <div className="text-xs text-muted-foreground p-2 rounded-lg bg-background border border-border space-y-0.5">
+                          <p className="text-foreground font-medium">Prévia do chunk:</p>
+                          <p><span className="text-primary">P:</span> {csvPreview[1][csvPreview[0].indexOf(csvColPergunta)] ?? "—"}</p>
+                          <p><span className="text-primary">R:</span> {csvPreview[1][csvPreview[0].indexOf(csvColResposta)] ?? "—"}</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
