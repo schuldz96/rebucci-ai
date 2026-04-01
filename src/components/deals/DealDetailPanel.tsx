@@ -4,7 +4,7 @@ import { useContactStore } from "@/store/contactStore";
 import { useDealStore } from "@/store/dealStore";
 import { evolutionApi, isFromMe, type EvoInstance } from "@/lib/evolutionApi";
 import { supabase } from "@/lib/supabase";
-import { X, ChevronLeft, Send, Plus, UserPlus, Pencil, Check, Loader2, RefreshCw, Paperclip, Mic, Image as ImageIcon, Video, File } from "lucide-react";
+import { X, ChevronLeft, Send, Plus, UserPlus, Pencil, Check, Loader2, RefreshCw, Paperclip, Mic, Image as ImageIcon, Video, File, Trash2 } from "lucide-react";
 import { cn, formatPhone, stripPhone, getPhoneVariants } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -45,6 +45,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const [chatRemoteJid, setChatRemoteJid] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [clearingHistory, setClearingHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<{ file: File; base64: string; preview?: string } | null>(null);
   const [allInstances, setAllInstances] = useState<string[]>([]);
@@ -258,6 +259,23 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       setChatInput(text);
     }
     setSending(false);
+  };
+
+  const handleClearAIHistory = async () => {
+    const phone = chatRemoteJid
+      ? chatRemoteJid.split("@")[0]
+      : deal.phone ? stripPhone(deal.phone) : null;
+    if (!phone) return;
+    if (!confirm("Zerar o histórico de memória da IA para este contato? A IA começará a conversa do zero.")) return;
+    setClearingHistory(true);
+    try {
+      let query = supabase.from("ai_conversation_history").delete().eq("phone", phone);
+      if (chatInstance) query = query.eq("instance_name", chatInstance);
+      await query;
+    } catch (e) {
+      console.error("Erro ao limpar histórico da IA:", e);
+    }
+    setClearingHistory(false);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -494,6 +512,14 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
               <button onClick={() => findAndLoadChat(selectedInstance === "auto" ? undefined : selectedInstance)} disabled={loadingChat}
                 className="p-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-40" title="Recarregar chat">
                 <RefreshCw className={cn("w-3.5 h-3.5", loadingChat && "animate-spin")} />
+              </button>
+              <button
+                onClick={handleClearAIHistory}
+                disabled={clearingHistory || (!chatRemoteJid && !deal.phone)}
+                className="p-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-destructive/20 hover:text-destructive hover:border-destructive/30 transition-colors disabled:opacity-40"
+                title="Zerar memória da IA"
+              >
+                <Trash2 className={cn("w-3.5 h-3.5", clearingHistory && "animate-pulse")} />
               </button>
             </div>
           </div>
