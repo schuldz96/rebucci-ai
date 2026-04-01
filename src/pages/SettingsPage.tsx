@@ -686,6 +686,15 @@ const SettingsPage = () => {
     if (evoTab === "rag") { loadRagJobs(); loadVsStatus(); }
   }, [evoTab, isConfigured]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Polling: atualiza status das bases a cada 3s enquanto houver alguma "processando"
+  useEffect(() => {
+    if (evoTab !== "rag") return;
+    const hasProcessing = vsStatuses.some((s) => s.status === "processing");
+    if (!hasProcessing) return;
+    const interval = setInterval(() => { loadVsStatus(); }, 3000);
+    return () => clearInterval(interval);
+  }, [evoTab, vsStatuses, loadVsStatus]);
+
   const handleSaveConfig = async () => {
     if (!apiUrl || !apiKey) return;
     setSaving(true);
@@ -1029,33 +1038,27 @@ const SettingsPage = () => {
       if (csvCancelled) {
         setCsvStatus(`⚠️ Cancelado. ${totalChunks} chunks salvos.`);
       } else {
-        // ── Auto-gera embeddings após salvar chunks ──────────────────────────
-        setCsvStatus(`✅ ${totalChunks} chunks salvos. Gerando embeddings...`);
+        // ── Dispara geração de embeddings no servidor (fire-and-forget) ───────
         const now = new Date().toISOString();
         await supabase.from("vectorstore_status").upsert(
           { instance_name: baseName, status: "processing", last_run: now, updated_at: now },
           { onConflict: "instance_name" }
         );
         await loadVsStatus();
+        setCsvStatus(`✅ ${totalChunks} chunks salvos. Embeddings sendo gerados em background…`);
 
-        let embeddedCount = 0;
-        while (true) {
-          const { data: embData, error: embErr } = await supabase.functions.invoke("generate-embeddings", {
-            body: { instance_name: baseName },
-          });
-          if (embErr || embData?.error) {
-            setCsvStatus(`⚠️ Chunks salvos mas embeddings falharam: ${embErr?.message ?? embData?.error}`);
-            break;
+        // Chama a edge function uma única vez — ela faz o loop internamente
+        // Não aguardamos a resposta (fire-and-forget) para não bloquear a UI
+        supabase.functions.invoke("generate-embeddings", {
+          body: { instance_name: baseName },
+        }).then(({ data, error }) => {
+          if (error || data?.error) {
+            supabase.from("vectorstore_status").upsert(
+              { instance_name: baseName, status: "error", error_message: error?.message ?? data?.error, updated_at: new Date().toISOString() },
+              { onConflict: "instance_name" }
+            );
           }
-          embeddedCount = embData?.embedded ?? embeddedCount;
-          await loadVsStatus();
-          if (embData?.done) {
-            setCsvStatus(`✅ Concluído! ${totalChunks} chunks salvos e ${embeddedCount} embeddings gerados.`);
-            break;
-          }
-          setCsvStatus(`Gerando embeddings... ${embeddedCount} / ${totalChunks}`);
-          await new Promise((r) => setTimeout(r, 800));
-        }
+        });
       }
 
       setCsvFile(null);
@@ -1735,7 +1738,7 @@ const SettingsPage = () => {
                                     vs.status === "processing" ? "bg-primary/20 text-primary" :
                                     "bg-destructive/20 text-destructive"
                                   )}>
-                                    {vs.status === "done" ? "✓ Pronto" : vs.status === "processing" ? "⚙ Processando" : "✗ Erro"}
+                                    {vs.status === "done" ? "✓ Pronto" : vs.status === "processing" ? `⚙ ${vs.embedded ?? 0}/${vs.total_chunks ?? 0}` : "✗ Erro"}
                                   </span>
                                   <button onClick={() => handleDeleteBase(vs.instance_name)} className="text-muted-foreground hover:text-destructive transition-colors" title="Remover base">
                                     <Trash2 className="w-3.5 h-3.5" />
