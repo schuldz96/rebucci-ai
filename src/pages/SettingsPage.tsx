@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -702,13 +702,29 @@ const SettingsPage = () => {
     if (evoTab === "logs") { loadAiLogs(); }
   }, [evoTab, isConfigured]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Polling: atualiza status das bases a cada 3s enquanto houver alguma "processando"
+  // Polling com backoff: atualiza status das bases (3s → 5s → 10s) enquanto houver alguma "processando"
+  const pollIntervalRef = useRef(3000);
+  const prevVsStatusesRef = useRef<string>("");
   useEffect(() => {
     if (evoTab !== "rag") return;
     const hasProcessing = vsStatuses.some((s) => s.status === "processing");
-    if (!hasProcessing) return;
-    const interval = setInterval(() => { loadVsStatus(); }, 3000);
-    return () => clearInterval(interval);
+    if (!hasProcessing) { pollIntervalRef.current = 3000; prevVsStatusesRef.current = ""; return; }
+
+    // Detecta mudança de status para resetar backoff
+    const statusKey = vsStatuses.map(s => `${s.name}:${s.status}`).join(",");
+    if (prevVsStatusesRef.current && prevVsStatusesRef.current !== statusKey) {
+      pollIntervalRef.current = 3000; // Reset on change
+    }
+    prevVsStatusesRef.current = statusKey;
+
+    const currentInterval = pollIntervalRef.current;
+    const timeout = setTimeout(() => {
+      loadVsStatus();
+      // Increase interval for next poll if status didn't change
+      if (pollIntervalRef.current === 3000) pollIntervalRef.current = 5000;
+      else if (pollIntervalRef.current === 5000) pollIntervalRef.current = 10000;
+    }, currentInterval);
+    return () => clearTimeout(timeout);
   }, [evoTab, vsStatuses, loadVsStatus]);
 
   const handleSaveConfig = async () => {
@@ -746,29 +762,40 @@ const SettingsPage = () => {
       setInstances(raw);
       if (raw.length > 0 && !ragInstance) setRagInstance(raw[0].instance.instanceName);
 
-      // Garantir webhook imutável para cada instância + carregar nomes customizados
+      // Batch fetch ALL webhooks in one query
+      const allNames = raw.map(inst => inst.instance.instanceName);
+      const { data: allWebhooks } = await supabase.from("instance_webhooks").select("instance_name, webhook_token, display_name").in("instance_name", allNames);
+
+      const existingMap = new Map((allWebhooks ?? []).map(w => [w.instance_name, w]));
+      const missingNames = allNames.filter(name => !existingMap.has(name));
+
+      // Batch insert missing webhooks
+      if (missingNames.length > 0) {
+        const { data: created } = await supabase.from("instance_webhooks")
+          .insert(missingNames.map(name => ({ instance_name: name })))
+          .select("instance_name, webhook_token, display_name");
+        (created ?? []).forEach(w => existingMap.set(w.instance_name, w));
+      }
+
       const newWebhooks: Record<string, string> = {};
       const newDisplayNames: Record<string, string> = {};
-      for (const inst of raw) {
-        const name = inst.instance.instanceName;
-        const { data: existing } = await supabase.from("instance_webhooks").select("webhook_token, display_name").eq("instance_name", name).single();
-        if (existing) {
-          newWebhooks[name] = `${SUPABASE_URL}/functions/v1/whatsapp-webhook?token=${existing.webhook_token}`;
-          if (existing.display_name) newDisplayNames[name] = existing.display_name;
-        } else {
-          const { data: created } = await supabase.from("instance_webhooks").insert({ instance_name: name }).select("webhook_token, display_name").single();
-          if (created) newWebhooks[name] = `${SUPABASE_URL}/functions/v1/whatsapp-webhook?token=${created.webhook_token}`;
+      for (const name of allNames) {
+        const row = existingMap.get(name);
+        if (row) {
+          newWebhooks[name] = `${SUPABASE_URL}/functions/v1/whatsapp-webhook?token=${row.webhook_token}`;
+          if (row.display_name) newDisplayNames[name] = row.display_name;
         }
       }
       setWebhooks(newWebhooks);
       setDisplayNames(newDisplayNames);
 
-      // Sincroniza instâncias para a tabela instances (usada pelo AIAgentModal)
-      for (const inst of raw) {
-        const name = inst.instance.instanceName;
-        const status = inst.instance.connectionStatus === "open" ? "online" : "offline";
-        await supabase.from("instances").upsert({ name, phone: '', status }, { onConflict: "name", ignoreDuplicates: false });
-      }
+      // Batch upsert instances (usada pelo AIAgentModal)
+      const instanceRows = raw.map(inst => ({
+        name: inst.instance.instanceName,
+        phone: '',
+        status: inst.instance.connectionStatus === "open" ? "online" : "offline",
+      }));
+      await supabase.from("instances").upsert(instanceRows, { onConflict: "name", ignoreDuplicates: false });
     } catch {
       /* silencioso */
     }

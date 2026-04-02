@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { evolutionApi } from "@/lib/evolutionApi";
 import { supabase } from "@/lib/supabase";
@@ -43,13 +43,38 @@ const WhatsAppPage = () => {
     init();
   }, []);
 
-  // Polling de 3s quando há conversa selecionada
+  // Polling quando há conversa selecionada — para quando aba está oculta
+  const visibleRef = useRef(!document.hidden);
+
   useEffect(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (selectedConversationId) {
-      pollRef.current = setInterval(() => { pollMessages(); }, POLL_INTERVAL);
-    }
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    const startPolling = () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (selectedConversationId && visibleRef.current) {
+        pollRef.current = setInterval(() => { pollMessages(); }, POLL_INTERVAL);
+      }
+    };
+
+    const handleVisibility = () => {
+      visibleRef.current = !document.hidden;
+      if (document.hidden) {
+        // Tab oculta → para polling
+        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      } else {
+        // Tab visível → poll imediato + retoma intervalo
+        if (selectedConversationId) {
+          pollMessages();
+          startPolling();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    startPolling();
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [selectedConversationId]);
 
   useEffect(() => {
@@ -60,7 +85,7 @@ const WhatsAppPage = () => {
     instFilter === "all" ? true : i.status === instFilter
   );
 
-  const filteredConversations = conversations
+  const filteredConversations = useMemo(() => conversations
     .filter((c) => c.instanceId === selectedInstanceId)
     .filter((c) => convFilter === "all" ? true : c.status === convFilter)
     .filter((c) => searchTerm ? c.contactName.toLowerCase().includes(searchTerm.toLowerCase()) : true)
@@ -69,7 +94,7 @@ const WhatsAppPage = () => {
       if (sortMode === "za") return b.contactName.localeCompare(a.contactName);
       if (sortMode === "old") return (a.lastMessageTimestamp ?? 0) - (b.lastMessageTimestamp ?? 0);
       return (b.lastMessageTimestamp ?? 0) - (a.lastMessageTimestamp ?? 0); // recent: mais recentes primeiro
-    });
+    }), [conversations, selectedInstanceId, convFilter, searchTerm, sortMode]);
 
   const activeConversation = conversations.find((c) => c.id === selectedConversationId);
 

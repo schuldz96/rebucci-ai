@@ -175,7 +175,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const snapConvId = selectedConversationId;
     try {
       const conv = get().conversations.find(c => c.id === snapConvId);
-      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 100, conv?.remoteJidAlt);
+      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 30, conv?.remoteJidAlt);
       // Descarta se o usuário trocou de conversa enquanto o poll estava em voo
       if (get().selectedConversationId !== snapConvId) return;
       const sorted = [...raw].sort((a, b) =>

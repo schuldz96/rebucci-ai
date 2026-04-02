@@ -141,16 +141,21 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
         ? [forceInstance]
         : names;
 
-      for (const instanceName of instancesToSearch) {
-        const result = await searchInInstance(instanceName, variants);
-        if (result) {
-          setChatInstance(instanceName);
-          setChatRemoteJid(result.remoteJid);
-          chatAltJidRef.current = result.altRemoteJid ?? null;
-          setChatMessages(result.msgs);
-          setLoadingChat(false);
-          return;
-        }
+      const searchResults = await Promise.all(
+        instancesToSearch.map(async (instanceName) => {
+          const result = await searchInInstance(instanceName, variants);
+          return result ? { instanceName, result } : null;
+        })
+      );
+
+      const found = searchResults.find(r => r !== null);
+      if (found) {
+        setChatInstance(found.instanceName);
+        setChatRemoteJid(found.result.remoteJid);
+        chatAltJidRef.current = found.result.altRemoteJid ?? null;
+        setChatMessages(found.result.msgs);
+        setLoadingChat(false);
+        return;
       }
 
       const ctx = forceInstance ? `na instância "${forceInstance}"` : "nas instâncias ativas";
@@ -201,37 +206,64 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   }, []);
 
   // Polling incremental: busca apenas mensagens após o último timestamp conhecido
-  useEffect(() => {
-    const poll = async () => {
-      const inst = chatInstanceRef.current;
-      const jid = chatRemoteJidRef.current;
-      if (!inst || !jid) return;
-      try {
-        const afterTs = lastTimestampRef.current;
-        // Se ainda não carregamos nada, aguarda
-        if (afterTs === 0) return;
+  // Para após 5 polls vazios consecutivos (15s sem novidades); retoma ao enviar mensagem
+  const emptyPollCountRef = useRef(0);
+  const pollingStoppedRef = useRef(false);
 
-        const alt = chatAltJidRef.current ?? undefined;
-        const raw = await evolutionApi.fetchMessagesAfter(inst, jid, afterTs + 1, 50, alt);
-        if (raw.length === 0) return;
+  const resumePolling = useCallback(() => {
+    if (!pollingStoppedRef.current) return;
+    pollingStoppedRef.current = false;
+    emptyPollCountRef.current = 0;
+    // Re-trigger the polling effect by clearing and restarting
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    pollingRef.current = setInterval(pollFn, 3000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-        const incoming = processMsgs(raw, true);
-        if (incoming.length === 0) return;
+  const pollFn = useCallback(async () => {
+    const inst = chatInstanceRef.current;
+    const jid = chatRemoteJidRef.current;
+    if (!inst || !jid) return;
+    try {
+      const afterTs = lastTimestampRef.current;
+      // Se ainda não carregamos nada, aguarda
+      if (afterTs === 0) return;
 
-        setChatMessages((prev) => {
-          const existingIds = new Set(prev.map(m => m.id));
-          const newMsgs = incoming.filter(m => !existingIds.has(m.id));
-          if (newMsgs.length === 0) return prev;
-          // Remove optimistas substituídos + append novas em ordem de ts
-          const base = prev.filter(m => !m.id.startsWith("temp-"));
-          return [...base, ...newMsgs].sort((a, b) => a.ts - b.ts);
-        });
-      } catch {
-        // silencioso
+      const alt = chatAltJidRef.current ?? undefined;
+      const raw = await evolutionApi.fetchMessagesAfter(inst, jid, afterTs + 1, 50, alt);
+      if (raw.length === 0) {
+        emptyPollCountRef.current += 1;
+        if (emptyPollCountRef.current >= 5) {
+          // 5 polls vazios consecutivos → para polling
+          pollingStoppedRef.current = true;
+          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+        }
+        return;
       }
-    };
 
-    pollingRef.current = setInterval(poll, 3000);
+      emptyPollCountRef.current = 0; // Reset on new data
+
+      const incoming = processMsgs(raw, true);
+      if (incoming.length === 0) return;
+
+      setChatMessages((prev) => {
+        const existingIds = new Set(prev.map(m => m.id));
+        const newMsgs = incoming.filter(m => !existingIds.has(m.id));
+        if (newMsgs.length === 0) return prev;
+        // Remove optimistas substituídos + append novas em ordem de ts
+        const base = prev.filter(m => !m.id.startsWith("temp-"));
+        return [...base, ...newMsgs].sort((a, b) => a.ts - b.ts);
+      });
+    } catch {
+      // silencioso
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    emptyPollCountRef.current = 0;
+    pollingStoppedRef.current = false;
+    pollingRef.current = setInterval(pollFn, 3000);
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
@@ -245,6 +277,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const handleSend = async () => {
     if (pendingFile) return handleSendMedia();
     if (!chatInput.trim() || !chatInstance || !chatRemoteJid) return;
+    resumePolling(); // Retoma polling ao enviar mensagem
     setSending(true);
     const text = chatInput.trim();
     setChatInput("");
