@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
     }
 
     let batchesUsed = 0;
-    const results: Record<string, { processed: number; total: number; embedded: number; status: string }> = {};
+    const results: Record<string, Record<string, unknown>> = {};
 
     for (const baseName of bases) {
       if (batchesUsed >= MAX_BATCHES_TOTAL) break;
@@ -65,12 +65,11 @@ Deno.serve(async (req: Request) => {
       let baseProcessed = 0;
 
       while (batchesUsed < MAX_BATCHES_TOTAL) {
-        const { data: chunks, error: fetchErr } = await supabase
-          .from("rag_chunks")
-          .select("id, content")
-          .eq("instance_name", baseName)
-          .is("embedding", null)
-          .limit(BATCH_SIZE);
+        // Usa RPC para buscar chunks pendentes (contorna bug do PostgREST com vector+null)
+        const { data: chunks, error: fetchErr } = await supabase.rpc("get_pending_chunks", {
+          base_name: baseName,
+          batch_limit: BATCH_SIZE,
+        });
 
         if (fetchErr) {
           await setStatus(supabase, baseName, totalChunks, "error", `Fetch: ${fetchErr.message}`);
@@ -97,15 +96,11 @@ Deno.serve(async (req: Request) => {
         if (invalidIds.length > 0) {
           const now = new Date().toISOString();
           const zeroEmb = JSON.stringify(Array(1536).fill(0));
-          const { error: rpcErr } = await supabase.rpc("batch_update_embeddings", {
+          await supabase.rpc("batch_update_embeddings", {
             chunk_ids: invalidIds,
             chunk_embeddings: invalidIds.map(() => zeroEmb),
             ts: now,
           });
-          if (rpcErr) {
-            await setStatus(supabase, baseName, totalChunks, "error", `RPC invalid: ${rpcErr.message}`);
-            break;
-          }
           baseProcessed += invalidIds.length;
         }
 
@@ -145,7 +140,7 @@ Deno.serve(async (req: Request) => {
         const oaJson = await oaRes.json();
         const embeddings: number[][] = oaJson.data.map((d: { embedding: number[] }) => d.embedding);
 
-        // Batch update via RPC (evita statement timeout do PostgREST)
+        // Batch update via RPC (evita statement timeout e NOT NULL constraints)
         const now = new Date().toISOString();
         const { error: rpcErr } = await supabase.rpc("batch_update_embeddings", {
           chunk_ids: valid.map((c) => c.id),
@@ -163,7 +158,7 @@ Deno.serve(async (req: Request) => {
         await setStatus(supabase, baseName, totalChunks, "processing");
       }
 
-      const { count: embNow } = await supabase.from("rag_chunks").select("id", { count: "exact", head: true }).eq("instance_name", baseName).not("embedding", "is", null);
+      const { count: embNow } = await supabase.from("rag_chunks").select("id", { count: "exact", head: true }).eq("instance_name", baseName).not("embedded_at", "is", null);
       results[baseName] = { processed: baseProcessed, total: totalChunks, embedded: embNow ?? 0, status: baseProcessed > 0 ? "ok" : "skipped" };
     }
 
@@ -184,7 +179,7 @@ async function setStatus(
     .from("rag_chunks")
     .select("id", { count: "exact", head: true })
     .eq("instance_name", instance_name)
-    .not("embedding", "is", null);
+    .not("embedded_at", "is", null);
 
   await supabase.from("vectorstore_status").upsert(
     {
