@@ -216,6 +216,8 @@ Deno.serve(async () => {
         );
       }
 
+      promptParts.push("\nREGRA DE FORMATAÇÃO: Separe sua resposta em 2 ou 3 parágrafos curtos (use \\n\\n entre eles). Cada parágrafo deve ter no máximo 1-2 frases. NUNCA envie um bloco único de texto longo.");
+
       const systemPrompt = promptParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda em português.";
 
       const messages: { role: string; content: string }[] = [
@@ -253,24 +255,28 @@ Deno.serve(async () => {
         await new Promise((r) => setTimeout(r, typingSeconds * 1000));
       }
 
-      // Divide a resposta em partes — cada parágrafo (separado por \n\n) vira uma mensagem separada
-      // Se não houver \n\n, quebra por frases (. ! ?) para não mandar textão
+      // Divide a resposta em até 3 partes para parecer mais natural
       let parts: string[] = aiResponse.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
 
-      // Se ficou tudo em 1 bloco e é grande, quebra por frases
-      if (parts.length === 1 && parts[0].length > 200) {
-        const sentences: string[] = [];
-        let buf = "";
-        for (const seg of parts[0].split(/(?<=[.!?])\s+/)) {
-          if (buf && buf.length + seg.length > 200) {
-            sentences.push(buf.trim());
-            buf = seg;
-          } else {
-            buf = buf ? `${buf} ${seg}` : seg;
+      // Se ficou tudo em 1 bloco, quebra por frases
+      if (parts.length === 1 && parts[0].length > 80) {
+        const sentences = parts[0].split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+        if (sentences.length >= 2) {
+          // Distribui frases em até 3 partes equilibradas
+          const targetParts = Math.min(3, sentences.length);
+          const perPart = Math.ceil(sentences.length / targetParts);
+          parts = [];
+          for (let s = 0; s < sentences.length; s += perPart) {
+            parts.push(sentences.slice(s, s + perPart).join(" ").trim());
           }
         }
-        if (buf) sentences.push(buf.trim());
-        if (sentences.length > 1) parts = sentences;
+      }
+
+      // Limita a no máximo 3 mensagens (junta excedentes na última)
+      if (parts.length > 3) {
+        const first2 = parts.slice(0, 2);
+        const rest = parts.slice(2).join("\n\n");
+        parts = [...first2, rest];
       }
 
       let lastSendJson = {};
