@@ -3,8 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const BATCH_SIZE = 200;
-const MAX_BATCHES_TOTAL = 5; // ~1000 chunks por invocação
+const BATCH_SIZE = 100;
+const MAX_BATCHES_TOTAL = 40;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -19,14 +19,12 @@ Deno.serve(async (req: Request) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Lê instance_name do body (opcional)
     let targetBase: string | null = null;
     try {
       const body = await req.json();
       targetBase = body?.instance_name ?? null;
     } catch { /* body vazio ok */ }
 
-    // Busca TODAS as bases com status "processing"
     let bases: string[] = [];
     if (targetBase) {
       bases = [targetBase];
@@ -38,10 +36,9 @@ Deno.serve(async (req: Request) => {
       if (!pending || pending.length === 0) {
         return json({ done: true, message: "Nenhuma base pendente" });
       }
-      bases = pending.map((p) => p.instance_name);
+      bases = pending.map((p: { instance_name: string }) => p.instance_name);
     }
 
-    // Busca token OpenAI
     const { data: tokenRow } = await supabase
       .from("api_tokens")
       .select("token")
@@ -59,7 +56,6 @@ Deno.serve(async (req: Request) => {
     for (const baseName of bases) {
       if (batchesUsed >= MAX_BATCHES_TOTAL) break;
 
-      // Conta total
       const { count: total } = await supabase
         .from("rag_chunks")
         .select("id", { count: "exact", head: true })
@@ -68,7 +64,6 @@ Deno.serve(async (req: Request) => {
       const totalChunks = total ?? 0;
       let baseProcessed = 0;
 
-      // Loop de batches para esta base
       while (batchesUsed < MAX_BATCHES_TOTAL) {
         const { data: chunks, error: fetchErr } = await supabase
           .from("rag_chunks")
@@ -78,7 +73,7 @@ Deno.serve(async (req: Request) => {
           .limit(BATCH_SIZE);
 
         if (fetchErr) {
-          await setStatus(supabase, baseName, totalChunks, "error", fetchErr.message);
+          await setStatus(supabase, baseName, totalChunks, "error", `Fetch: ${fetchErr.message}`);
           break;
         }
 
@@ -87,8 +82,41 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
+        // Separa válidos dos inválidos
+        const valid: { id: string; content: string }[] = [];
+        const invalidIds: string[] = [];
+        for (const c of chunks) {
+          if (c.content && c.content.trim().length > 0) {
+            valid.push(c);
+          } else {
+            invalidIds.push(c.id);
+          }
+        }
+
+        // Marca inválidos via RPC batch
+        if (invalidIds.length > 0) {
+          const now = new Date().toISOString();
+          const zeroEmb = JSON.stringify(Array(1536).fill(0));
+          const { error: rpcErr } = await supabase.rpc("batch_update_embeddings", {
+            chunk_ids: invalidIds,
+            chunk_embeddings: invalidIds.map(() => zeroEmb),
+            ts: now,
+          });
+          if (rpcErr) {
+            await setStatus(supabase, baseName, totalChunks, "error", `RPC invalid: ${rpcErr.message}`);
+            break;
+          }
+          baseProcessed += invalidIds.length;
+        }
+
+        if (valid.length === 0) {
+          batchesUsed++;
+          await setStatus(supabase, baseName, totalChunks, "processing");
+          continue;
+        }
+
         // OpenAI Embeddings
-        const inputs = chunks.map((c) => c.content.slice(0, 6000));
+        const inputs = valid.map((c) => c.content.slice(0, 6000));
         const oaRes = await fetch("https://api.openai.com/v1/embeddings", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
@@ -102,7 +130,6 @@ Deno.serve(async (req: Request) => {
             JSON.stringify(errJson).includes("insufficient_quota") ||
             JSON.stringify(errJson).includes("rate_limit");
 
-          // Pausa TODAS as bases em processamento se for quota/rate limit
           if (isQuota) {
             for (const b of bases) {
               const { count: bTotal } = await supabase.from("rag_chunks").select("id", { count: "exact", head: true }).eq("instance_name", b);
@@ -118,24 +145,24 @@ Deno.serve(async (req: Request) => {
         const oaJson = await oaRes.json();
         const embeddings: number[][] = oaJson.data.map((d: { embedding: number[] }) => d.embedding);
 
+        // Batch update via RPC (evita statement timeout do PostgREST)
         const now = new Date().toISOString();
-        await Promise.all(
-          chunks.map((chunk, i) =>
-            supabase
-              .from("rag_chunks")
-              .update({ embedding: JSON.stringify(embeddings[i]), embedded_at: now })
-              .eq("id", chunk.id)
-          )
-        );
+        const { error: rpcErr } = await supabase.rpc("batch_update_embeddings", {
+          chunk_ids: valid.map((c) => c.id),
+          chunk_embeddings: embeddings.map((e) => JSON.stringify(e)),
+          ts: now,
+        });
+
+        if (rpcErr) {
+          await setStatus(supabase, baseName, totalChunks, "error", `RPC: ${rpcErr.message}`);
+          break;
+        }
 
         baseProcessed += chunks.length;
         batchesUsed++;
-
-        // Atualiza progresso
         await setStatus(supabase, baseName, totalChunks, "processing");
       }
 
-      // Resultado desta base
       const { count: embNow } = await supabase.from("rag_chunks").select("id", { count: "exact", head: true }).eq("instance_name", baseName).not("embedding", "is", null);
       results[baseName] = { processed: baseProcessed, total: totalChunks, embedded: embNow ?? 0, status: baseProcessed > 0 ? "ok" : "skipped" };
     }

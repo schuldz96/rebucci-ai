@@ -678,8 +678,8 @@ const SettingsPage = () => {
 
         if (data?.done) break;
 
-        // Pausa entre lotes para evitar rate limit da OpenAI/Supabase
-        await new Promise((r) => setTimeout(r, 800));
+        // Pausa curta entre lotes
+        await new Promise((r) => setTimeout(r, 200));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
@@ -941,7 +941,7 @@ const SettingsPage = () => {
       }).select().single();
       if (!job) throw new Error("Falha ao criar job");
 
-      const INSERT_BATCH = 50;
+      const INSERT_BATCH = 500;
       const pending: object[] = [];
       let totalChunks = 0;
 
@@ -985,21 +985,26 @@ const SettingsPage = () => {
         const idxFromMe = headers.findIndex(h => /from.?me|enviado|sent/i.test(h));
         const idxMsg = headers.findIndex(h => /mensagem|message|texto|text|body|conteudo/i.test(h));
 
-        setCsvStatus("Agrupando conversas por contato...");
+        setCsvStatus(`Analisando ${dataRows.length.toLocaleString()} mensagens...`);
 
         // Agrupa mensagens por telefone, filtra lixo
         const convMap = new Map<string, string[]>();
         const msgFreq = new Map<string, number>(); // detecta mensagens repetidas (broadcast)
 
         // Primeira passada: conta frequência de cada mensagem
-        for (const row of dataRows) {
-          const msg = (idxMsg >= 0 ? (row[idxMsg] ?? "") : "").trim();
+        for (let r = 0; r < dataRows.length; r++) {
+          const msg = (idxMsg >= 0 ? (dataRows[r][idxMsg] ?? "") : "").trim();
           if (msg) msgFreq.set(msg, (msgFreq.get(msg) ?? 0) + 1);
+          if (r % 5000 === 0 && r > 0) {
+            setCsvStatus(`Analisando duplicatas... ${r.toLocaleString()}/${dataRows.length.toLocaleString()} msgs`);
+            await new Promise((r) => setTimeout(r, 0)); // yield para atualizar UI
+          }
         }
 
         // Segunda passada: agrupa, ignorando mensagens que aparecem >50x (broadcast/spam)
         let skippedSpam = 0;
-        for (const row of dataRows) {
+        for (let r = 0; r < dataRows.length; r++) {
+          const row = dataRows[r];
           const jid = idxJid >= 0 ? (row[idxJid] ?? "desconhecido") : "desconhecido";
           const fromMe = idxFromMe >= 0 ? (row[idxFromMe] ?? "") : "";
           const msg = (idxMsg >= 0 ? (row[idxMsg] ?? "") : row.join(" | ")).trim();
@@ -1014,6 +1019,11 @@ const SettingsPage = () => {
           const speaker = fm === "true" || fm === "1" || fm === "atendente" ? "Atendente" : "Aluno";
           if (!convMap.has(jid)) convMap.set(jid, []);
           convMap.get(jid)!.push(`${speaker}: ${msg}`);
+
+          if (r % 5000 === 0 && r > 0) {
+            setCsvStatus(`Agrupando conversas... ${r.toLocaleString()}/${dataRows.length.toLocaleString()} msgs (${convMap.size.toLocaleString()} contatos)`);
+            await new Promise((r) => setTimeout(r, 0)); // yield para atualizar UI
+          }
         }
 
         setCsvStatus(`${convMap.size.toLocaleString()} contatos encontrados (${skippedSpam.toLocaleString()} msgs de broadcast filtradas). Criando chunks...`);
@@ -1048,9 +1058,10 @@ const SettingsPage = () => {
           if (pending.length >= INSERT_BATCH) {
             await supabase.from("rag_chunks").insert([...pending]);
             pending.length = 0;
-            if (processed % 100 === 0) {
-              setCsvStatus(`Salvando... ${processed.toLocaleString()}/${convMap.size.toLocaleString()} contatos (${totalChunks.toLocaleString()} chunks)`);
-            }
+          }
+          if (processed % 50 === 0) {
+            setCsvStatus(`Salvando... ${processed.toLocaleString()}/${convMap.size.toLocaleString()} contatos (${totalChunks.toLocaleString()} chunks)`);
+            await new Promise((r) => setTimeout(r, 0)); // yield para atualizar UI
           }
         }
       }
@@ -1074,14 +1085,29 @@ const SettingsPage = () => {
       if (csvCancelled) {
         setCsvStatus(`⚠️ Cancelado. ${totalChunks} chunks salvos.`);
       } else {
-        // ── Registra status e aguarda pg_cron processar os embeddings ─────────
+        // ── Registra status e dispara embeddings diretamente ─────────
         const now = new Date().toISOString();
         await supabase.from("vectorstore_status").upsert(
           { instance_name: baseName, status: "processing", total_chunks: totalChunks, embedded: 0, last_run: now, updated_at: now },
           { onConflict: "instance_name" }
         );
         await loadVsStatus();
-        setCsvStatus(`✅ ${totalChunks} chunks salvos. Embeddings sendo gerados em background…`);
+        setCsvStatus(`✅ ${totalChunks} chunks salvos. Gerando embeddings...`);
+
+        // Dispara Edge Function em loop até completar (sem depender do pg_cron)
+        let embDone = false;
+        while (!embDone && !csvCancelRef.current) {
+          const { data: embData, error: embErr } = await supabase.functions.invoke("generate-embeddings", {
+            body: { instance_name: baseName },
+          });
+          await loadVsStatus();
+          if (embErr || embData?.error || embData?.done || embData?.paused) {
+            embDone = true;
+          } else {
+            await new Promise((r) => setTimeout(r, 200));
+          }
+        }
+        setCsvStatus(`✅ ${totalChunks} chunks salvos. Embeddings concluídos!`);
       }
 
       setCsvFile(null);

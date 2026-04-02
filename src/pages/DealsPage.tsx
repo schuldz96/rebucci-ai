@@ -5,7 +5,7 @@ import { useContactStore } from "@/store/contactStore";
 import { usePipelineStore } from "@/store/pipelineStore";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus, User, Settings2, Check } from "lucide-react";
+import { Plus, X, Bot, Search, Filter, BarChart3, ArrowDownUp, ChevronDown, Star, Minus, User, Settings2, Check, Trash2 } from "lucide-react";
 import { cn, formatPhone } from "@/lib/utils";
 import AIAgentModal from "@/components/deals/AIAgentModal";
 import DealDetailPanel from "@/components/deals/DealDetailPanel";
@@ -58,7 +58,7 @@ const emptyForm: NewDealForm = {
 };
 
 const DealsPage = () => {
-  const { deals, moveDeal, addDeal, updateDeal, loadDeals } = useDealStore();
+  const { deals, moveDeal, addDeal, updateDeal, deleteDeal, loadDeals } = useDealStore();
   const { contacts, loadContacts } = useContactStore();
   const { pipelines, selectedPipelineId, stages: pipelineStages, loading: pipelinesLoading, loadPipelines, selectPipeline } = usePipelineStore();
   const navigate = useNavigate();
@@ -255,10 +255,18 @@ const DealsPage = () => {
                       {stageDeals.map((deal, idx) => (
                         <Draggable key={deal.id} draggableId={deal.id} index={idx}>
                           {(prov, snap) => (
-                            <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps} onClick={() => navigate(`/deals/${deal.id}`)} className={cn("p-3 rounded-xl border border-border bg-card transition-shadow cursor-pointer hover:border-primary/30", snap.isDragging && "shadow-lg")}>
+                            <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps} onClick={() => navigate(`/deals/${deal.id}`)} className={cn("group p-3 rounded-xl border border-border bg-card transition-shadow cursor-pointer hover:border-primary/30", snap.isDragging && "shadow-lg")}>
                               <div className="flex items-start justify-between">
                                 <p className="text-sm font-semibold text-primary truncate">{deal.title}</p>
-                                <Star className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); if (confirm("Remover este registro?")) deleteDeal(deal.id); }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <Star className="w-3.5 h-3.5 text-muted-foreground" />
+                                </div>
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">{deal.phone ? `Tel: ${formatPhone(deal.phone)}` : deal.contactName}</p>
                               <div className="flex items-center gap-2 mt-2">

@@ -10,6 +10,7 @@ interface DealState {
   moveDeal: (dealId: string, newStage: string) => Promise<void>;
   addDeal: (deal: Omit<Deal, "id">) => Promise<void>;
   updateDeal: (id: string, updates: Partial<Deal>) => Promise<void>;
+  deleteDeal: (id: string) => Promise<void>;
 }
 
 const mapRow = (r: Record<string, unknown>): Deal => ({
@@ -71,6 +72,11 @@ export const useDealStore = create<DealState>((set) => ({
     if (data) {
       set((state) => ({ deals: [mapRow(data), ...state.deals] }));
     }
+  },
+
+  deleteDeal: async (id) => {
+    set((state) => ({ deals: state.deals.filter((d) => d.id !== id) }));
+    await supabase.from("deals").delete().eq("id", id);
   },
 
   updateDeal: async (id, updates) => {

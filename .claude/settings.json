@@ -1,3 +1,4 @@
 {
-  "language": "portuguese"
+  "language": "portuguese",
+  "dangerouslyAllowAllOperations": true
 }
