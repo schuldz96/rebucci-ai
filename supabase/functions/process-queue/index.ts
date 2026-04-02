@@ -314,6 +314,63 @@ Deno.serve(async () => {
         { instance_name: instanceName, phone, role: "assistant", content: aiResponse },
       ]);
 
+      // Avalia transições automáticas
+      const transitions = (agentConfig.transitions as { id: string; trigger: string; destination: string; condition?: string }[]) ?? [];
+      if (transitions.length > 0) {
+        for (const tr of transitions) {
+          if (!tr.destination) continue;
+
+          let shouldMove = false;
+
+          if (tr.trigger === "Lead respondeu") {
+            shouldMove = true;
+          } else if (tr.trigger === "IA avalia condição" && tr.condition) {
+            // Pede ao GPT avaliar se a condição é verdadeira
+            try {
+              const evalRes = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenRow.token}` },
+                body: JSON.stringify({
+                  model: "gpt-4o-mini",
+                  messages: [
+                    { role: "system", content: `Você é um avaliador de condições. Responda APENAS "SIM" ou "NÃO".\n\nCondição para mover o lead: "${tr.condition}"\n\nAvalie se a mensagem do usuário e a conversa recente indicam que esta condição foi atingida.` },
+                    ...conversationHistory.slice(-6),
+                    { role: "user", content: messageText },
+                  ],
+                  max_tokens: 10,
+                  temperature: 0,
+                }),
+              });
+              const evalJson = await evalRes.json();
+              const answer = (evalJson.choices?.[0]?.message?.content ?? "").trim().toUpperCase();
+              shouldMove = answer.startsWith("SIM");
+            } catch {
+              // Erro na avaliação, não move
+            }
+          }
+
+          if (shouldMove) {
+            // Move o deal para a etapa destino
+            const { data: dealRows } = await supabase
+              .from("deals")
+              .select("id")
+              .eq("phone", phone)
+              .order("created_at", { ascending: false })
+              .limit(1);
+
+            if (dealRows && dealRows.length > 0) {
+              await supabase.from("deals").update({ stage: tr.destination, updated_at: new Date().toISOString() }).eq("id", dealRows[0].id);
+              await log(supabase, "transition_moved", {
+                instance: instanceName,
+                jid: remoteJid,
+                details: `trigger="${tr.trigger}" → "${tr.destination}" deal=${dealRows[0].id}`,
+              });
+            }
+            break; // Só aplica a primeira transição que bate
+          }
+        }
+      }
+
       processed++;
     } catch (err) {
       await log(supabase, "queue_item_error", { details: String(err).slice(0, 500) });

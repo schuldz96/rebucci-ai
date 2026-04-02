@@ -206,12 +206,16 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
 
   const addTransition = (trigger: string) => {
     const id = `tr-${Date.now()}`;
-    setConfig({ ...config, transitions: [...config.transitions, { id, trigger, destination: "" }] });
+    setConfig({ ...config, transitions: [...config.transitions, { id, trigger, destination: "", condition: "" }] });
     setAddingTransition(false);
   };
 
   const updateTransitionDestination = (id: string, destination: string) => {
     setConfig({ ...config, transitions: config.transitions.map((t) => (t.id === id ? { ...t, destination } : t)) });
+  };
+
+  const updateTransitionCondition = (id: string, condition: string) => {
+    setConfig({ ...config, transitions: config.transitions.map((t) => (t.id === id ? { ...t, condition } : t)) });
   };
 
   const removeTransition = (id: string) => setConfig({ ...config, transitions: config.transitions.filter((t) => t.id !== id) });
@@ -527,6 +531,18 @@ const AIAgentModal = ({ stage, onClose, onRemove }: { stage: string; onClose: ()
                           </select>
                           <button onClick={() => removeTransition(tr.id)} className="text-muted-foreground hover:text-destructive transition-colors shrink-0"><Trash2 className="w-4 h-4" /></button>
                         </div>
+                        {tr.trigger === "IA avalia condição" && (
+                          <div className="px-4 pb-3 pt-1">
+                            <label className="text-xs text-muted-foreground mb-1 block">Descreva a condição em linguagem natural:</label>
+                            <textarea
+                              value={tr.condition || ""}
+                              onChange={(e) => updateTransitionCondition(tr.id, e.target.value)}
+                              placeholder="Ex: Quando o aluno pedir para falar com um humano, reclamar do atendimento, ou perguntar sobre cancelamento"
+                              rows={3}
+                              className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
