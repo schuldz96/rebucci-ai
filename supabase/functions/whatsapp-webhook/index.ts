@@ -32,6 +32,107 @@ function extractText(message: unknown): string {
   );
 }
 
+type MediaType = "audio" | "image" | "video" | "document" | null;
+
+function detectMediaType(message: unknown): MediaType {
+  if (!message || typeof message !== "object") return null;
+  const m = message as Record<string, unknown>;
+  if (m.audioMessage) return "audio";
+  if (m.imageMessage) return "image";
+  if (m.videoMessage) return "video";
+  if (m.documentMessage) return "document";
+  return null;
+}
+
+function extractDocumentInfo(message: unknown): { title?: string; caption?: string; mimetype?: string } {
+  if (!message || typeof message !== "object") return {};
+  const m = message as Record<string, unknown>;
+  const doc = m.documentMessage as Record<string, unknown> | undefined;
+  if (!doc) return {};
+  return {
+    title: doc.title as string | undefined,
+    caption: doc.caption as string | undefined,
+    mimetype: doc.mimetype as string | undefined,
+  };
+}
+
+async function downloadMedia(
+  instanceName: string,
+  messageData: Record<string, unknown>,
+  evoUrl: string,
+  evoToken: string,
+): Promise<{ base64: string; mimetype: string } | null> {
+  try {
+    const key = messageData.key as Record<string, unknown>;
+    const res = await fetch(`${evoUrl}/chat/getBase64FromMediaMessage/${instanceName}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: evoToken },
+      body: JSON.stringify({ message: { key }, convertToMp4: false }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json() as { base64?: string; mimetype?: string };
+    if (!json.base64) return null;
+    return { base64: json.base64, mimetype: json.mimetype || "application/octet-stream" };
+  } catch {
+    return null;
+  }
+}
+
+async function transcribeAudio(base64: string, mimetype: string, openaiToken: string): Promise<string> {
+  try {
+    const binaryStr = atob(base64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+    const ext = mimetype.includes("ogg") ? "ogg" : mimetype.includes("mp4") ? "m4a" : mimetype.includes("mpeg") ? "mp3" : "ogg";
+    const formData = new FormData();
+    formData.append("file", new Blob([bytes], { type: mimetype }), `audio.${ext}`);
+    formData.append("model", "whisper-1");
+    formData.append("language", "pt");
+
+    const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${openaiToken}` },
+      body: formData,
+    });
+    if (!res.ok) return "";
+    const json = await res.json() as { text?: string };
+    return json.text?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+async function describeImage(base64: string, mimetype: string, openaiToken: string, caption?: string): Promise<string> {
+  try {
+    const dataUrl = `data:${mimetype};base64,${base64}`;
+    const userContent: unknown[] = [
+      { type: "image_url", image_url: { url: dataUrl, detail: "low" } },
+    ];
+    if (caption) {
+      userContent.unshift({ type: "text", text: `Legenda enviada: "${caption}"` });
+    }
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiToken}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "Descreva a imagem de forma objetiva em português, em no máximo 2 frases. Se houver texto na imagem, transcreva-o." },
+          { role: "user", content: userContent },
+        ],
+        max_tokens: 300,
+      }),
+    });
+    if (!res.ok) return caption || "";
+    const json = await res.json();
+    return json.choices?.[0]?.message?.content?.trim() ?? caption ?? "";
+  } catch {
+    return caption || "";
+  }
+}
+
 function extractMessageData(body: Record<string, unknown>): Record<string, unknown> | null {
   const raw = body.data;
   if (!raw) return null;
@@ -126,7 +227,70 @@ Deno.serve(async (req: Request) => {
     if (!remoteJid || remoteJid.endsWith("@g.us")) return new Response("ok", { status: 200 });
 
     const rawPhone = stripPhone(remoteJid.split("@")[0]);
-    const messageText = extractText(data.message).trim();
+    let messageText = extractText(data.message).trim();
+    const mediaType = detectMediaType(data.message);
+
+    // Se for mídia (áudio/imagem/vídeo/documento), tenta processar
+    if (mediaType && !messageText) {
+      const [evoConfigRes, openaiTokenRes] = await Promise.all([
+        supabase.from("evolution_config").select("api_url, api_token").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("api_tokens").select("token").ilike("provider", "openai").limit(1).maybeSingle(),
+      ]);
+
+      if (evoConfigRes.data && openaiTokenRes.data?.token) {
+        const evoUrl = (evoConfigRes.data.api_url as string).replace(/\/$/, "");
+        const evoToken = evoConfigRes.data.api_token as string;
+        const openaiToken = openaiTokenRes.data.token;
+        const media = await downloadMedia(instanceName, data, evoUrl, evoToken);
+
+        if (media) {
+          switch (mediaType) {
+            case "audio": {
+              const transcription = await transcribeAudio(media.base64, media.mimetype, openaiToken);
+              if (transcription) {
+                messageText = `[Áudio transcrito]: ${transcription}`;
+                await log("audio_transcribed", { instance: instanceName, jid: remoteJid, msg: transcription.slice(0, 200) });
+              }
+              break;
+            }
+            case "image": {
+              const imgCaption = ((data.message as Record<string, unknown>)?.imageMessage as Record<string, unknown>)?.caption as string | undefined;
+              const description = await describeImage(media.base64, media.mimetype, openaiToken, imgCaption);
+              if (description) {
+                messageText = `[Imagem]: ${description}`;
+                await log("image_described", { instance: instanceName, jid: remoteJid, msg: description.slice(0, 200) });
+              }
+              break;
+            }
+            case "video": {
+              const vidCaption = ((data.message as Record<string, unknown>)?.videoMessage as Record<string, unknown>)?.caption as string | undefined;
+              // Para vídeo, usa apenas a legenda se existir (transcrição de vídeo é muito custosa)
+              if (vidCaption) {
+                messageText = `[Vídeo com legenda]: ${vidCaption}`;
+              } else {
+                messageText = "[Vídeo recebido sem legenda]";
+              }
+              await log("video_received", { instance: instanceName, jid: remoteJid, msg: messageText });
+              break;
+            }
+            case "document": {
+              const docInfo = extractDocumentInfo(data.message);
+              const parts: string[] = [];
+              if (docInfo.title) parts.push(`"${docInfo.title}"`);
+              if (docInfo.mimetype) parts.push(`(${docInfo.mimetype})`);
+              if (docInfo.caption) parts.push(`— ${docInfo.caption}`);
+              messageText = `[Documento recebido]: ${parts.join(" ") || "arquivo"}`;
+              await log("document_received", { instance: instanceName, jid: remoteJid, msg: messageText });
+              break;
+            }
+          }
+        }
+
+        if (!messageText) {
+          await log("media_processing_failed", { instance: instanceName, jid: remoteJid, details: `type=${mediaType}` });
+        }
+      }
+    }
 
     await log("message_parsed", { instance: instanceName, event, jid: remoteJid, msg: messageText.slice(0, 200) });
 
