@@ -588,12 +588,24 @@ const SettingsPage = () => {
     setSavingGeneral(false);
   };
 
-  // Load Prime endpoints
+  const [primeSyncLogs, setPrimeSyncLogs] = useState<Record<string, { details: string; created_at: string }>>({});
+
+  // Load Prime endpoints + sync logs
   useEffect(() => {
     if (section !== "prime") return;
     setPrimeLoading(true);
-    supabase.from("prime_endpoints").select("*").order("created_at").then(({ data }) => {
-      if (data) setPrimeEndpoints(data);
+    Promise.all([
+      supabase.from("prime_endpoints").select("*").order("created_at"),
+      supabase.from("webhook_logs").select("event, details, created_at").eq("instance_name", "prime-sync").order("created_at", { ascending: false }).limit(10),
+    ]).then(([epRes, logRes]) => {
+      if (epRes.data) setPrimeEndpoints(epRes.data);
+      if (logRes.data) {
+        const logs: Record<string, { details: string; created_at: string }> = {};
+        for (const log of logRes.data) {
+          if (!logs[log.event]) logs[log.event] = { details: log.details, created_at: log.created_at };
+        }
+        setPrimeSyncLogs(logs);
+      }
       setPrimeLoading(false);
     });
   }, [section]);
@@ -1451,6 +1463,28 @@ const SettingsPage = () => {
                         {primeTestResult[ep.id].msg}
                       </p>
                     )}
+                    {/* Status da última sync */}
+                    {(() => {
+                      const syncKey = /active|customer|sync/i.test(ep.url) ? "sync-contacts" : /feedback/i.test(ep.url) ? "sync-feedbacks" : null;
+                      const log = syncKey ? primeSyncLogs[syncKey] : null;
+                      if (!log) return null;
+                      const data = (() => { try { return JSON.parse(log.details); } catch { return null; } })();
+                      const time = new Date(log.created_at).toLocaleString("pt-BR");
+                      const cronLabel = syncKey === "sync-contacts" ? "Cron: cada 4h" : "Cron: cada 1min (25 contatos/vez)";
+                      return (
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
+                          <span className="text-primary font-medium">{cronLabel}</span>
+                          <span>Última sync: {time}</span>
+                          {data && (
+                            <span>
+                              {data.synced != null ? `${data.synced} sincronizados` : ""}
+                              {data.updated != null ? `${data.updated} atualizados` : ""}
+                              {data.errors > 0 ? ` · ${data.errors} erros` : ""}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
