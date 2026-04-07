@@ -5,11 +5,28 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 function cleanPhone(p: string): string {
   let d = p.replace(/\D/g, "");
-  // Remove DDI duplicado (5555... com >13 dígitos)
+
+  // DDI duplicado: 5555... (BR), 351351... (PT), 4444... (UK)
   if (d.startsWith("5555") && d.length > 13) d = d.slice(2);
-  if (d.length > 13 && d.startsWith("55")) d = d.slice(2);
-  // Adiciona DDI 55 se falta
-  if (!d.startsWith("55") && (d.length === 10 || d.length === 11)) d = `55${d}`;
+  if (d.startsWith("351351") && d.length > 14) d = d.slice(3);
+  if (d.startsWith("4444") && d.length > 12) d = d.slice(2);
+
+  // DDD duplicado sem DDI: 6161..., 2121..., etc.
+  const ddd2 = d.slice(0, 2);
+  const ddd4 = d.slice(2, 4);
+  if (ddd2 === ddd4 && !d.startsWith("55") && !d.startsWith("351") && !d.startsWith("44") && d.length >= 12) {
+    d = `55${d.slice(2)}`;
+  }
+
+  // BR sem DDI 55 (10-12 dígitos começando com DDD válido 11-99)
+  if (!d.startsWith("55") && !d.startsWith("351") && !d.startsWith("44") && d.length >= 10 && d.length <= 12) {
+    const possibleDdd = parseInt(d.slice(0, 2), 10);
+    if (possibleDdd >= 11 && possibleDdd <= 99) d = `55${d}`;
+  }
+
+  // Ainda longo demais: tenta remover DDI duplicado genérico
+  if (d.startsWith("55") && d.length > 13) d = d.slice(2);
+
   return d;
 }
 

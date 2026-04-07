@@ -45,18 +45,27 @@ export function getPhoneVariants(phone: string): string[] {
  */
 export function cleanPhone(phone: string): string {
   let d = stripPhone(phone);
-  // Se começa com 5555 e tem mais de 13 dígitos → DDI duplicado, remove o primeiro 55
-  if (d.startsWith("5555") && d.length > 13) {
-    d = d.slice(2);
+
+  // DDI duplicado: 5555 (BR), 351351 (PT), 4444 (UK)
+  if (d.startsWith("5555") && d.length > 13) d = d.slice(2);
+  if (d.startsWith("351351") && d.length > 14) d = d.slice(3);
+  if (d.startsWith("4444") && d.length > 12) d = d.slice(2);
+
+  // DDD duplicado sem DDI: 6161..., 2121..., etc.
+  const ddd2 = d.slice(0, 2);
+  const ddd4 = d.slice(2, 4);
+  if (ddd2 === ddd4 && !d.startsWith("55") && !d.startsWith("351") && !d.startsWith("44") && d.length >= 12) {
+    d = `55${d.slice(2)}`;
   }
-  // Se ainda tem mais de 13 dígitos (ex: 15+ dígitos), tenta normalizar
-  if (d.length > 13 && d.startsWith("55")) {
-    d = d.slice(2);
+
+  // BR sem DDI 55 (10-12 dígitos)
+  if (!d.startsWith("55") && !d.startsWith("351") && !d.startsWith("44") && d.length >= 10 && d.length <= 12) {
+    const possibleDdd = parseInt(d.slice(0, 2), 10);
+    if (possibleDdd >= 11 && possibleDdd <= 99) d = `55${d}`;
   }
-  // Se não tem DDI 55 e tem 10-11 dígitos (DDD + número), adiciona
-  if (!d.startsWith("55") && (d.length === 10 || d.length === 11)) {
-    d = `55${d}`;
-  }
+
+  if (d.startsWith("55") && d.length > 13) d = d.slice(2);
+
   return d;
 }
 
