@@ -1,106 +1,170 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users,
-  MessageSquare,
-  DollarSign,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-  Bot,
+  Users, UserCheck, UserX, CalendarClock, AlertTriangle,
+  Loader2,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
-const stats = [
-  { label: "Total Leads", value: "1.247", change: "+12.5%", up: true, icon: Users, color: "text-primary" },
-  { label: "Conversas Ativas", value: "89", change: "+8.2%", up: true, icon: MessageSquare, color: "text-accent" },
-  { label: "Receita Mensal", value: "R$ 47.8k", change: "+23.1%", up: true, icon: DollarSign, color: "text-success" },
-  { label: "Taxa de Conversão", value: "34.2%", change: "-2.4%", up: false, icon: TrendingUp, color: "text-warning" },
-];
+interface Stats {
+  total: number;
+  active: number;
+  inactive: number;
+  expiring30: number;
+  expired30: number;
+}
 
-const recentActivities = [
-  { text: "Ana Silva avançou para 'Qualificado'", time: "5 min atrás" },
-  { text: "Nova mensagem de Carlos Mendes", time: "12 min atrás" },
-  { text: "Negócio 'Consultoria IA' fechado - R$ 12.000", time: "1h atrás" },
-  { text: "Agente IA respondeu 23 mensagens", time: "2h atrás" },
-  { text: "Nova base RAG criada: 'Base Vendas'", time: "3h atrás" },
-  { text: "Roberto Alves abriu ticket de suporte", time: "4h atrás" },
-];
+interface FeedbackItem {
+  id: string;
+  name: string;
+  phone: string;
+  nextFeedback: string;
+  daysLeft: number;
+}
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const today = new Date().toISOString().slice(0, 10);
+      const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      const ago30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+
+      // Busca stats em paralelo
+      const [totalRes, activeRes, inactiveRes, expiringRes, expiredRes, feedbackRes] = await Promise.all([
+        supabase.from("contacts").select("id", { count: "exact", head: true }),
+        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "inactive"),
+        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "active").gte("end_date", today).lte("end_date", in30),
+        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "inactive").gte("end_date", ago30).lte("end_date", today),
+        supabase.from("contacts").select("id, name, phone, next_feedback").not("next_feedback", "is", null).gte("next_feedback", today).order("next_feedback", { ascending: true }).limit(20),
+      ]);
+
+      setStats({
+        total: totalRes.count ?? 0,
+        active: activeRes.count ?? 0,
+        inactive: inactiveRes.count ?? 0,
+        expiring30: expiringRes.count ?? 0,
+        expired30: expiredRes.count ?? 0,
+      });
+
+      if (feedbackRes.data) {
+        setFeedbacks(feedbackRes.data.map((r) => {
+          const diff = Math.ceil((new Date(r.next_feedback as string).getTime() - Date.now()) / 86400000);
+          return {
+            id: r.id as string,
+            name: r.name as string,
+            phone: r.phone as string,
+            nextFeedback: r.next_feedback as string,
+            daysLeft: diff,
+          };
+        }));
+      }
+
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const statCards = stats ? [
+    { label: "Total Alunos", value: stats.total.toLocaleString(), icon: Users, color: "text-primary", bgColor: "bg-primary/10" },
+    { label: "Alunos Ativos", value: stats.active.toLocaleString(), icon: UserCheck, color: "text-success", bgColor: "bg-success/10" },
+    { label: "Alunos Inativos", value: stats.inactive.toLocaleString(), icon: UserX, color: "text-muted-foreground", bgColor: "bg-muted" },
+    { label: "Vencendo próx. 30 dias", value: stats.expiring30.toLocaleString(), icon: CalendarClock, color: "text-warning", bgColor: "bg-warning/10" },
+    { label: "Vencidos últimos 30 dias", value: stats.expired30.toLocaleString(), icon: AlertTriangle, color: "text-destructive", bgColor: "bg-destructive/10" },
+  ] : [];
+
   return (
-    <div className="p-6 lg:p-8 space-y-8 max-w-7xl">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Visão geral do seu CRM</p>
-      </div>
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 overflow-auto p-6 lg:p-8 space-y-8 max-w-7xl">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Visão geral dos alunos</p>
+        </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface-elevated p-5"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
-              <span className={`text-xs font-medium flex items-center gap-0.5 ${stat.up ? "text-success" : "text-destructive"}`}>
-                {stat.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {stat.change}
-              </span>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {statCards.map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className="surface-elevated p-5"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", stat.bgColor)}>
+                      <stat.icon className={cn("w-4.5 h-4.5", stat.color)} />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                </motion.div>
+              ))}
             </div>
-            <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-            <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-          </motion.div>
-        ))}
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Activity */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="surface-elevated p-6"
-        >
-          <h2 className="text-lg font-semibold text-foreground mb-4">Atividade Recente</h2>
-          <div className="space-y-4">
-            {recentActivities.map((a, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
-                <div>
-                  <p className="text-sm text-foreground">{a.text}</p>
-                  <p className="text-xs text-muted-foreground">{a.time}</p>
+            {/* Próximos Feedbacks */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="surface-elevated p-6"
+            >
+              <h2 className="text-lg font-semibold text-foreground mb-4">Próximos Feedbacks</h2>
+              {feedbacks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum feedback agendado nos próximos dias.</p>
+              ) : (
+                <div className="overflow-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Aluno</th>
+                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Telefone</th>
+                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Data</th>
+                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Em</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {feedbacks.map((fb) => (
+                        <tr
+                          key={fb.id}
+                          onClick={() => navigate(`/contacts/${fb.id}`)}
+                          className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
+                        >
+                          <td className="px-4 py-2.5 text-sm font-medium text-foreground">{fb.name}</td>
+                          <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.phone}</td>
+                          <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.nextFeedback}</td>
+                          <td className="px-4 py-2.5">
+                            <span className={cn("text-xs px-2 py-0.5 rounded-lg font-medium",
+                              fb.daysLeft <= 3 ? "bg-destructive/20 text-destructive" :
+                              fb.daysLeft <= 7 ? "bg-warning/20 text-warning" :
+                              "bg-muted text-muted-foreground"
+                            )}>
+                              {fb.daysLeft === 0 ? "Hoje" : fb.daysLeft === 1 ? "Amanhã" : `${fb.daysLeft} dias`}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* AI Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="surface-elevated p-6"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Bot className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Resumo IA</h2>
-          </div>
-          <div className="space-y-4 text-sm text-secondary-foreground">
-            <p>
-              📊 Hoje seus agentes responderam <strong className="text-foreground">47 mensagens</strong> automaticamente com taxa de satisfação de <strong className="text-foreground">94%</strong>.
-            </p>
-            <p>
-              🔥 <strong className="text-foreground">3 leads quentes</strong> identificados — Ana Silva, Carlos Mendes e Pedro Santos estão prontos para conversão.
-            </p>
-            <p>
-              💡 Sugestão: O lead "Juliana Costa" não recebeu follow-up há 48h. Recomendo ativação do agente de reengajamento.
-            </p>
-          </div>
-        </motion.div>
+              )}
+            </motion.div>
+          </>
+        )}
       </div>
     </div>
   );
