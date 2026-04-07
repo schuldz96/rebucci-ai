@@ -56,6 +56,9 @@ const ContactsPage = () => {
   const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", company: "", status: "active" as Contact["status"] });
   const [createError, setCreateError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [advFilters, setAdvFilters] = useState<{ id: string; field: string; op: "equals" | "known" | "unknown"; value: string }[]>([]);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [sortCol, setSortCol] = useState<string>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(0);
@@ -91,6 +94,16 @@ const ContactsPage = () => {
     loadDeals();
   }, [loadContacts, loadDeals]);
 
+  // Fecha menu filtro ao clicar fora
+  useEffect(() => {
+    if (!showFilterMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showFilterMenu]);
+
   const filtered = contacts
     .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter))
     .filter((c) =>
@@ -100,6 +113,15 @@ const ContactsPage = () => {
           c.company.toLowerCase().includes(search.toLowerCase())
         : true
     )
+    .filter((c) => {
+      for (const f of advFilters) {
+        const val = (c[f.field as keyof Contact] ?? "") as string;
+        if (f.op === "known" && (!val || val === "—")) return false;
+        if (f.op === "unknown" && val && val !== "—") return false;
+        if (f.op === "equals" && f.value && !val.toLowerCase().includes(f.value.toLowerCase())) return false;
+      }
+      return true;
+    })
     .sort((a, b) => {
       const key = sortCol as keyof Contact;
       const va = (a[key] ?? "") as string;
@@ -112,7 +134,7 @@ const ContactsPage = () => {
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   // Reset page quando filtro/busca muda
-  useEffect(() => { setPage(0); }, [statusFilter, search, sortCol, sortDir]);
+  useEffect(() => { setPage(0); }, [statusFilter, search, sortCol, sortDir, advFilters]);
 
   const toggleSort = (col: string) => {
     if (sortCol === col) {
@@ -178,7 +200,6 @@ const ContactsPage = () => {
           />
         </div>
         <div className="flex items-center gap-1">
-          <Filter className="w-4 h-4 text-muted-foreground mr-1" />
           {["all", "active", "inactive"].map((s) => (
             <button
               key={s}
@@ -191,6 +212,55 @@ const ContactsPage = () => {
               {s === "all" ? "Todos" : statusLabels[s]}
             </button>
           ))}
+        </div>
+
+        {/* Filtro avançado */}
+        <div className="relative" ref={filterRef}>
+          <button
+            onClick={() => setShowFilterMenu(!showFilterMenu)}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border",
+              advFilters.length > 0 ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:bg-secondary"
+            )}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            Filtrar{advFilters.length > 0 && ` (${advFilters.length})`}
+          </button>
+          {showFilterMenu && (
+            <div className="absolute top-full left-0 mt-1 w-80 bg-card border border-border rounded-xl shadow-lg z-30 p-3 space-y-3">
+              {advFilters.map((f) => (
+                <div key={f.id} className="flex items-center gap-2">
+                  <select value={f.field} onChange={(e) => setAdvFilters((prev) => prev.map((x) => x.id === f.id ? { ...x, field: e.target.value } : x))}
+                    className="flex-1 px-2 py-1.5 rounded-lg bg-secondary border border-border text-xs text-foreground">
+                    {COLUMNS.map((col) => <option key={col.key} value={col.key}>{col.label}</option>)}
+                  </select>
+                  <select value={f.op} onChange={(e) => setAdvFilters((prev) => prev.map((x) => x.id === f.id ? { ...x, op: e.target.value as "equals" | "known" | "unknown" } : x))}
+                    className="px-2 py-1.5 rounded-lg bg-secondary border border-border text-xs text-foreground">
+                    <option value="equals">igual a</option>
+                    <option value="known">é conhecido</option>
+                    <option value="unknown">é desconhecido</option>
+                  </select>
+                  {f.op === "equals" && (
+                    <input value={f.value} onChange={(e) => setAdvFilters((prev) => prev.map((x) => x.id === f.id ? { ...x, value: e.target.value } : x))}
+                      placeholder="Valor..." className="w-24 px-2 py-1.5 rounded-lg bg-secondary border border-border text-xs text-foreground placeholder:text-muted-foreground" />
+                  )}
+                  <button onClick={() => setAdvFilters((prev) => prev.filter((x) => x.id !== f.id))} className="text-muted-foreground hover:text-destructive">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() => setAdvFilters((prev) => [...prev, { id: `f-${Date.now()}`, field: "name", op: "equals", value: "" }])}
+                className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <Plus className="w-3.5 h-3.5" /> Adicionar filtro
+              </button>
+              {advFilters.length > 0 && (
+                <button onClick={() => { setAdvFilters([]); setShowFilterMenu(false); }} className="text-xs text-muted-foreground hover:text-destructive">
+                  Limpar todos
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

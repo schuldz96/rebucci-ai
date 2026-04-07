@@ -13,13 +13,23 @@ function cleanPhone(p: string): string {
   return d;
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
+  aacute: "á", Aacute: "Á", agrave: "à", Agrave: "À", atilde: "ã", Atilde: "Ã", acirc: "â", Acirc: "Â", auml: "ä",
+  eacute: "é", Eacute: "É", egrave: "è", ecirc: "ê", Ecirc: "Ê", euml: "ë",
+  iacute: "í", Iacute: "Í", igrave: "ì", icirc: "î", iuml: "ï",
+  oacute: "ó", Oacute: "Ó", ograve: "ò", otilde: "õ", Otilde: "Õ", ocirc: "ô", Ocirc: "Ô", ouml: "ö",
+  uacute: "ú", Uacute: "Ú", ugrave: "ù", ucirc: "û", uuml: "ü", Uuml: "Ü",
+  ccedil: "ç", Ccedil: "Ç", ntilde: "ñ", Ntilde: "Ñ",
+};
+
 function decodeHtml(str: string): string {
   return str
-    .replace(/&iacute;/g, "í").replace(/&ccedil;/g, "ç").replace(/&atilde;/g, "ã")
-    .replace(/&aacute;/g, "á").replace(/&eacute;/g, "é").replace(/&oacute;/g, "ó")
-    .replace(/&uacute;/g, "ú").replace(/&agrave;/g, "à").replace(/&ecirc;/g, "ê")
-    .replace(/&ocirc;/g, "ô").replace(/&uuml;/g, "ü").replace(/&ntilde;/g, "ñ")
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+    .replace(/&(#(\d+)|#x([0-9a-fA-F]+)|([a-zA-Z]+));/g, (_, __, dec, hex, name) => {
+      if (dec) return String.fromCharCode(parseInt(dec, 10));
+      if (hex) return String.fromCharCode(parseInt(hex, 16));
+      return HTML_ENTITIES[name] ?? `&${name};`;
+    });
 }
 
 Deno.serve(async (req: Request) => {
