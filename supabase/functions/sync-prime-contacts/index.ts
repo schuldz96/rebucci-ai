@@ -3,8 +3,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-function stripPhone(p: string): string {
-  return p.replace(/\D/g, "");
+function cleanPhone(p: string): string {
+  let d = p.replace(/\D/g, "");
+  // Remove DDI duplicado (5555... com >13 dígitos)
+  if (d.startsWith("5555") && d.length > 13) d = d.slice(2);
+  if (d.length > 13 && d.startsWith("55")) d = d.slice(2);
+  // Adiciona DDI 55 se falta
+  if (!d.startsWith("55") && (d.length === 10 || d.length === 11)) d = `55${d}`;
+  return d;
 }
 
 function decodeHtml(str: string): string {
@@ -70,7 +76,7 @@ Deno.serve(async (req: Request) => {
     }[] = [];
 
     for (const item of customers) {
-      const phone = stripPhone(item.customer.phone);
+      const phone = cleanPhone(item.customer.phone);
       if (!phone || seen.has(phone)) continue;
       seen.add(phone);
 

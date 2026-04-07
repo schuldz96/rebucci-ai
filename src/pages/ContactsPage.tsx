@@ -5,7 +5,7 @@ import { useDealStore } from "@/store/dealStore";
 import type { Contact } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, X, Filter } from "lucide-react";
-import { cn, formatPhone, stripPhone } from "@/lib/utils";
+import { cn, cleanPhone, stripPhone } from "@/lib/utils";
 import ContactDetailPanel from "@/components/contacts/ContactDetailPanel";
 
 const STORAGE_KEY = "contacts-col-widths";
@@ -205,7 +205,7 @@ const ContactsPage = () => {
                   >
                     <td className="px-4 py-3 text-sm font-medium text-foreground truncate" style={{ maxWidth: colWidths.name }}>{c.name}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground truncate" style={{ maxWidth: colWidths.email }}>{c.email}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{formatPhone(c.phone)}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{cleanPhone(c.phone)}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground truncate" style={{ maxWidth: colWidths.company }}>{c.company}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium", statusColors[c.status])}>

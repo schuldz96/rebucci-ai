@@ -37,9 +37,32 @@ export function getPhoneVariants(phone: string): string[] {
   return [`55${base}`];
 }
 
+/**
+ * Normaliza telefone brasileiro:
+ * - Remove caracteres não-numéricos
+ * - Remove DDI duplicado (5555... com >13 dígitos → remove primeiro 55)
+ * - Resultado: 55 + DD + 8-9 dígitos (12-13 dígitos total)
+ */
+export function cleanPhone(phone: string): string {
+  let d = stripPhone(phone);
+  // Se começa com 5555 e tem mais de 13 dígitos → DDI duplicado, remove o primeiro 55
+  if (d.startsWith("5555") && d.length > 13) {
+    d = d.slice(2);
+  }
+  // Se ainda tem mais de 13 dígitos (ex: 15+ dígitos), tenta normalizar
+  if (d.length > 13 && d.startsWith("55")) {
+    d = d.slice(2);
+  }
+  // Se não tem DDI 55 e tem 10-11 dígitos (DDD + número), adiciona
+  if (!d.startsWith("55") && (d.length === 10 || d.length === 11)) {
+    d = `55${d}`;
+  }
+  return d;
+}
+
 /** Format digits-only phone for display: +55 11 98765-4321 */
 export function formatPhone(phone: string): string {
-  const digits = stripPhone(phone);
+  const digits = cleanPhone(phone);
   if (digits.length === 13) {
     return `+${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 9)}-${digits.slice(9)}`;
   }
@@ -49,5 +72,5 @@ export function formatPhone(phone: string): string {
   if (digits.length === 11) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   }
-  return phone;
+  return digits;
 }
