@@ -143,19 +143,16 @@ const ContactsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c, i) => (
-                  <motion.tr
+                {filtered.map((c) => (
+                  <tr
                     key={c.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03 }}
                     onClick={() => navigate(`/contacts/${c.id}`)}
                     className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
                   >
                     <td className="px-5 py-3.5 text-sm font-medium text-foreground whitespace-nowrap">{c.name}</td>
                     <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.email}</td>
                     <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{formatPhone(c.phone)}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.company}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap max-w-[200px] truncate">{c.company}</td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium", statusColors[c.status])}>
                         {statusLabels[c.status]}
@@ -166,7 +163,7 @@ const ContactsPage = () => {
                     <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.endDate || "—"}</td>
                     <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.lastFeedback || "—"}</td>
                     <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.nextFeedback || "—"}</td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>

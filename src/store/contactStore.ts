@@ -30,14 +30,22 @@ export const useContactStore = create<ContactState>((set) => ({
 
   loadContacts: async () => {
     set({ loading: true });
-    const { data, error } = await supabase
-      .from("contacts")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error && data) {
-      set({ contacts: data.map(mapRow) });
+    // Busca todos os contatos (Supabase limita a 1000 por query, então pagina)
+    const all: Contact[] = [];
+    let from = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error || !data || data.length === 0) break;
+      all.push(...data.map(mapRow));
+      if (data.length < PAGE) break;
+      from += PAGE;
     }
-    set({ loading: false });
+    set({ contacts: all, loading: false });
   },
 
   updateContact: async (id, updates) => {
