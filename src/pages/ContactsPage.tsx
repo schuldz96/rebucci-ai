@@ -13,7 +13,7 @@ const COLUMNS = [
   { key: "name", label: "Nome", default: 180 },
   { key: "email", label: "Email", default: 220 },
   { key: "phone", label: "Telefone", default: 150 },
-  { key: "company", label: "Empresa", default: 180 },
+  { key: "company", label: "Plano", default: 180 },
   { key: "status", label: "Status", default: 90 },
   { key: "createdAt", label: "Criado em", default: 110 },
   { key: "activationDate", label: "Ativação", default: 110 },
@@ -262,7 +262,7 @@ const ContactsPage = () => {
                     key={field}
                     value={newContact[field]}
                     onChange={(e) => setNewContact({ ...newContact, [field]: e.target.value })}
-                    placeholder={{ name: "Nome", email: "Email", phone: "Telefone", company: "Empresa" }[field]}
+                    placeholder={{ name: "Nome", email: "Email", phone: "Telefone", company: "Plano" }[field]}
                     className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 ))}

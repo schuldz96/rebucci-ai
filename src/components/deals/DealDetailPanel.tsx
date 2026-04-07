@@ -502,7 +502,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
             {linkedContact && (
               <div className="space-y-0 pt-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Dados do contato</p>
-                <EditableRow label="Empresa" fieldKey="company" display={linkedContact.company || "—"} rawVal={linkedContact.company || ""} />
+                <EditableRow label="Plano" fieldKey="company" display={linkedContact.company || "—"} rawVal={linkedContact.company || ""} />
                 <EditableRow label="Data Ativação" fieldKey="activationDate" display={linkedContact.activationDate || "—"} rawVal={linkedContact.activationDate || ""} type="date" />
                 <EditableRow label="Data Término" fieldKey="endDate" display={linkedContact.endDate || "—"} rawVal={linkedContact.endDate || ""} type="date" />
                 <EditableRow label="Último Feedback" fieldKey="lastFeedback" display={linkedContact.lastFeedback || "—"} rawVal={linkedContact.lastFeedback || ""} type="date" />

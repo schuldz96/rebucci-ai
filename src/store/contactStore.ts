@@ -39,6 +39,7 @@ export const useContactStore = create<ContactState>((set) => ({
         .from("contacts")
         .select("*")
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(from, from + PAGE - 1);
       if (error || !data || data.length === 0) break;
       all.push(...data.map(mapRow));

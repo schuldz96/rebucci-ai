@@ -156,7 +156,7 @@ const ContactDetailPanel = ({ contact, onClose }: Props) => {
             <EditableRow label="Nome" fieldKey="name" display={contact.name} rawVal={contact.name} />
             <EditableRow label="Email" fieldKey="email" display={contact.email} rawVal={contact.email} />
             <EditableRow label="Telefone" fieldKey="phone" display={formatPhone(contact.phone)} rawVal={contact.phone} />
-            <EditableRow label="Empresa" fieldKey="company" display={contact.company || "—"} rawVal={contact.company || ""} />
+            <EditableRow label="Plano" fieldKey="company" display={contact.company || "—"} rawVal={contact.company || ""} />
             <EditableRow
               label="Status"
               fieldKey="status"
