@@ -619,10 +619,22 @@ const SettingsPage = () => {
   const handleTestPrimeEndpoint = async (endpoint: { id: string; url: string; method: string; auth_token: string }) => {
     setPrimeTesting(endpoint.id);
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (endpoint.auth_token) headers["Authorization"] = `Bearer ${endpoint.auth_token}`;
-      const res = await fetch(endpoint.url, { method: endpoint.method, headers });
-      setPrimeTestResult((prev) => ({ ...prev, [endpoint.id]: { ok: res.ok, msg: `${res.status} ${res.statusText}` } }));
+      // Se é endpoint de sync/active, chama via edge function (evita CORS)
+      if (/active|sync|customer/i.test(endpoint.url) || /sync/i.test(endpoint.name ?? "")) {
+        const { data, error } = await supabase.functions.invoke("sync-prime-contacts");
+        if (error) throw new Error(error.message);
+        const result = data as { success?: boolean; synced?: number; errors?: number; error?: string };
+        if (result.error) {
+          setPrimeTestResult((prev) => ({ ...prev, [endpoint.id]: { ok: false, msg: result.error! } }));
+        } else {
+          setPrimeTestResult((prev) => ({ ...prev, [endpoint.id]: { ok: true, msg: `✅ ${result.synced ?? 0} contatos sincronizados` } }));
+        }
+      } else {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (endpoint.auth_token) headers["Authorization"] = `Bearer ${endpoint.auth_token}`;
+        const res = await fetch(endpoint.url, { method: endpoint.method, headers });
+        setPrimeTestResult((prev) => ({ ...prev, [endpoint.id]: { ok: res.ok, msg: `${res.status} ${res.statusText}` } }));
+      }
     } catch (e) {
       setPrimeTestResult((prev) => ({ ...prev, [endpoint.id]: { ok: false, msg: e instanceof Error ? e.message : "Erro" } }));
     }

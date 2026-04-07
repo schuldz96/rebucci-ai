@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useContactStore } from "@/store/contactStore";
 import { useDealStore } from "@/store/dealStore";
@@ -7,6 +7,32 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, X, Filter } from "lucide-react";
 import { cn, formatPhone, stripPhone } from "@/lib/utils";
 import ContactDetailPanel from "@/components/contacts/ContactDetailPanel";
+
+const STORAGE_KEY = "contacts-col-widths";
+const COLUMNS = [
+  { key: "name", label: "Nome", default: 180 },
+  { key: "email", label: "Email", default: 220 },
+  { key: "phone", label: "Telefone", default: 150 },
+  { key: "company", label: "Empresa", default: 180 },
+  { key: "status", label: "Status", default: 90 },
+  { key: "createdAt", label: "Criado em", default: 110 },
+  { key: "activationDate", label: "Ativação", default: 110 },
+  { key: "endDate", label: "Término", default: 110 },
+  { key: "lastFeedback", label: "Últ. Feedback", default: 120 },
+  { key: "nextFeedback", label: "Próx. Feedback", default: 120 },
+] as const;
+
+function loadColWidths(): Record<string, number> {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return Object.fromEntries(COLUMNS.map((c) => [c.key, c.default]));
+}
+
+function saveColWidths(widths: Record<string, number>) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(widths)); } catch { /* ignore */ }
+}
 
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success",
@@ -32,6 +58,31 @@ const ContactsPage = () => {
   const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", company: "", status: "lead" as Contact["status"] });
   const [createError, setCreateError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [colWidths, setColWidths] = useState<Record<string, number>>(loadColWidths);
+  const resizingRef = useRef<{ key: string; startX: number; startW: number } | null>(null);
+
+  const onResizeStart = useCallback((key: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizingRef.current = { key, startX: e.clientX, startW: colWidths[key] ?? 150 };
+    const onMove = (ev: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const delta = ev.clientX - resizingRef.current.startX;
+      const newW = Math.max(60, resizingRef.current.startW + delta);
+      setColWidths((prev) => {
+        const next = { ...prev, [resizingRef.current!.key]: newW };
+        saveColWidths(next);
+        return next;
+      });
+    };
+    const onUp = () => {
+      resizingRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [colWidths]);
 
   useEffect(() => {
     loadContacts();
@@ -121,25 +172,28 @@ const ContactsPage = () => {
 
       {/* Table */}
       <div className="flex-1 overflow-hidden px-6 lg:px-8 pb-6">
-        <div className="surface-elevated h-full overflow-auto">
+        <div className="surface-elevated h-full overflow-auto scrollbar-thick">
           {loading && contacts.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
               Carregando contatos...
             </div>
           ) : (
-            <table className="w-full">
+            <table style={{ minWidth: COLUMNS.reduce((s, col) => s + (colWidths[col.key] ?? col.default), 0) }}>
               <thead className="sticky top-0 z-10 bg-card">
                 <tr className="border-b border-border">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Nome</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Email</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Telefone</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Empresa</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Status</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Criado em</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Ativação</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Término</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Últ. Feedback</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Próx. Feedback</th>
+                  {COLUMNS.map((col) => (
+                    <th
+                      key={col.key}
+                      className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap relative select-none"
+                      style={{ width: colWidths[col.key] ?? col.default, minWidth: 60 }}
+                    >
+                      {col.label}
+                      <div
+                        onMouseDown={(e) => onResizeStart(col.key, e)}
+                        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/30 active:bg-primary/50"
+                      />
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -149,20 +203,20 @@ const ContactsPage = () => {
                     onClick={() => navigate(`/contacts/${c.id}`)}
                     className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
                   >
-                    <td className="px-5 py-3.5 text-sm font-medium text-foreground whitespace-nowrap">{c.name}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.email}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{formatPhone(c.phone)}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap max-w-[200px] truncate">{c.company}</td>
-                    <td className="px-5 py-3.5 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm font-medium text-foreground truncate" style={{ maxWidth: colWidths.name }}>{c.name}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground truncate" style={{ maxWidth: colWidths.email }}>{c.email}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{formatPhone(c.phone)}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground truncate" style={{ maxWidth: colWidths.company }}>{c.company}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium", statusColors[c.status])}>
                         {statusLabels[c.status]}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.createdAt}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.activationDate || "—"}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.endDate || "—"}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.lastFeedback || "—"}</td>
-                    <td className="px-5 py-3.5 text-sm text-muted-foreground whitespace-nowrap">{c.nextFeedback || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{c.createdAt}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{c.activationDate || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{c.endDate || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{c.lastFeedback || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{c.nextFeedback || "—"}</td>
                   </tr>
                 ))}
               </tbody>

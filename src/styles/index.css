@@ -93,6 +93,19 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/30;
   }
+
+  .scrollbar-thick::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+  .scrollbar-thick::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/25 rounded-full;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+  .scrollbar-thick::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
 }
 
 @layer utilities {
