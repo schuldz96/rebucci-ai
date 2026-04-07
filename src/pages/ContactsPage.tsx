@@ -4,8 +4,9 @@ import { useContactStore } from "@/store/contactStore";
 import { useDealStore } from "@/store/dealStore";
 import type { Contact } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, X, Filter } from "lucide-react";
+import { Search, Plus, X, Filter, CheckSquare, Square, Loader2 } from "lucide-react";
 import { cn, cleanPhone, stripPhone } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import ContactDetailPanel from "@/components/contacts/ContactDetailPanel";
 
 const STORAGE_KEY = "contacts-col-widths";
@@ -56,6 +57,9 @@ const ContactsPage = () => {
   const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", company: "", status: "active" as Contact["status"] });
   const [createError, setCreateError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [creatingDeals, setCreatingDeals] = useState(false);
+  const [dealResult, setDealResult] = useState<string | null>(null);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [advFilters, setAdvFilters] = useState<{ id: string; field: string; op: "equals" | "known" | "unknown"; value: string }[]>([]);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -135,6 +139,80 @@ const ContactsPage = () => {
 
   // Reset page quando filtro/busca muda
   useEffect(() => { setPage(0); }, [statusFilter, search, sortCol, sortDir, advFilters]);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllPage = () => {
+    const allIds = paged.map((c) => c.id);
+    const allSelected = allIds.every((id) => selected.has(id));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) { allIds.forEach((id) => next.delete(id)); }
+      else { allIds.forEach((id) => next.add(id)); }
+      return next;
+    });
+  };
+
+  const handleCreateDeals = async () => {
+    if (selected.size === 0) return;
+    setCreatingDeals(true);
+    setDealResult(null);
+
+    // Busca deals existentes para verificar duplicatas (1 deal por email)
+    const { data: existingDeals } = await supabase
+      .from("deals")
+      .select("phone");
+
+    const existingPhones = new Set((existingDeals ?? []).map((d: { phone: string }) => d.phone).filter(Boolean));
+
+    // Busca primeiro stage do pipeline
+    const { data: stages } = await supabase
+      .from("pipeline_stages")
+      .select("name, pipeline_id")
+      .order("order_index", { ascending: true })
+      .limit(1);
+
+    const firstStage = stages?.[0]?.name ?? "Suporte IA";
+    const pipelineId = stages?.[0]?.pipeline_id ?? null;
+
+    const selectedContacts = contacts.filter((c) => selected.has(c.id));
+    let created = 0;
+    let skipped = 0;
+
+    for (const c of selectedContacts) {
+      if (existingPhones.has(c.phone)) {
+        skipped++;
+        continue;
+      }
+      try {
+        await supabase.from("deals").insert({
+          title: c.name,
+          contact_name: c.name,
+          contact_id: c.id,
+          phone: c.phone,
+          value: 0,
+          priority: "medium",
+          stage: firstStage,
+          pipeline_id: pipelineId,
+        });
+        existingPhones.add(c.phone);
+        created++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    setDealResult(`${created} negócios criados${skipped > 0 ? `, ${skipped} já existiam` : ""}`);
+    setSelected(new Set());
+    setCreatingDeals(false);
+    loadDeals();
+  };
 
   const toggleSort = (col: string) => {
     if (sortCol === col) {
@@ -264,6 +342,23 @@ const ContactsPage = () => {
         </div>
       </div>
 
+      {/* Selection bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-6 lg:px-8 pb-2 shrink-0">
+          <span className="text-sm text-foreground font-medium">{selected.size} selecionado{selected.size > 1 ? "s" : ""}</span>
+          <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">Limpar seleção</button>
+          <button
+            onClick={handleCreateDeals}
+            disabled={creatingDeals}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 disabled:opacity-50"
+          >
+            {creatingDeals ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            Gerar negócios
+          </button>
+          {dealResult && <span className="text-xs text-success">{dealResult}</span>}
+        </div>
+      )}
+
       {/* Table */}
       <div className="flex-1 overflow-hidden px-6 lg:px-8 pb-6">
         <div className="surface-elevated h-full overflow-auto scrollbar-thick">
@@ -275,6 +370,13 @@ const ContactsPage = () => {
             <table style={{ minWidth: COLUMNS.reduce((s, col) => s + (colWidths[col.key] ?? col.default), 0) }}>
               <thead className="sticky top-0 z-10 bg-card">
                 <tr className="border-b border-border">
+                  <th className="px-3 py-3 w-10">
+                    <button onClick={selectAllPage} className="text-muted-foreground hover:text-foreground">
+                      {paged.length > 0 && paged.every((c) => selected.has(c.id))
+                        ? <CheckSquare className="w-4 h-4 text-primary" />
+                        : <Square className="w-4 h-4" />}
+                    </button>
+                  </th>
                   {COLUMNS.map((col) => (
                     <th
                       key={col.key}
@@ -301,8 +403,13 @@ const ContactsPage = () => {
                   <tr
                     key={c.id}
                     onClick={() => navigate(`/contacts/${c.id}`)}
-                    className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
+                    className={cn("border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer", selected.has(c.id) && "bg-primary/5")}
                   >
+                    <td className="px-3 py-3 w-10" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => toggleSelect(c.id)} className="text-muted-foreground hover:text-foreground">
+                        {selected.has(c.id) ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-sm font-medium text-foreground truncate" style={{ maxWidth: colWidths.name }}>{c.name}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground truncate" style={{ maxWidth: colWidths.email }}>{c.email}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{cleanPhone(c.phone)}</td>
