@@ -19,6 +19,23 @@ Deno.serve(async (req: Request) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
+    // Lock: se última execução foi < 50s atrás, skip (evita overlap de cron)
+    const { data: lastRun } = await supabase
+      .from("webhook_logs")
+      .select("created_at")
+      .eq("instance_name", "prime-sync")
+      .eq("event", "sync-feedbacks")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (lastRun) {
+      const elapsed = Date.now() - new Date(lastRun.created_at).getTime();
+      if (elapsed < 50000) {
+        return json({ skipped: true, reason: "Já existe uma execução recente", elapsed_ms: elapsed });
+      }
+    }
+
     // Busca endpoint Prime de feedbacks
     const { data: endpoints } = await supabase
       .from("prime_endpoints")

@@ -29,6 +29,8 @@ const DashboardPage = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fbPage, setFbPage] = useState(0);
+  const FB_PAGE_SIZE = 10;
 
   useEffect(() => {
     const load = async () => {
@@ -44,7 +46,7 @@ const DashboardPage = () => {
         supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "inactive"),
         supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "active").gte("end_date", today).lte("end_date", in30),
         supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "inactive").gte("end_date", ago30).lte("end_date", today),
-        supabase.from("contacts").select("id, name, phone, next_feedback").not("next_feedback", "is", null).gte("next_feedback", today).order("next_feedback", { ascending: true }).limit(20),
+        supabase.from("contacts").select("id, name, phone, next_feedback").not("next_feedback", "is", null).gte("next_feedback", today).order("next_feedback", { ascending: true }).limit(200),
       ]);
 
       setStats({
@@ -123,44 +125,61 @@ const DashboardPage = () => {
               transition={{ delay: 0.35 }}
               className="surface-elevated p-6"
             >
-              <h2 className="text-lg font-semibold text-foreground mb-4">Próximos Feedbacks</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Próximos Feedbacks</h2>
+                {feedbacks.length > 0 && <span className="text-xs text-muted-foreground">{feedbacks.length} agendados</span>}
+              </div>
               {feedbacks.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhum feedback agendado nos próximos dias.</p>
               ) : (
-                <div className="overflow-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Aluno</th>
-                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Telefone</th>
-                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Data</th>
-                        <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Em</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {feedbacks.map((fb) => (
-                        <tr
-                          key={fb.id}
-                          onClick={() => navigate(`/contacts/${fb.id}`)}
-                          className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
-                        >
-                          <td className="px-4 py-2.5 text-sm font-medium text-foreground">{fb.name}</td>
-                          <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.phone}</td>
-                          <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.nextFeedback}</td>
-                          <td className="px-4 py-2.5">
-                            <span className={cn("text-xs px-2 py-0.5 rounded-lg font-medium",
-                              fb.daysLeft <= 3 ? "bg-destructive/20 text-destructive" :
-                              fb.daysLeft <= 7 ? "bg-warning/20 text-warning" :
-                              "bg-muted text-muted-foreground"
-                            )}>
-                              {fb.daysLeft === 0 ? "Hoje" : fb.daysLeft === 1 ? "Amanhã" : `${fb.daysLeft} dias`}
-                            </span>
-                          </td>
+                <>
+                  <div className="overflow-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Aluno</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Telefone</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Data</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Em</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {feedbacks.slice(fbPage * FB_PAGE_SIZE, (fbPage + 1) * FB_PAGE_SIZE).map((fb) => (
+                          <tr
+                            key={fb.id}
+                            onClick={() => navigate(`/contacts/${fb.id}`)}
+                            className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
+                          >
+                            <td className="px-4 py-2.5 text-sm font-medium text-foreground">{fb.name}</td>
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.phone}</td>
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.nextFeedback}</td>
+                            <td className="px-4 py-2.5">
+                              <span className={cn("text-xs px-2 py-0.5 rounded-lg font-medium",
+                                fb.daysLeft <= 3 ? "bg-destructive/20 text-destructive" :
+                                fb.daysLeft <= 7 ? "bg-warning/20 text-warning" :
+                                "bg-muted text-muted-foreground"
+                              )}>
+                                {fb.daysLeft === 0 ? "Hoje" : fb.daysLeft === 1 ? "Amanhã" : `${fb.daysLeft} dias`}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {feedbacks.length > FB_PAGE_SIZE && (
+                    <div className="flex items-center justify-between pt-3 border-t border-border mt-2">
+                      <span className="text-xs text-muted-foreground">
+                        {fbPage * FB_PAGE_SIZE + 1}–{Math.min((fbPage + 1) * FB_PAGE_SIZE, feedbacks.length)} de {feedbacks.length}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setFbPage((p) => Math.max(0, p - 1))} disabled={fbPage === 0} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">‹</button>
+                        <span className="text-xs text-foreground px-2">{fbPage + 1} / {Math.ceil(feedbacks.length / FB_PAGE_SIZE)}</span>
+                        <button onClick={() => setFbPage((p) => Math.min(Math.ceil(feedbacks.length / FB_PAGE_SIZE) - 1, p + 1))} disabled={(fbPage + 1) * FB_PAGE_SIZE >= feedbacks.length} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">›</button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </motion.div>
           </>
