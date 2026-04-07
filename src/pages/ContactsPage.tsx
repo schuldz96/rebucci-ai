@@ -37,13 +37,11 @@ function saveColWidths(widths: Record<string, number>) {
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success",
   inactive: "bg-muted text-muted-foreground",
-  lead: "bg-primary/20 text-primary",
 };
 
 const statusLabels: Record<string, string> = {
   active: "Ativo",
   inactive: "Inativo",
-  lead: "Lead",
 };
 
 const ContactsPage = () => {
@@ -55,9 +53,13 @@ const ContactsPage = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showModal, setShowModal] = useState(false);
-  const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", company: "", status: "lead" as Contact["status"] });
+  const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", company: "", status: "active" as Contact["status"] });
   const [createError, setCreateError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sortCol, setSortCol] = useState<string>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 100;
   const [colWidths, setColWidths] = useState<Record<string, number>>(loadColWidths);
   const resizingRef = useRef<{ key: string; startX: number; startW: number } | null>(null);
 
@@ -97,7 +99,29 @@ const ContactsPage = () => {
           c.email.toLowerCase().includes(search.toLowerCase()) ||
           c.company.toLowerCase().includes(search.toLowerCase())
         : true
-    );
+    )
+    .sort((a, b) => {
+      const key = sortCol as keyof Contact;
+      const va = (a[key] ?? "") as string;
+      const vb = (b[key] ?? "") as string;
+      const cmp = va.localeCompare(vb, "pt", { numeric: true });
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  // Reset page quando filtro/busca muda
+  useEffect(() => { setPage(0); }, [statusFilter, search, sortCol, sortDir]);
+
+  const toggleSort = (col: string) => {
+    if (sortCol === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+  };
 
   const handleCreate = async () => {
     setCreateError("");
@@ -155,7 +179,7 @@ const ContactsPage = () => {
         </div>
         <div className="flex items-center gap-1">
           <Filter className="w-4 h-4 text-muted-foreground mr-1" />
-          {["all", "active", "lead", "inactive"].map((s) => (
+          {["all", "active", "inactive"].map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -184,10 +208,16 @@ const ContactsPage = () => {
                   {COLUMNS.map((col) => (
                     <th
                       key={col.key}
-                      className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap relative select-none"
+                      onClick={() => toggleSort(col.key)}
+                      className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap relative select-none cursor-pointer hover:text-foreground transition-colors"
                       style={{ width: colWidths[col.key] ?? col.default, minWidth: 60 }}
                     >
-                      {col.label}
+                      <span className="flex items-center gap-1">
+                        {col.label}
+                        {sortCol === col.key && (
+                          <span className="text-primary">{sortDir === "asc" ? "▲" : "▼"}</span>
+                        )}
+                      </span>
                       <div
                         onMouseDown={(e) => onResizeStart(col.key, e)}
                         className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/30 active:bg-primary/50"
@@ -197,7 +227,7 @@ const ContactsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => (
+                {paged.map((c) => (
                   <tr
                     key={c.id}
                     onClick={() => navigate(`/contacts/${c.id}`)}
@@ -223,6 +253,21 @@ const ContactsPage = () => {
             </table>
           )}
         </div>
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-2 shrink-0 border-t border-border">
+            <span className="text-xs text-muted-foreground">
+              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setPage(0)} disabled={page === 0} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">«</button>
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">‹</button>
+              <span className="text-xs text-foreground px-2">{page + 1} / {totalPages}</span>
+              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">›</button>
+              <button onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">»</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contact Detail Panel */}

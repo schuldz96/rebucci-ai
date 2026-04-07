@@ -12,9 +12,8 @@ type EditKey = keyof Omit<Contact, "id">;
 const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success",
   inactive: "bg-muted text-muted-foreground",
-  lead: "bg-primary/20 text-primary",
 };
-const statusLabels: Record<string, string> = { active: "Ativo", inactive: "Inativo", lead: "Lead" };
+const statusLabels: Record<string, string> = { active: "Ativo", inactive: "Inativo" };
 
 interface Props {
   contact: Contact;
@@ -164,7 +163,6 @@ const ContactDetailPanel = ({ contact, onClose }: Props) => {
               rawVal={contact.status}
               type="select"
               options={[
-                { value: "lead", label: "Lead" },
                 { value: "active", label: "Ativo" },
                 { value: "inactive", label: "Inativo" },
               ]}
