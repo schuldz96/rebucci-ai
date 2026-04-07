@@ -1465,22 +1465,30 @@ const SettingsPage = () => {
                     )}
                     {/* Status da última sync */}
                     {(() => {
-                      const syncKey = /active|customer|sync/i.test(ep.url) ? "sync-contacts" : /feedback/i.test(ep.url) ? "sync-feedbacks" : null;
+                      const isFeedback = /feedback/i.test(ep.url) || /feedback/i.test(ep.name);
+                      const isContacts = /active|customer/i.test(ep.url) && !isFeedback;
+                      const syncKey = isContacts ? "sync-contacts" : isFeedback ? "sync-feedbacks" : null;
                       const log = syncKey ? primeSyncLogs[syncKey] : null;
-                      if (!log) return null;
-                      const data = (() => { try { return JSON.parse(log.details); } catch { return null; } })();
-                      const time = new Date(log.created_at).toLocaleString("pt-BR");
-                      const cronLabel = syncKey === "sync-contacts" ? "Cron: cada 4h" : "Cron: cada 1min (25 contatos/vez)";
+                      if (!syncKey) return null;
+                      const data = log ? (() => { try { return JSON.parse(log.details); } catch { return null; } })() : null;
+                      const time = log ? new Date(log.created_at).toLocaleString("pt-BR") : null;
+                      const cronLabel = isContacts ? "Cron: cada 4h" : "Cron: diário 00h (1 email/2s)";
+                      // Verifica se está rodando (feedbacks: se log recente < 2min)
+                      const isRunning = log && (Date.now() - new Date(log.created_at).getTime()) < 120000;
+                      // Progresso dos feedbacks
+                      const totalContacts = 2674;
+                      const feedbackProgress = isFeedback && data?.batch ? Math.round(((data.updated ?? 0) + (data.noFeedback ?? 0)) / totalContacts * 100) : null;
                       return (
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
                           <span className="text-primary font-medium">{cronLabel}</span>
-                          <span>Última sync: {time}</span>
-                          {data && (
-                            <span>
-                              {data.synced != null ? `${data.synced} sincronizados` : ""}
-                              {data.updated != null ? `${data.updated} atualizados` : ""}
-                              {data.errors > 0 ? ` · ${data.errors} erros` : ""}
-                            </span>
+                          {isRunning && <span className="flex items-center gap-1 text-success"><span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> Rodando</span>}
+                          {time && <span>Última sync: {time}</span>}
+                          {!time && <span>Aguardando primeira execução...</span>}
+                          {data && isContacts && (
+                            <span>{data.synced ?? data.unique ?? 0} sincronizados{data.errors > 0 ? ` · ${data.errors} erros` : ""}</span>
+                          )}
+                          {data && isFeedback && (
+                            <span>{data.updated ?? 0} atualizados · {data.noFeedback ?? 0} sem feedback{data.errors > 0 ? ` · ${data.errors} erros` : ""} (batch: {data.batch ?? 0})</span>
                           )}
                         </div>
                       );
