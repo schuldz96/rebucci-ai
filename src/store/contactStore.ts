@@ -46,7 +46,14 @@ export const useContactStore = create<ContactState>((set) => ({
       if (data.length < PAGE) break;
       from += PAGE;
     }
-    set({ contacts: all, loading: false });
+    // Deduplica por id (paginação pode duplicar em edge cases)
+    const seen = new Set<string>();
+    const unique = all.filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+    set({ contacts: unique, loading: false });
   },
 
   updateContact: async (id, updates) => {
