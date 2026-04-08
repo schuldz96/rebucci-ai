@@ -233,15 +233,20 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       const raw = await evolutionApi.fetchMessagesAfter(inst, jid, afterTs + 1, 50, alt);
       if (raw.length === 0) {
         emptyPollCountRef.current += 1;
-        if (emptyPollCountRef.current >= 5) {
-          // 5 polls vazios consecutivos → para polling
-          pollingStoppedRef.current = true;
-          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+        // Após 10 polls vazios, reduz frequência para 10s (mas nunca para)
+        if (emptyPollCountRef.current >= 10 && pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = setInterval(pollFn, 10000);
         }
         return;
       }
 
-      emptyPollCountRef.current = 0; // Reset on new data
+      // Mensagens novas: reset contador e volta para 3s
+      if (emptyPollCountRef.current >= 10 && pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = setInterval(pollFn, 3000);
+      }
+      emptyPollCountRef.current = 0;
 
       const incoming = processMsgs(raw, true);
       if (incoming.length === 0) return;
