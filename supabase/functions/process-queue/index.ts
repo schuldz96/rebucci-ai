@@ -151,18 +151,6 @@ Deno.serve(async () => {
         messageText = uniqueMsgs.join("\n");
       }
 
-      // Persiste a mensagem de entrada do usuário (redundância: se webhook já salvou, ignora duplicata)
-      await supabase.from("mensagens_whatsapp").upsert({
-        instance_name: instanceName,
-        remote_jid: remoteJid,
-        corpo: messageText,
-        tipo: "text",
-        direcao: "entrada",
-        external_message_id: `q-${item.id}`,
-        message_timestamp: Math.floor(new Date(item.created_at as string).getTime() / 1000),
-        enviada_em: item.created_at as string,
-      }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true });
-
       // Token OpenAI
       const { data: tokenRow } = await supabase
         .from("api_tokens")

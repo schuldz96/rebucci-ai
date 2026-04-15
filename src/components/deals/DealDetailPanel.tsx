@@ -211,10 +211,19 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
           ts: m.message_timestamp ?? 0,
         }));
 
-        // Dedup por ID: prioridade para API (mais fresco), complementa com banco
-        const seenIds = new Set(apiMsgs.map((m) => m.id));
-        const extra = dbMsgs.filter((m) => !seenIds.has(m.id));
-        const merged = [...apiMsgs, ...extra].sort((a, b) => a.ts - b.ts);
+        // Dedup por ID + conteúdo: evita duplicatas de API + webhook
+        const all = [...apiMsgs, ...dbMsgs];
+        const seen = new Set<string>();
+        const merged: ChatMsg[] = [];
+        for (const m of all.sort((a, b) => a.ts - b.ts)) {
+          // Chave: ID OU (conteúdo + direção + timestamp próximo)
+          const idKey = m.id;
+          const contentKey = `${m.content.slice(0, 80)}|${m.direction}|${Math.floor(m.ts / 120)}`;
+          if (seen.has(idKey) || seen.has(contentKey)) continue;
+          seen.add(idKey);
+          seen.add(contentKey);
+          merged.push(m);
+        }
 
         const maxTs = merged.length > 0 ? merged[merged.length - 1].ts : 0;
         if (maxTs > lastTimestampRef.current) lastTimestampRef.current = maxTs;
