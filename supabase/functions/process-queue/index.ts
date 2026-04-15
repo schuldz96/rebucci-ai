@@ -161,7 +161,7 @@ Deno.serve(async () => {
         external_message_id: `q-${item.id}`,
         message_timestamp: Math.floor(new Date(item.created_at as string).getTime() / 1000),
         enviada_em: item.created_at as string,
-      }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true }).catch(() => {});
+      }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true });
 
       // Token OpenAI
       const { data: tokenRow } = await supabase
@@ -262,7 +262,7 @@ Deno.serve(async () => {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
           body: JSON.stringify({ number: phone, presence: "composing", delay: typingSeconds * 1000 }),
-        }).catch(() => {});
+        });
         // Aguarda o tempo de digitação
         await new Promise((r) => setTimeout(r, typingSeconds * 1000));
       }
@@ -299,7 +299,7 @@ Deno.serve(async () => {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
           body: JSON.stringify({ number: phone, presence: "composing", delay: partTyping * 1000 }),
-        }).catch(() => {});
+        });
         await new Promise((r) => setTimeout(r, partTyping * 1000));
 
         const res = await fetch(`${evoConfig.api_url}/message/sendText/${sendInstance}`, {
@@ -322,7 +322,7 @@ Deno.serve(async () => {
           external_message_id: sentMsgId,
           message_timestamp: nowTs,
           enviada_em: new Date().toISOString(),
-        }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true }).catch(() => {});
+        }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true });
       }
 
       // Atualiza conversa com última mensagem enviada pela IA
@@ -333,7 +333,7 @@ Deno.serve(async () => {
         ultima_mensagem_em: new Date().toISOString(),
         status: "answered",
         atualizado_em: new Date().toISOString(),
-      }, { onConflict: "instance_name,remote_jid" }).catch(() => {});
+      }, { onConflict: "instance_name,remote_jid" });
 
       // Log completo: entrada, resposta e contexto RAG
       const { error: logErr } = await supabase.from("ai_logs").insert({
