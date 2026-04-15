@@ -90,8 +90,6 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   };
 
   const searchInInstance = async (instanceName: string, variants: string[]): Promise<{ remoteJid: string; altRemoteJid?: string; msgs: ReturnType<typeof processMsgs> } | null> => {
-    // Busca via fetchChats PRIMEIRO — dá os dois JIDs (@lid + @s.whatsapp.net)
-    // para poder buscar enviadas e recebidas juntas
     const chats = await evolutionApi.fetchChats(instanceName, 500);
     const found = chats.find((c) => {
       const chatPhone = (c.remoteJidAlt ?? c.remoteJid).split("@")[0];
@@ -100,15 +98,54 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     if (found) {
       const altRemoteJid = found.remoteJidAlt ?? undefined;
       const msgs = await evolutionApi.fetchMessages(instanceName, found.remoteJid, 100, altRemoteJid);
-      if (msgs.length > 0) return { remoteJid: found.remoteJid, altRemoteJid, msgs: processMsgs(msgs, true) };
+      if (msgs.length > 0) {
+        // Salva no banco em background para próximas cargas
+        persistMessages(instanceName, found.remoteJid, altRemoteJid, msgs);
+        return { remoteJid: found.remoteJid, altRemoteJid, msgs: processMsgs(msgs, true) };
+      }
     }
-    // Fallback: tenta direto com @s.whatsapp.net (sem @lid)
     for (const variant of variants) {
       const remoteJid = `${variant}@s.whatsapp.net`;
       const msgs = await evolutionApi.fetchMessages(instanceName, remoteJid, 100);
-      if (msgs.length > 0) return { remoteJid, msgs: processMsgs(msgs, true) };
+      if (msgs.length > 0) {
+        persistMessages(instanceName, remoteJid, undefined, msgs);
+        return { remoteJid, msgs: processMsgs(msgs, true) };
+      }
     }
     return null;
+  };
+
+  // Salva mensagens da API no banco para consultas futuras (fire-and-forget)
+  const persistMessages = (instanceName: string, remoteJid: string, altJid: string | undefined, rawMsgs: Parameters<typeof evolutionApi.extractMessageText>[0][]) => {
+    const batch = rawMsgs.filter((m) => m?.key?.id).map((m) => ({
+      instance_name: instanceName,
+      remote_jid: m.key.remoteJid || remoteJid,
+      push_name: (m as { pushName?: string }).pushName || null,
+      corpo: evolutionApi.extractMessageText(m) || "",
+      tipo: m.message?.audioMessage ? "audio" : m.message?.imageMessage ? "image" : "text",
+      direcao: isFromMe(m) ? "saida" : "entrada",
+      external_message_id: m.key.id,
+      message_timestamp: m.messageTimestamp || null,
+      enviada_em: m.messageTimestamp ? new Date(m.messageTimestamp * 1000).toISOString() : null,
+    }));
+    // Insere em background (não bloqueia a UI)
+    for (let b = 0; b < batch.length; b += 200) {
+      supabase.from("mensagens_whatsapp")
+        .upsert(batch.slice(b, b + 200), { onConflict: "instance_name,external_message_id", ignoreDuplicates: true })
+        .then(() => {});
+    }
+    // Upsert conversa
+    const phone = (altJid || remoteJid).split("@")[0]?.replace(/\D/g, "") || "";
+    supabase.from("conversas_whatsapp")
+      .upsert({
+        instance_name: instanceName,
+        remote_jid: remoteJid,
+        remote_jid_alt: altJid || null,
+        contato_nome: (rawMsgs[0] as { pushName?: string })?.pushName || phone,
+        contato_telefone: phone,
+        status: "answered",
+      }, { onConflict: "instance_name,remote_jid" })
+      .then(() => {});
   };
 
   const findAndLoadChat = useCallback(async (forceInstance?: string) => {
@@ -131,56 +168,7 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
 
       const variants = getPhoneVariants(phone);
 
-      // ── 1) Busca rápida no banco local (~20ms) ──
-      const phoneFilter = variants.map(v => `contato_telefone.eq.${v}`).join(",");
-      let dbQuery = supabase
-        .from("conversas_whatsapp")
-        .select("instance_name, remote_jid, remote_jid_alt, contato_nome")
-        .or(phoneFilter);
-      if (forceInstance) dbQuery = dbQuery.eq("instance_name", forceInstance);
-      const { data: dbConvs } = await dbQuery.limit(5);
-
-      if (dbConvs && dbConvs.length > 0) {
-        const conv = dbConvs[0];
-        const jids = [conv.remote_jid];
-        if (conv.remote_jid_alt) jids.push(conv.remote_jid_alt);
-
-        const { data: dbMsgs } = await supabase
-          .from("mensagens_whatsapp")
-          .select("*")
-          .eq("instance_name", conv.instance_name)
-          .in("remote_jid", jids)
-          .order("message_timestamp", { ascending: true })
-          .limit(200);
-
-        if (dbMsgs && dbMsgs.length > 0) {
-          const msgs: ChatMsg[] = dbMsgs.map((m) => ({
-            id: m.external_message_id || m.id,
-            content: m.corpo || "",
-            type: m.tipo === "audio" ? "audio" : m.tipo === "image" ? "image" : "text",
-            direction: m.direcao === "saida" ? "sent" : "received",
-            timestamp: m.enviada_em ? safeTime(Math.floor(new Date(m.enviada_em).getTime() / 1000)) : "",
-            ts: m.message_timestamp ?? 0,
-          }));
-          const maxTs = msgs.length > 0 ? msgs[msgs.length - 1].ts : 0;
-          if (maxTs > lastTimestampRef.current) lastTimestampRef.current = maxTs;
-
-          setChatInstance(conv.instance_name);
-          setChatRemoteJid(conv.remote_jid);
-          chatAltJidRef.current = conv.remote_jid_alt ?? null;
-          setChatMessages(msgs);
-
-          // Carrega instâncias em background para o seletor
-          evolutionApi.fetchInstances().then((insts) => {
-            setAllInstances(insts.filter(i => i.instance.status === "open").map(i => i.instance.instanceName));
-          }).catch(() => {});
-
-          setLoadingChat(false);
-          return;
-        }
-      }
-
-      // ── 2) Fallback: busca via Evolution API ──
+      // ── Busca via Evolution API (fonte de verdade) + salva no banco ──
       const instances: EvoInstance[] = await evolutionApi.fetchInstances();
       const activeInstances = instances.filter(i => i.instance.status === "open");
       const names = activeInstances.map(i => i.instance.instanceName);
