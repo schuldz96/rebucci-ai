@@ -188,7 +188,38 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
         setChatInstance(found.instanceName);
         setChatRemoteJid(found.result.remoteJid);
         chatAltJidRef.current = found.result.altRemoteJid ?? null;
-        setChatMessages(found.result.msgs);
+
+        // Merge: API + banco, deduplicado por ID
+        const apiMsgs = found.result.msgs;
+        const jids = [found.result.remoteJid];
+        if (found.result.altRemoteJid) jids.push(found.result.altRemoteJid);
+
+        const { data: dbRows } = await supabase
+          .from("mensagens_whatsapp")
+          .select("*")
+          .eq("instance_name", found.instanceName)
+          .in("remote_jid", jids)
+          .order("message_timestamp", { ascending: true })
+          .limit(300);
+
+        const dbMsgs: ChatMsg[] = (dbRows ?? []).map((m) => ({
+          id: m.external_message_id || m.id,
+          content: m.corpo || "",
+          type: (m.tipo === "audio" ? "audio" : m.tipo === "image" ? "image" : "text") as ChatMsg["type"],
+          direction: (m.direcao === "saida" ? "sent" : "received") as ChatMsg["direction"],
+          timestamp: m.enviada_em ? safeTime(Math.floor(new Date(m.enviada_em).getTime() / 1000)) : "",
+          ts: m.message_timestamp ?? 0,
+        }));
+
+        // Dedup por ID: prioridade para API (mais fresco), complementa com banco
+        const seenIds = new Set(apiMsgs.map((m) => m.id));
+        const extra = dbMsgs.filter((m) => !seenIds.has(m.id));
+        const merged = [...apiMsgs, ...extra].sort((a, b) => a.ts - b.ts);
+
+        const maxTs = merged.length > 0 ? merged[merged.length - 1].ts : 0;
+        if (maxTs > lastTimestampRef.current) lastTimestampRef.current = maxTs;
+
+        setChatMessages(merged);
         setLoadingChat(false);
         return;
       }
