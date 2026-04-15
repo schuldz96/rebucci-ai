@@ -345,6 +345,24 @@ Deno.serve(async (req: Request) => {
     // Mensagens de saída (fromMe): já salvou + backfill, não processa IA
     if (fromMe) return new Response("ok", { status: 200 });
 
+    // ── Comando /limpar: zera memória da IA para este número ──
+    if (messageText.trim().toLowerCase() === "/limpar") {
+      const phonesToClear = [rawPhone];
+      // Variantes do telefone (com/sem 9, com/sem 55)
+      const pv = phoneVariants(rawPhone);
+      pv.forEach((v) => { if (!phonesToClear.includes(v)) phonesToClear.push(v); });
+
+      let cleared = 0;
+      for (const ph of phonesToClear) {
+        const { count: c1 } = await supabase.from("ai_conversation_history").delete({ count: "exact" }).eq("phone", ph);
+        const { count: c2 } = await supabase.from("ai_logs").delete({ count: "exact" }).eq("phone", ph);
+        cleared += (c1 ?? 0) + (c2 ?? 0);
+      }
+
+      await log("memory_cleared", { instance: instanceName, jid: remoteJid, details: `${cleared} registros apagados` });
+      return new Response("ok", { status: 200 });
+    }
+
     // Se for mídia (áudio/imagem/vídeo/documento), tenta processar
     if (mediaType && !messageText) {
       const [evoConfigRes, openaiTokenRes] = await Promise.all([
