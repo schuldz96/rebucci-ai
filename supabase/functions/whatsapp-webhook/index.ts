@@ -268,7 +268,81 @@ Deno.serve(async (req: Request) => {
       atualizado_em: new Date().toISOString(),
     }, { onConflict: "instance_name,remote_jid" });
 
-    // Mensagens de saída (fromMe): já salvou, não processa IA
+    // ── Backfill proativo: se poucas mensagens no banco, carrega histórico da API ──
+    const { count: msgCount } = await supabase
+      .from("mensagens_whatsapp")
+      .select("id", { count: "exact", head: true })
+      .eq("instance_name", instanceName)
+      .eq("remote_jid", remoteJid);
+
+    if ((msgCount ?? 0) < 10) {
+      try {
+        const { data: evoConf } = await supabase.from("evolution_config")
+          .select("api_url, api_token").order("created_at", { ascending: false }).limit(1).maybeSingle();
+
+        if (evoConf) {
+          const evoUrl = (evoConf.api_url as string).replace(/\/$/, "");
+          const evoTk = evoConf.api_token as string;
+
+          // Busca mensagens dos últimos 60 dias para este JID
+          const cutoff = Math.floor(Date.now() / 1000) - (60 * 86400);
+          const jidsToFetch = [remoteJid];
+
+          // Se @lid, tenta descobrir o JID real via conversa existente
+          if (remoteJid.includes("@lid")) {
+            const { data: convRow } = await supabase.from("conversas_whatsapp")
+              .select("remote_jid_alt").eq("instance_name", instanceName).eq("remote_jid", remoteJid).maybeSingle();
+            if (convRow?.remote_jid_alt) jidsToFetch.push(convRow.remote_jid_alt);
+          }
+
+          for (const jid of jidsToFetch) {
+            try {
+              const res = await fetch(`${evoUrl}/chat/findMessages/${instanceName}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", apikey: evoTk },
+                body: JSON.stringify({ where: { key: { remoteJid: jid }, messageTimestamp: { gte: cutoff } }, limit: 300 }),
+              });
+              if (!res.ok) continue;
+              const resJson = await res.json() as { messages?: { records?: { key: { remoteJid: string; fromMe: boolean | number | string; id: string }; pushName?: string; messageTimestamp: number; message?: unknown }[] } };
+              const records = resJson?.messages?.records ?? [];
+
+              if (records.length === 0) continue;
+
+              const batch = records.filter((m) => m?.key?.id).map((m) => ({
+                instance_name: instanceName,
+                remote_jid: m.key.remoteJid || jid,
+                push_name: m.pushName || null,
+                corpo: extractText(m.message) || "",
+                tipo: (() => {
+                  const msg = m.message as Record<string, unknown> | undefined;
+                  if (!msg) return "text";
+                  if (msg.audioMessage) return "audio";
+                  if (msg.imageMessage) return "image";
+                  if (msg.videoMessage) return "video";
+                  if (msg.documentMessage) return "document";
+                  return "text";
+                })(),
+                direcao: (m.key.fromMe === true || m.key.fromMe === 1 || m.key.fromMe === "true") ? "saida" as const : "entrada" as const,
+                external_message_id: m.key.id,
+                message_timestamp: m.messageTimestamp || null,
+                enviada_em: m.messageTimestamp ? new Date(m.messageTimestamp * 1000).toISOString() : null,
+              }));
+
+              // Insere em lotes de 200
+              for (let b = 0; b < batch.length; b += 200) {
+                await supabase.from("mensagens_whatsapp")
+                  .upsert(batch.slice(b, b + 200), { onConflict: "instance_name,external_message_id", ignoreDuplicates: true });
+              }
+              await log("backfill_done", { instance: instanceName, jid: remoteJid, details: `${batch.length} msgs` });
+            } catch { /* silencioso por JID */ }
+          }
+        }
+      } catch {
+        await log("backfill_error", { instance: instanceName, jid: remoteJid });
+      }
+    }
+
+    // Mensagens de saída (fromMe): já salvou + backfill, não processa IA
     if (fromMe) return new Response("ok", { status: 200 });
 
     // Se for mídia (áudio/imagem/vídeo/documento), tenta processar
