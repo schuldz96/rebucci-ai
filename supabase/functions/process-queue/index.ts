@@ -216,7 +216,7 @@ Deno.serve(async () => {
         );
       }
 
-      promptParts.push("\nREGRA DE FORMATAÇÃO: Separe sua resposta em 2 ou 3 parágrafos curtos (use \\n\\n entre eles). Cada parágrafo deve ter no máximo 1-2 frases. NUNCA envie um bloco único de texto longo.");
+      promptParts.push("\nREGRA DE FORMATAÇÃO: Responda de forma curta e direta. Use \\n\\n entre parágrafos SOMENTE quando realmente tratar de assuntos diferentes. Não force separação. Cada parágrafo deve ter conteúdo útil — nunca um parágrafo só de saudação ou só de despedida.");
 
       const systemPrompt = promptParts.join("\n\n") || "Você é um assistente de atendimento ao cliente. Responda em português.";
 
@@ -255,27 +255,31 @@ Deno.serve(async () => {
         await new Promise((r) => setTimeout(r, typingSeconds * 1000));
       }
 
-      // Divide a resposta em até 3 partes para parecer mais natural
+      // Divide por parágrafos que o GPT separou com \n\n
       let parts: string[] = aiResponse.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
 
-      // Se ficou tudo em 1 bloco, quebra por frases
-      if (parts.length === 1 && parts[0].length > 80) {
-        const sentences = parts[0].split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
-        if (sentences.length >= 2) {
-          // Distribui frases em até 3 partes equilibradas
-          const targetParts = Math.min(3, sentences.length);
-          const perPart = Math.ceil(sentences.length / targetParts);
-          parts = [];
-          for (let s = 0; s < sentences.length; s += perPart) {
-            parts.push(sentences.slice(s, s + perPart).join(" ").trim());
-          }
-        }
+      // Filtra parágrafos inúteis (só saudação ou só despedida sem conteúdo)
+      const greetingOnly = /^(e ai[!,.]?|opa[!,.]?|fala[a]*[!,.]?|bom dia[a]*[!,.]?|boa tarde[!,.]?|boa noite[!,.]?)?\s*(tudo bem\??|como voc[eê] est[aá]\??)?$/i;
+      const closingOnly = /^(qualquer (coisa|d[uú]vida),?\s*(s[oó] chamar|me (chama|avisa))[.!]?\s*(abra[aá]co!?)?|abra[aá]co!?)$/i;
+
+      if (parts.length > 1) {
+        parts = parts.filter((p, i) => {
+          // Mantém sempre o primeiro e o último se forem os únicos com conteúdo
+          if (parts.length <= 1) return true;
+          // Remove parágrafos que são SÓ saudação solta (sem conteúdo real)
+          if (greetingOnly.test(p.trim())) return false;
+          // Remove parágrafos que são SÓ despedida genérica
+          if (closingOnly.test(p.trim())) return false;
+          return true;
+        });
+        // Garante que sobrou pelo menos 1 parte
+        if (parts.length === 0) parts = [aiResponse.replace(/\n\n+/g, " ").trim()];
       }
 
-      // Limita a no máximo 3 mensagens (junta excedentes na última)
+      // Limita a no máximo 3 mensagens
       if (parts.length > 3) {
         const first2 = parts.slice(0, 2);
-        const rest = parts.slice(2).join("\n\n");
+        const rest = parts.slice(2).join(" ");
         parts = [...first2, rest];
       }
 
