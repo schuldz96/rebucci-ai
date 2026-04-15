@@ -151,6 +151,59 @@ Deno.serve(async () => {
         messageText = uniqueMsgs.join("\n");
       }
 
+      // Busca dados do contato/deal para injetar contexto no prompt
+      let contactContext = "";
+      try {
+        const pv = [phone];
+        if (phone.startsWith("55") && phone.length === 12) {
+          pv.push(`${phone.slice(0, 4)}9${phone.slice(4)}`);
+        } else if (phone.startsWith("55") && phone.length === 13) {
+          pv.push(`${phone.slice(0, 4)}${phone.slice(5)}`);
+        }
+
+        // Deal
+        const { data: dealRows } = await supabase
+          .from("deals")
+          .select("id, title, stage, contact_name, contact_id, phone, value")
+          .or(pv.map((v) => `phone.eq.${v}`).join(","))
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (dealRows && dealRows.length > 0) {
+          const deal = dealRows[0];
+          const parts: string[] = [`Nome: ${deal.contact_name || "N/A"}`, `Estágio: ${deal.stage || "N/A"}`];
+
+          // Contato vinculado
+          if (deal.contact_id) {
+            const { data: contact } = await supabase
+              .from("contacts")
+              .select("company, status, activation_date, end_date, last_feedback, next_feedback")
+              .eq("id", deal.contact_id)
+              .maybeSingle();
+
+            if (contact) {
+              if (contact.company) parts.push(`Plano: ${contact.company}`);
+              if (contact.status) parts.push(`Status: ${contact.status}`);
+              if (contact.activation_date) parts.push(`Data Ativação: ${contact.activation_date}`);
+              if (contact.end_date) parts.push(`Data Término: ${contact.end_date}`);
+              if (contact.last_feedback) parts.push(`Último Feedback: ${contact.last_feedback}`);
+              if (contact.next_feedback) parts.push(`Próximo Feedback: ${contact.next_feedback}`);
+
+              // Verifica se está inativo/vencido
+              const today = new Date().toISOString().slice(0, 10);
+              if (contact.end_date && contact.end_date < today) {
+                parts.push("⚠️ PLANO VENCIDO — sugerir renovação");
+              }
+              if (contact.next_feedback && contact.next_feedback < today) {
+                parts.push("⚠️ FEEDBACK ATRASADO");
+              }
+            }
+          }
+
+          contactContext = `\n\nDADOS DO ALUNO:\n${parts.join("\n")}`;
+        }
+      } catch { /* silencioso */ }
+
       // Token OpenAI
       const { data: tokenRow } = await supabase
         .from("api_tokens")
@@ -209,6 +262,11 @@ Deno.serve(async () => {
       const promptParts: string[] = [];
       if (agentConfig.system_prompt) promptParts.push(agentConfig.system_prompt as string);
       if (agentConfig.prompt_complement) promptParts.push(agentConfig.prompt_complement as string);
+
+      // Injeta dados do contato (plano, datas, feedback, status)
+      if (contactContext) {
+        promptParts.push(contactContext + "\n\nUse esses dados para responder perguntas sobre plano, datas, feedback e renovação. Se o plano está VENCIDO, sugira renovação de forma natural. Se o feedback está atrasado, lembre o aluno de enviar as fotos.");
+      }
 
       if (ragContext) {
         promptParts.push(
