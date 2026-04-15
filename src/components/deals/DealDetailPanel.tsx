@@ -130,16 +130,63 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
       }
 
       const variants = getPhoneVariants(phone);
+
+      // ── 1) Busca rápida no banco local (~20ms) ──
+      const phoneFilter = variants.map(v => `contato_telefone.eq.${v}`).join(",");
+      let dbQuery = supabase
+        .from("conversas_whatsapp")
+        .select("instance_name, remote_jid, remote_jid_alt, contato_nome")
+        .or(phoneFilter);
+      if (forceInstance) dbQuery = dbQuery.eq("instance_name", forceInstance);
+      const { data: dbConvs } = await dbQuery.limit(5);
+
+      if (dbConvs && dbConvs.length > 0) {
+        const conv = dbConvs[0];
+        const jids = [conv.remote_jid];
+        if (conv.remote_jid_alt) jids.push(conv.remote_jid_alt);
+
+        const { data: dbMsgs } = await supabase
+          .from("mensagens_whatsapp")
+          .select("*")
+          .eq("instance_name", conv.instance_name)
+          .in("remote_jid", jids)
+          .order("message_timestamp", { ascending: true })
+          .limit(200);
+
+        if (dbMsgs && dbMsgs.length > 0) {
+          const msgs: ChatMsg[] = dbMsgs.map((m) => ({
+            id: m.external_message_id || m.id,
+            content: m.corpo || "",
+            type: m.tipo === "audio" ? "audio" : m.tipo === "image" ? "image" : "text",
+            direction: m.direcao === "saida" ? "sent" : "received",
+            timestamp: m.enviada_em ? safeTime(Math.floor(new Date(m.enviada_em).getTime() / 1000)) : "",
+            ts: m.message_timestamp ?? 0,
+          }));
+          const maxTs = msgs.length > 0 ? msgs[msgs.length - 1].ts : 0;
+          if (maxTs > lastTimestampRef.current) lastTimestampRef.current = maxTs;
+
+          setChatInstance(conv.instance_name);
+          setChatRemoteJid(conv.remote_jid);
+          chatAltJidRef.current = conv.remote_jid_alt ?? null;
+          setChatMessages(msgs);
+
+          // Carrega instâncias em background para o seletor
+          evolutionApi.fetchInstances().then((insts) => {
+            setAllInstances(insts.filter(i => i.instance.status === "open").map(i => i.instance.instanceName));
+          }).catch(() => {});
+
+          setLoadingChat(false);
+          return;
+        }
+      }
+
+      // ── 2) Fallback: busca via Evolution API ──
       const instances: EvoInstance[] = await evolutionApi.fetchInstances();
       const activeInstances = instances.filter(i => i.instance.status === "open");
       const names = activeInstances.map(i => i.instance.instanceName);
-
-      // Atualiza lista de instâncias disponíveis
       setAllInstances(names);
 
-      const instancesToSearch = forceInstance
-        ? [forceInstance]
-        : names;
+      const instancesToSearch = forceInstance ? [forceInstance] : names;
 
       const searchResults = await Promise.all(
         instancesToSearch.map(async (instanceName) => {
@@ -226,14 +273,55 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
     if (!inst || !jid) return;
     try {
       const afterTs = lastTimestampRef.current;
-      // Se ainda não carregamos nada, aguarda
       if (afterTs === 0) return;
 
+      // ── 1) Busca do banco (rápido) ──
       const alt = chatAltJidRef.current ?? undefined;
+      const jids = [jid];
+      if (alt) jids.push(alt);
+
+      const { data: dbRows } = await supabase
+        .from("mensagens_whatsapp")
+        .select("*")
+        .eq("instance_name", inst)
+        .in("remote_jid", jids)
+        .gt("message_timestamp", afterTs)
+        .order("message_timestamp", { ascending: true })
+        .limit(50);
+
+      if (dbRows && dbRows.length > 0) {
+        const incoming: ChatMsg[] = dbRows.map((m) => ({
+          id: m.external_message_id || m.id,
+          content: m.corpo || "",
+          type: m.tipo === "audio" ? "audio" : m.tipo === "image" ? "image" : "text",
+          direction: m.direcao === "saida" ? "sent" : "received",
+          timestamp: m.enviada_em ? safeTime(Math.floor(new Date(m.enviada_em).getTime() / 1000)) : "",
+          ts: m.message_timestamp ?? 0,
+        }));
+
+        const maxTs = incoming[incoming.length - 1].ts;
+        if (maxTs > lastTimestampRef.current) lastTimestampRef.current = maxTs;
+
+        if (emptyPollCountRef.current >= 10 && pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = setInterval(pollFn, 3000);
+        }
+        emptyPollCountRef.current = 0;
+
+        setChatMessages((prev) => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const newMsgs = incoming.filter(m => !existingIds.has(m.id));
+          if (newMsgs.length === 0) return prev;
+          const base = prev.filter(m => !m.id.startsWith("temp-"));
+          return [...base, ...newMsgs].sort((a, b) => a.ts - b.ts);
+        });
+        return;
+      }
+
+      // ── 2) Fallback: busca da Evolution API ──
       const raw = await evolutionApi.fetchMessagesAfter(inst, jid, afterTs + 1, 50, alt);
       if (raw.length === 0) {
         emptyPollCountRef.current += 1;
-        // Após 10 polls vazios, reduz frequência para 10s (mas nunca para)
         if (emptyPollCountRef.current >= 10 && pollingRef.current) {
           clearInterval(pollingRef.current);
           pollingRef.current = setInterval(pollFn, 10000);
@@ -241,7 +329,6 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
         return;
       }
 
-      // Mensagens novas: reset contador e volta para 3s
       if (emptyPollCountRef.current >= 10 && pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = setInterval(pollFn, 3000);
@@ -255,7 +342,6 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
         const existingIds = new Set(prev.map(m => m.id));
         const newMsgs = incoming.filter(m => !existingIds.has(m.id));
         if (newMsgs.length === 0) return prev;
-        // Remove optimistas substituídos + append novas em ordem de ts
         const base = prev.filter(m => !m.id.startsWith("temp-"));
         return [...base, ...newMsgs].sort((a, b) => a.ts - b.ts);
       });
@@ -282,18 +368,49 @@ const DealDetailPanel = ({ deal, onClose, onLinkContact }: Props) => {
   const handleSend = async () => {
     if (pendingFile) return handleSendMedia();
     if (!chatInput.trim() || !chatInstance || !chatRemoteJid) return;
-    resumePolling(); // Retoma polling ao enviar mensagem
+    resumePolling();
     setSending(true);
     const text = chatInput.trim();
     setChatInput("");
     const nowTs = Math.floor(Date.now() / 1000);
-    const tempMsg: ChatMsg = { id: `temp-${Date.now()}`, content: text, direction: "sent", timestamp: safeTime(nowTs), type: "text", ts: nowTs };
+    const tempId = `temp-${Date.now()}`;
+    const tempMsg: ChatMsg = { id: tempId, content: text, direction: "sent", timestamp: safeTime(nowTs), type: "text", ts: nowTs };
     setChatMessages((prev) => [...prev, tempMsg]);
     try {
       const phone = chatRemoteJid.split("@")[0];
-      await evolutionApi.sendTextMessage(chatInstance, phone, text);
+      const result = await evolutionApi.sendTextMessage(chatInstance, phone, text) as Record<string, unknown>;
+
+      // Persiste no banco
+      const sentKey = (result?.key as Record<string, unknown>) ?? {};
+      const externalId = (sentKey.id as string) || tempId;
+      const now = new Date();
+      supabase.from("mensagens_whatsapp").upsert({
+        instance_name: chatInstance,
+        remote_jid: chatRemoteJid,
+        corpo: text,
+        tipo: "text",
+        direcao: "saida",
+        external_message_id: externalId,
+        message_timestamp: nowTs,
+        enviada_em: now.toISOString(),
+      }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true }).catch(() => {});
+
+      supabase.from("conversas_whatsapp").upsert({
+        instance_name: chatInstance,
+        remote_jid: chatRemoteJid,
+        ultima_mensagem: text,
+        ultima_mensagem_em: now.toISOString(),
+        status: "answered",
+        atualizado_em: now.toISOString(),
+      }, { onConflict: "instance_name,remote_jid" }).catch(() => {});
+
+      // Atualiza lastTimestamp para polling pegar mensagens novas após esta
+      if (nowTs > lastTimestampRef.current) lastTimestampRef.current = nowTs;
+
+      // Substitui ID temporário pelo real
+      setChatMessages((prev) => prev.map(m => m.id === tempId ? { ...m, id: externalId } : m));
     } catch {
-      setChatMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
+      setChatMessages((prev) => prev.filter((m) => m.id !== tempId));
       setChatInput(text);
     }
     setSending(false);

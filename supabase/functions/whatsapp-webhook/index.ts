@@ -221,14 +221,55 @@ Deno.serve(async (req: Request) => {
     if (!data) return new Response("ok", { status: 200 });
 
     const key = data.key as Record<string, unknown> | undefined;
-    if (key?.fromMe === true) return new Response("ok", { status: 200 });
 
     const remoteJid = (key?.remoteJid as string | undefined) ?? "";
     if (!remoteJid || remoteJid.endsWith("@g.us")) return new Response("ok", { status: 200 });
 
+    const fromMe = key?.fromMe === true;
+    const externalMessageId = (key?.id as string | undefined) ?? "";
+    const pushName = (data.pushName as string | undefined) ?? "";
     const rawPhone = stripPhone(remoteJid.split("@")[0]);
+    const messageTimestamp = (data.messageTimestamp as number | undefined) ?? Math.floor(Date.now() / 1000);
     let messageText = extractText(data.message).trim();
     const mediaType = detectMediaType(data.message);
+
+    // ── Persistência: salva TODA mensagem (entrada + saída) no banco ──
+    const tipoMsg = mediaType ?? "text";
+    const direcao = fromMe ? "saida" : "entrada";
+    const enviadaEm = new Date(messageTimestamp * 1000).toISOString();
+
+    // Salva mensagem (ON CONFLICT = ignora duplicata pelo external_message_id)
+    if (externalMessageId) {
+      await supabase.from("mensagens_whatsapp").upsert({
+        instance_name: instanceName,
+        remote_jid: remoteJid,
+        push_name: pushName || null,
+        corpo: messageText || (mediaType ? `[${mediaType}]` : ""),
+        tipo: tipoMsg,
+        direcao,
+        external_message_id: externalMessageId,
+        message_timestamp: messageTimestamp,
+        enviada_em: enviadaEm,
+      }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true });
+    }
+
+    // Upsert conversa
+    const contatoTelefone = rawPhone;
+    const contatoNome = pushName || rawPhone;
+    await supabase.from("conversas_whatsapp").upsert({
+      instance_name: instanceName,
+      remote_jid: remoteJid,
+      contato_nome: contatoNome,
+      contato_telefone: contatoTelefone,
+      ultima_mensagem: messageText || (mediaType ? `[${mediaType}]` : ""),
+      ultima_mensagem_em: enviadaEm,
+      nao_lidas: fromMe ? 0 : 1,
+      status: fromMe ? "answered" : "pending",
+      atualizado_em: new Date().toISOString(),
+    }, { onConflict: "instance_name,remote_jid" });
+
+    // Mensagens de saída (fromMe): já salvou, não processa IA
+    if (fromMe) return new Response("ok", { status: 200 });
 
     // Se for mídia (áudio/imagem/vídeo/documento), tenta processar
     if (mediaType && !messageText) {
@@ -293,6 +334,19 @@ Deno.serve(async (req: Request) => {
     }
 
     await log("message_parsed", { instance: instanceName, event, jid: remoteJid, msg: messageText.slice(0, 200) });
+
+    // Atualiza corpo da mensagem no banco se mídia foi processada (transcrição/descrição)
+    if (mediaType && messageText && externalMessageId) {
+      await supabase.from("mensagens_whatsapp")
+        .update({ corpo: messageText })
+        .eq("instance_name", instanceName)
+        .eq("external_message_id", externalMessageId);
+      // Atualiza também última mensagem da conversa
+      await supabase.from("conversas_whatsapp")
+        .update({ ultima_mensagem: messageText, atualizado_em: new Date().toISOString() })
+        .eq("instance_name", instanceName)
+        .eq("remote_jid", remoteJid);
+    }
 
     if (!messageText) return new Response("ok", { status: 200 });
 

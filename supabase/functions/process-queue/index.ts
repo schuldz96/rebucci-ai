@@ -151,6 +151,18 @@ Deno.serve(async () => {
         messageText = uniqueMsgs.join("\n");
       }
 
+      // Persiste a mensagem de entrada do usuário (redundância: se webhook já salvou, ignora duplicata)
+      await supabase.from("mensagens_whatsapp").upsert({
+        instance_name: instanceName,
+        remote_jid: remoteJid,
+        corpo: messageText,
+        tipo: "text",
+        direcao: "entrada",
+        external_message_id: `q-${item.id}`,
+        message_timestamp: Math.floor(new Date(item.created_at as string).getTime() / 1000),
+        enviada_em: item.created_at as string,
+      }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true }).catch(() => {});
+
       // Token OpenAI
       const { data: tokenRow } = await supabase
         .from("api_tokens")
@@ -279,7 +291,7 @@ Deno.serve(async () => {
         parts = [...first2, rest];
       }
 
-      let lastSendJson = {};
+      let lastSendJson: Record<string, unknown> = {};
       for (let i = 0; i < parts.length; i++) {
         // Typing proporcional ao tamanho (~50 chars/s de leitura humana, mín 3s, máx 8s)
         const partTyping = Math.min(8, Math.max(3, Math.round(parts[i].length / 30)));
@@ -295,8 +307,33 @@ Deno.serve(async () => {
           headers: { "Content-Type": "application/json", apikey: evoConfig.api_token as string },
           body: JSON.stringify({ number: phone, text: parts[i] }),
         });
-        lastSendJson = await res.json().catch(() => ({}));
+        lastSendJson = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+
+        // Persiste mensagem de saída no banco
+        const sentKey = (lastSendJson.key as Record<string, unknown>) ?? {};
+        const sentMsgId = (sentKey.id as string) || `ai-${Date.now()}-${i}`;
+        const nowTs = Math.floor(Date.now() / 1000);
+        await supabase.from("mensagens_whatsapp").upsert({
+          instance_name: instanceName,
+          remote_jid: remoteJid,
+          corpo: parts[i],
+          tipo: "text",
+          direcao: "saida",
+          external_message_id: sentMsgId,
+          message_timestamp: nowTs,
+          enviada_em: new Date().toISOString(),
+        }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true }).catch(() => {});
       }
+
+      // Atualiza conversa com última mensagem enviada pela IA
+      await supabase.from("conversas_whatsapp").upsert({
+        instance_name: instanceName,
+        remote_jid: remoteJid,
+        ultima_mensagem: parts[parts.length - 1],
+        ultima_mensagem_em: new Date().toISOString(),
+        status: "answered",
+        atualizado_em: new Date().toISOString(),
+      }, { onConflict: "instance_name,remote_jid" }).catch(() => {});
 
       // Log completo: entrada, resposta e contexto RAG
       const { error: logErr } = await supabase.from("ai_logs").insert({

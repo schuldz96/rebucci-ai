@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { evolutionApi, isFromMe } from "@/lib/evolutionApi";
+import { supabase } from "@/lib/supabase";
 import type { ChatMessage, Conversation, Instance } from "@/data/mockData";
 
 interface ChatState {
@@ -23,7 +24,6 @@ interface ChatState {
 async function ensureConfigured(): Promise<boolean> {
   if (evolutionApi.isConfigured()) return true;
   try {
-    const { supabase } = await import("@/lib/supabase");
     const { data } = await supabase
       .from("evolution_config")
       .select("api_url, api_token")
@@ -46,6 +46,14 @@ function safeTimestamp(ts: number): string {
   }
 }
 
+function isoToTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
 export const useChatStore = create<ChatState>((set, get) => ({
   instances: [],
   conversations: [],
@@ -60,7 +68,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!ok) return;
     set({ loading: true });
     try {
-      const { supabase } = await import("@/lib/supabase");
       const [raw, { data: webhookRows }] = await Promise.all([
         evolutionApi.fetchInstances(),
         supabase.from("instance_webhooks").select("instance_name, display_name"),
@@ -80,8 +87,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       set({ instances, loading: false });
 
-      // Auto-seleciona apenas sem disparar loadConversations automaticamente
-      // (o usuário clica para carregar)
       if (!get().selectedInstanceId && instances.length > 0) {
         const first = instances.find((i) => i.status === "online") ?? instances[0];
         set({ selectedInstanceId: first.id });
@@ -91,23 +96,52 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  // ── Conversas: lê do banco, fallback para Evolution API ──
   loadConversations: async (instanceName: string) => {
     const ok = await ensureConfigured();
     if (!ok) return;
     set({ loading: true, conversations: [] });
+
     try {
+      // 1) Tenta ler do banco (rápido: ~20ms)
+      const { data: dbRows } = await supabase
+        .from("conversas_whatsapp")
+        .select("*")
+        .eq("instance_name", instanceName)
+        .order("ultima_mensagem_em", { ascending: false, nullsFirst: false })
+        .limit(500);
+
+      if (dbRows && dbRows.length > 0) {
+        const conversations: Conversation[] = dbRows.map((r) => {
+          const phone = r.contato_telefone || r.remote_jid?.split("@")[0] || "";
+          return {
+            id: r.remote_jid,
+            instanceId: instanceName,
+            contactName: r.contato_nome || phone || "Desconhecido",
+            contactPhone: phone,
+            lastMessage: r.ultima_mensagem || "",
+            lastMessageTime: r.ultima_mensagem_em ? isoToTime(r.ultima_mensagem_em) : "",
+            lastMessageTimestamp: r.ultima_mensagem_em ? Math.floor(new Date(r.ultima_mensagem_em).getTime() / 1000) : 0,
+            unreadCount: r.nao_lidas || 0,
+            status: (r.status as Conversation["status"]) || "pending",
+            remoteJidAlt: r.remote_jid_alt || undefined,
+          };
+        });
+        set({ conversations, loading: false });
+        return;
+      }
+
+      // 2) Fallback: busca da Evolution API e salva no banco para próximas vezes
       const chats = await evolutionApi.fetchChats(instanceName, 200);
       const conversations: Conversation[] = chats
         .filter((c) => c.remoteJid)
         .sort((a, b) => {
-          // Sem timestamp vai pro fim
           if (!a.lastMessageTimestamp && !b.lastMessageTimestamp) return 0;
           if (!a.lastMessageTimestamp) return 1;
           if (!b.lastMessageTimestamp) return -1;
           return b.lastMessageTimestamp - a.lastMessageTimestamp;
         })
         .map((c) => {
-          // Para JIDs @lid, o número real fica em remoteJidAlt
           const phoneJid = c.remoteJidAlt || c.remoteJid;
           const phone = phoneJid.split("@")[0] || "";
           return {
@@ -123,21 +157,77 @@ export const useChatStore = create<ChatState>((set, get) => ({
             remoteJidAlt: c.remoteJidAlt,
           };
         });
+
+      // Salva conversas no banco em background (para próximas cargas serem rápidas)
+      const toInsert = conversations.map((c) => ({
+        instance_name: instanceName,
+        remote_jid: c.id,
+        remote_jid_alt: c.remoteJidAlt || null,
+        contato_nome: c.contactName,
+        contato_telefone: c.contactPhone,
+        ultima_mensagem: c.lastMessage,
+        ultima_mensagem_em: c.lastMessageTimestamp
+          ? new Date(c.lastMessageTimestamp * 1000).toISOString()
+          : null,
+        nao_lidas: c.unreadCount,
+        status: c.status,
+      }));
+
+      if (toInsert.length > 0) {
+        supabase
+          .from("conversas_whatsapp")
+          .upsert(toInsert, { onConflict: "instance_name,remote_jid" })
+          .then(() => {});
+      }
+
       set({ conversations, loading: false });
     } catch {
       set({ loading: false });
     }
   },
 
+  // ── Mensagens: lê do banco, fallback para Evolution API ──
   loadMessages: async (instanceName: string, remoteJid: string) => {
     const ok = await ensureConfigured();
     if (!ok) return;
     set({ loadingMessages: true, messages: [] });
+
     try {
-      const conv = get().conversations.find(c => c.id === remoteJid);
-      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 100, conv?.remoteJidAlt);
-      // Descarta se o usuário trocou de conversa enquanto carregava
+
+      const conv = get().conversations.find((c) => c.id === remoteJid);
+
+      // Monta lista de JIDs para buscar (principal + alt para @lid)
+      const jids = [remoteJid];
+      if (conv?.remoteJidAlt) jids.push(conv.remoteJidAlt);
+
+      // 1) Tenta ler do banco (rápido)
+      const { data: dbRows } = await supabase
+        .from("mensagens_whatsapp")
+        .select("*")
+        .eq("instance_name", instanceName)
+        .in("remote_jid", jids)
+        .order("message_timestamp", { ascending: true })
+        .limit(200);
+
       if (get().selectedConversationId !== remoteJid) return;
+
+      if (dbRows && dbRows.length > 0) {
+        const messages: ChatMessage[] = dbRows.map((m) => ({
+          id: m.external_message_id || m.id,
+          conversationId: remoteJid,
+          content: m.corpo || "",
+          type: (m.tipo === "audio" ? "audio" : m.tipo === "image" ? "image" : "text") as ChatMessage["type"],
+          direction: m.direcao === "saida" ? "sent" : "received",
+          timestamp: m.enviada_em ? isoToTime(m.enviada_em) : "",
+        }));
+        set({ messages, loadingMessages: false });
+        return;
+      }
+
+      // 2) Fallback: busca da Evolution API
+      const raw = await evolutionApi.fetchMessages(instanceName, remoteJid, 100, conv?.remoteJidAlt);
+      if (get().selectedConversationId !== remoteJid) return;
+
       const sorted = [...raw].sort((a, b) =>
         (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0)
       );
@@ -168,20 +258,57 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (selectedInstanceId) get().loadMessages(selectedInstanceId, id);
   },
 
+  // ── Poll: lê mensagens novas do banco (rápido) com fallback API ──
   pollMessages: async () => {
-    const { selectedInstanceId, selectedConversationId } = get();
+    const { selectedInstanceId, selectedConversationId, messages } = get();
     if (!selectedInstanceId || !selectedConversationId) return;
-    if (!evolutionApi.isConfigured()) return;
+
     const snapConvId = selectedConversationId;
     try {
-      const conv = get().conversations.find(c => c.id === snapConvId);
-      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 30, conv?.remoteJidAlt);
-      // Descarta se o usuário trocou de conversa enquanto o poll estava em voo
+
+      const conv = get().conversations.find((c) => c.id === snapConvId);
+
+      // JIDs para buscar
+      const jids = [snapConvId];
+      if (conv?.remoteJidAlt) jids.push(conv.remoteJidAlt);
+
+      // Busca do banco todas as mensagens e compara com estado atual
+      const { data: dbRows } = await supabase
+        .from("mensagens_whatsapp")
+        .select("*")
+        .eq("instance_name", selectedInstanceId)
+        .in("remote_jid", jids)
+        .order("message_timestamp", { ascending: true })
+        .limit(200);
+
       if (get().selectedConversationId !== snapConvId) return;
+
+      if (dbRows && dbRows.length > 0) {
+        const newMessages: ChatMessage[] = dbRows.map((m) => ({
+          id: m.external_message_id || m.id,
+          conversationId: snapConvId,
+          content: m.corpo || "",
+          type: (m.tipo === "audio" ? "audio" : m.tipo === "image" ? "image" : "text") as ChatMessage["type"],
+          direction: m.direcao === "saida" ? "sent" : "received",
+          timestamp: m.enviada_em ? isoToTime(m.enviada_em) : "",
+        }));
+
+        // Só atualiza se há diferenças
+        if (newMessages.length !== messages.length || newMessages.some((m, i) => m.id !== messages[i]?.id)) {
+          set({ messages: newMessages });
+        }
+        return;
+      }
+
+      // Fallback: busca da API
+      if (!evolutionApi.isConfigured()) return;
+      const raw = await evolutionApi.fetchMessages(selectedInstanceId, snapConvId, 30, conv?.remoteJidAlt);
+      if (get().selectedConversationId !== snapConvId) return;
+
       const sorted = [...raw].sort((a, b) =>
         (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0)
       );
-      const messages: ChatMessage[] = sorted
+      const fallbackMessages: ChatMessage[] = sorted
         .filter((m) => m?.key)
         .map((m) => ({
           id: m.key?.id ?? `msg-${Math.random()}`,
@@ -191,17 +318,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
           direction: isFromMe(m) ? "sent" : "received",
           timestamp: m.messageTimestamp ? safeTimestamp(m.messageTimestamp) : "",
         }));
-      set({ messages });
+      set({ messages: fallbackMessages });
     } catch { /* silencioso */ }
   },
 
+  // ── Send: envia via API + salva no banco ──
   sendMessage: async (content: string) => {
     const { selectedInstanceId, selectedConversationId, messages } = get();
     if (!selectedInstanceId || !selectedConversationId) return;
+
     const now = new Date();
     const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+    const tempId = `tmp-${Date.now()}`;
     const optimistic: ChatMessage = {
-      id: `tmp-${Date.now()}`,
+      id: tempId,
       conversationId: selectedConversationId,
       content,
       type: "text",
@@ -209,8 +339,43 @@ export const useChatStore = create<ChatState>((set, get) => ({
       timestamp: timeStr,
     };
     set({ messages: [...messages, optimistic] });
+
     try {
-      await evolutionApi.sendTextMessage(selectedInstanceId, selectedConversationId, content);
+      const result = await evolutionApi.sendTextMessage(selectedInstanceId, selectedConversationId, content) as Record<string, unknown>;
+
+      // Persiste no banco
+
+      const sentKey = (result?.key as Record<string, unknown>) ?? {};
+      const externalId = (sentKey.id as string) || tempId;
+      const nowTs = Math.floor(now.getTime() / 1000);
+
+      await supabase.from("mensagens_whatsapp").upsert({
+        instance_name: selectedInstanceId,
+        remote_jid: selectedConversationId,
+        corpo: content,
+        tipo: "text",
+        direcao: "saida",
+        external_message_id: externalId,
+        message_timestamp: nowTs,
+        enviada_em: now.toISOString(),
+      }, { onConflict: "instance_name,external_message_id", ignoreDuplicates: true }).catch(() => {});
+
+      // Atualiza conversa
+      await supabase.from("conversas_whatsapp").upsert({
+        instance_name: selectedInstanceId,
+        remote_jid: selectedConversationId,
+        ultima_mensagem: content,
+        ultima_mensagem_em: now.toISOString(),
+        status: "answered",
+        atualizado_em: now.toISOString(),
+      }, { onConflict: "instance_name,remote_jid" }).catch(() => {});
+
+      // Substitui ID temporário pelo real
+      set({
+        messages: get().messages.map((m) =>
+          m.id === tempId ? { ...m, id: externalId } : m
+        ),
+      });
     } catch { /* mantém mensagem otimista */ }
   },
 }));
