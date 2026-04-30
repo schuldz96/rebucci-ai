@@ -313,63 +313,87 @@ const ANAMNESIS_QUESTIONS = [
 const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: string }) => {
   const { toast } = useToast();
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [questions, setQuestions] = useState<{ id: string; label: string; type: string }[]>([]);
   const [anamnesisId, setAnamnesisId] = useState<string | null>(null);
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [sendingLink, setSendingLink] = useState(false);
 
   useEffect(() => {
-    supabase.from("anamnesis").select("*").eq("customer_id", customerId).maybeSingle().then(({ data }) => {
-      if (data) { setAnswers(data.answers ?? {}); setAnamnesisId(data.id); }
+    const load = async () => {
+      const { data: anam } = await supabase.from("anamnesis").select("*").eq("customer_id", customerId).maybeSingle();
+      if (anam) { setAnswers(anam.answers ?? {}); setAnamnesisId(anam.id); setSubmittedAt(anam.submitted_at); }
+
+      const { data: settings } = await supabase.from("coach_settings").select("anamnesis_mode, anamnesis_categories").eq("coach_id", coachId).maybeSingle();
+      const mode = settings?.anamnesis_mode ?? "default";
+
+      if (mode === "custom") {
+        const { data: qs } = await supabase.from("anamnesis_questions").select("id, label, type").eq("coach_id", coachId).eq("active", true).order("sort_order");
+        setQuestions(qs ?? []);
+      } else {
+        const CATEGORY_QUESTIONS: Record<string, { label: string; type: string }[]> = {
+          habVida: [{ label: "Possui alguma restrição alimentar?", type: "textarea" }, { label: "Qual o horário habitual das suas refeições?", type: "text" }, { label: "Descreva um dia típico de suas refeições", type: "textarea" }, { label: "Ingere bebida alcoólica?", type: "text" }, { label: "É fumante?", type: "text" }],
+          habSono: [{ label: "Quantas horas dorme por noite?", type: "text" }, { label: "Qualidade do sono (1-10)", type: "text" }, { label: "Tem dificuldade para dormir?", type: "text" }],
+          saude: [{ label: "Possui alguma doença diagnosticada?", type: "textarea" }, { label: "Usa algum medicamento?", type: "text" }, { label: "Tem lesões ou limitações físicas?", type: "textarea" }],
+          atividadeFisica: [{ label: "Pratica atividade física atualmente?", type: "text" }, { label: "Qual modalidade?", type: "text" }, { label: "Quantas vezes por semana treina?", type: "text" }],
+          objetivos: [{ label: "Qual é o seu objetivo principal?", type: "textarea" }, { label: "Peso desejado (kg)", type: "text" }],
+        };
+        const cats: string[] = settings?.anamnesis_categories ?? ["habVida", "habSono", "saude", "atividadeFisica"];
+        const qs: { id: string; label: string; type: string }[] = [];
+        cats.forEach((cat, ci) => (CATEGORY_QUESTIONS[cat] ?? []).forEach((q, qi) => qs.push({ id: `${cat}_${qi}`, ...q })));
+        setQuestions(qs);
+      }
       setLoading(false);
-    });
-  }, [customerId]);
+    };
+    load();
+  }, [customerId, coachId]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    if (anamnesisId) {
-      await supabase.from("anamnesis").update({ answers, submitted_at: new Date().toISOString() }).eq("id", anamnesisId);
-    } else {
-      const { data } = await supabase.from("anamnesis").insert({
-        coach_id: coachId, customer_id: customerId, answers, submitted_at: new Date().toISOString(),
-      }).select().single();
-      if (data) setAnamnesisId(data.id);
-    }
-    setSaving(false);
-    toast({ title: "Anamnese salva!" });
+  const sendLink = async () => {
+    setSendingLink(true);
+    const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    await supabase.from("anamnesis_tokens").insert({ coach_id: coachId, customer_id: customerId, token });
+    const url = `${window.location.origin}/anamnese/${token}`;
+    await navigator.clipboard.writeText(url);
+    setSendingLink(false);
+    toast({ title: "Link copiado!", description: "Envie para o aluno via WhatsApp ou e-mail." });
   };
-
-  const set = (key: string, val: string) => setAnswers((p) => ({ ...p, [key]: val }));
 
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
   return (
-    <div className="space-y-4 max-w-lg">
+    <div className="space-y-5 max-w-lg">
+      {/* Header com status */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground">Ficha de Anamnese</h3>
-        {anamnesisId && <span className="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">Preenchida</span>}
-      </div>
-      {ANAMNESIS_QUESTIONS.map((q) => (
-        <div key={q.key}>
-          <label className="text-sm font-medium text-foreground">{q.label}</label>
-          {q.type === "textarea" ? (
-            <textarea
-              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-              rows={2} value={answers[q.key] ?? ""} onChange={(e) => set(q.key, e.target.value)}
-            />
-          ) : q.type === "select" ? (
-            <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"
-              value={answers[q.key] ?? ""} onChange={(e) => set(q.key, e.target.value)}>
-              <option value="">Selecione...</option>
-              {q.options?.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
+        <div>
+          <h3 className="font-semibold text-foreground">Anamnese</h3>
+          {submittedAt ? (
+            <p className="text-xs text-green-400 mt-0.5">Preenchida em {new Date(submittedAt).toLocaleDateString("pt-BR")}</p>
           ) : (
-            <Input className="mt-1" value={answers[q.key] ?? ""} onChange={(e) => set(q.key, e.target.value)} />
+            <p className="text-xs text-muted-foreground mt-0.5">Ainda não preenchida pelo aluno</p>
           )}
         </div>
-      ))}
-      <Button onClick={handleSave} disabled={saving} className="gap-2">
-        {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Salvando...</> : "Salvar Anamnese"}
-      </Button>
+        <Button size="sm" variant="outline" className="gap-2" onClick={sendLink} disabled={sendingLink}>
+          {sendingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>}
+          Copiar link
+        </Button>
+      </div>
+
+      {/* Respostas */}
+      {anamnesisId && questions.length > 0 ? (
+        <div className="space-y-3">
+          {questions.map((q) => answers[q.id] ? (
+            <div key={q.id} className="bg-card border border-border rounded-xl px-4 py-3">
+              <p className="text-xs text-muted-foreground mb-1">{q.label}</p>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{answers[q.id]}</p>
+            </div>
+          ) : null)}
+        </div>
+      ) : !anamnesisId ? (
+        <div className="bg-muted/30 border border-dashed border-border rounded-xl p-6 text-center text-sm text-muted-foreground">
+          <p>Nenhuma resposta registrada.</p>
+          <p className="text-xs mt-1">Clique em "Copiar link" para enviar o formulário ao aluno.</p>
+        </div>
+      ) : null}
     </div>
   );
 };

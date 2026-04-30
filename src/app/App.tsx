@@ -51,8 +51,9 @@ import SupportPage from "@/pages/SupportPage";
 import AccountSettingsPage from "@/pages/account/AccountSettingsPage";
 import AccountSubscriptionPage from "@/pages/account/AccountSubscriptionPage";
 
-// Rota pública — Formulário de feedback
+// Rotas públicas
 import FeedbackFormPage from "@/pages/public/FeedbackFormPage";
+import AnamnesisFormPage from "@/pages/public/AnamnesisFormPage";
 
 // Páginas extras
 import NotificationsPage from "@/pages/NotificationsPage";
@@ -90,6 +91,7 @@ const AppRoutes = () => {
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
       />
       <Route path="/f/:token" element={<FeedbackFormPage />} />
+      <Route path="/anamnese/:token" element={<AnamnesisFormPage />} />
       <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
 
       {/* Rotas protegidas */}

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { User, Dumbbell, Zap, DollarSign, Plug, Loader2, Save } from "lucide-react";
+import { User, Dumbbell, Zap, DollarSign, Plug, Loader2, Save, ClipboardList, Plus, Trash2, GripVertical, Edit2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
+import { AnimatePresence, motion } from "framer-motion";
 
 const SECTIONS = [
   { id: "profile", label: "Perfil do Coach", icon: User },
@@ -13,6 +14,7 @@ const SECTIONS = [
   { id: "automations", label: "Automações", icon: Zap },
   { id: "financial", label: "Financeiro", icon: DollarSign },
   { id: "integrations", label: "Integrações", icon: Plug },
+  { id: "anamnesis", label: "Anamnese", icon: ClipboardList },
 ];
 
 const FEEDBACK_FREQ_OPTIONS = [7, 14, 15, 21, 30];
@@ -339,6 +341,315 @@ const IntegrationsSection = ({ coachId }: { coachId: string }) => {
   );
 };
 
+// ─── Categorias padrão ────────────────────────────────────────────────────────
+
+const DEFAULT_CATEGORIES = [
+  {
+    id: "habVida", label: "Hábitos de Vida",
+    questions: ["Restrição alimentar", "Horário das refeições", "Descreva um dia típico de suas refeições", "Ingere bebida alcoólica?", "Fumante?", "Come fora de casa com frequência?"],
+  },
+  {
+    id: "habSono", label: "Hábitos de Sono",
+    questions: ["Quantas horas dorme por noite?", "Qualidade do sono (1-10)", "Tem dificuldade para dormir?", "Usa algum recurso para dormir melhor?"],
+  },
+  {
+    id: "saude", label: "Histórico de Saúde",
+    questions: ["Possui alguma doença diagnosticada?", "Usa algum medicamento?", "Já fez cirurgias?", "Tem lesões ou limitações físicas?", "Histórico familiar de doenças?"],
+  },
+  {
+    id: "atividadeFisica", label: "Atividade Física",
+    questions: ["Pratica atividade física atualmente?", "Qual modalidade?", "Quantas vezes por semana?", "Há quanto tempo treina?", "Nível de experiência"],
+  },
+  {
+    id: "objetivos", label: "Objetivos",
+    questions: ["Qual é o seu objetivo principal?", "Peso desejado (kg)", "Prazo para atingir o objetivo", "Já tentou outros métodos antes?"],
+  },
+];
+
+const QUESTION_TYPES = [
+  { value: "text",     label: "Texto curto" },
+  { value: "textarea", label: "Texto longo" },
+  { value: "yesno",    label: "Sim / Não" },
+  { value: "scale",    label: "Escala 1-10" },
+  { value: "number",   label: "Número" },
+  { value: "select",   label: "Múltipla escolha" },
+];
+
+interface AnamnesisQuestion {
+  id: string;
+  label: string;
+  type: string;
+  options?: string[];
+  required: boolean;
+  sort_order: number;
+}
+
+const QuestionModal = ({
+  question,
+  onClose,
+  onSave,
+}: {
+  question?: AnamnesisQuestion;
+  onClose: () => void;
+  onSave: (q: Omit<AnamnesisQuestion, "id" | "sort_order">) => void;
+}) => {
+  const [label, setLabel] = useState(question?.label ?? "");
+  const [type, setType] = useState(question?.type ?? "text");
+  const [required, setRequired] = useState(question?.required ?? true);
+  const [options, setOptions] = useState<string[]>(question?.options ?? ["", ""]);
+
+  const handleSave = () => {
+    if (!label.trim()) return;
+    onSave({ label, type, required, options: type === "select" ? options.filter(Boolean) : undefined });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="w-full max-w-md bg-background border border-border rounded-2xl shadow-2xl overflow-hidden"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="font-semibold">{question ? "Editar pergunta" : "Nova pergunta"}</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <label className="text-sm font-medium">Pergunta *</label>
+            <Input className="mt-1" placeholder="Ex: Tem alguma restrição alimentar?" value={label} onChange={(e) => setLabel(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Tipo de resposta</label>
+            <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
+              {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          {type === "select" && (
+            <div>
+              <label className="text-sm font-medium">Opções</label>
+              <div className="space-y-2 mt-1">
+                {options.map((opt, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input placeholder={`Opção ${i + 1}`} value={opt} onChange={(e) => setOptions((o) => o.map((x, j) => j === i ? e.target.value : x))} />
+                    {options.length > 2 && (
+                      <button onClick={() => setOptions((o) => o.filter((_, j) => j !== i))} className="text-destructive"><X className="w-4 h-4" /></button>
+                    )}
+                  </div>
+                ))}
+                <button onClick={() => setOptions((o) => [...o, ""])} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"><Plus className="w-3 h-3" />Adicionar opção</button>
+              </div>
+            </div>
+          )}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="rounded" />
+            <span className="text-sm">Resposta obrigatória</span>
+          </label>
+        </div>
+        <div className="flex justify-end gap-3 px-5 py-4 border-t border-border">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={!label.trim()}>Salvar</Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const AnamnesisSection = ({ coachId }: { coachId: string }) => {
+  const { toast } = useToast();
+  const [mode, setMode] = useState<"default" | "custom">("default");
+  const [enabledCategories, setEnabledCategories] = useState<string[]>(["habVida", "habSono", "saude", "atividadeFisica"]);
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<AnamnesisQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<AnamnesisQuestion | undefined>();
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: settings } = await supabase
+        .from("coach_settings").select("anamnesis_mode, anamnesis_categories").eq("coach_id", coachId).maybeSingle();
+      if (settings) {
+        setMode(settings.anamnesis_mode ?? "default");
+        setEnabledCategories(settings.anamnesis_categories ?? ["habVida", "habSono", "saude", "atividadeFisica"]);
+      }
+      const { data: qs } = await supabase
+        .from("anamnesis_questions").select("*").eq("coach_id", coachId).eq("active", true).order("sort_order");
+      setQuestions(qs ?? []);
+      setLoading(false);
+    };
+    load();
+  }, [coachId]);
+
+  const saveSettings = async () => {
+    setSaving(true);
+    await supabase.from("coach_settings").upsert({ coach_id: coachId, anamnesis_mode: mode, anamnesis_categories: enabledCategories });
+    setSaving(false);
+    toast({ title: "Configurações salvas!" });
+  };
+
+  const toggleCategory = (id: string) =>
+    setEnabledCategories((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
+
+  const handleSaveQuestion = async (data: Omit<AnamnesisQuestion, "id" | "sort_order">) => {
+    if (editing) {
+      await supabase.from("anamnesis_questions").update({ label: data.label, type: data.type, options: data.options, required: data.required }).eq("id", editing.id);
+      setQuestions((prev) => prev.map((q) => q.id === editing.id ? { ...q, ...data } : q));
+      toast({ title: "Pergunta atualizada" });
+    } else {
+      const sort_order = questions.length;
+      const { data: inserted } = await supabase.from("anamnesis_questions")
+        .insert({ coach_id: coachId, ...data, sort_order }).select().single();
+      if (inserted) setQuestions((prev) => [...prev, inserted]);
+      toast({ title: "Pergunta adicionada" });
+    }
+    setShowModal(false);
+    setEditing(undefined);
+  };
+
+  const deleteQuestion = async (id: string) => {
+    await supabase.from("anamnesis_questions").update({ active: false }).eq("id", id);
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+    toast({ title: "Pergunta removida" });
+  };
+
+  const moveQuestion = async (idx: number, dir: -1 | 1) => {
+    const newQs = [...questions];
+    const target = idx + dir;
+    if (target < 0 || target >= newQs.length) return;
+    [newQs[idx], newQs[target]] = [newQs[target], newQs[idx]];
+    setQuestions(newQs);
+    await Promise.all(newQs.map((q, i) => supabase.from("anamnesis_questions").update({ sort_order: i }).eq("id", q.id)));
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h2 className="text-lg font-semibold">Anamnese</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Configure o formulário enviado ao aluno no início da consultoria</p>
+      </div>
+
+      {/* Toggle modo */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">Anamnese personalizada</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Crie suas próprias perguntas em vez de usar as categorias padrão</p>
+          </div>
+          <button
+            onClick={() => setMode((m) => m === "custom" ? "default" : "custom")}
+            className={cn("relative w-11 h-6 rounded-full transition-colors", mode === "custom" ? "bg-primary" : "bg-muted")}
+          >
+            <span className={cn("absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform", mode === "custom" && "translate-x-5")} />
+          </button>
+        </div>
+      </div>
+
+      {mode === "custom" ? (
+        <>
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-sm text-primary flex gap-3">
+            <ClipboardList className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>Adicione e ordene suas perguntas. O objetivo do aluno já é coletado automaticamente pelo sistema.</span>
+          </div>
+
+          <div className="space-y-2">
+            {questions.length === 0 && (
+              <div className="text-center py-10 text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+                Nenhuma pergunta criada ainda. Clique em "Nova pergunta" para começar.
+              </div>
+            )}
+            {questions.map((q, idx) => (
+              <div key={q.id} className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3 group">
+                <div className="flex flex-col gap-0.5">
+                  <button onClick={() => moveQuestion(idx, -1)} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-20">▲</button>
+                  <button onClick={() => moveQuestion(idx, 1)} disabled={idx === questions.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-20">▼</button>
+                </div>
+                <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{q.label}</p>
+                  <p className="text-xs text-muted-foreground">{QUESTION_TYPES.find((t) => t.value === q.type)?.label}{q.required ? "" : " · Opcional"}</p>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => { setEditing(q); setShowModal(true); }} className="p-1.5 rounded text-muted-foreground hover:text-foreground"><Edit2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => deleteQuestion(q.id)} className="p-1.5 rounded text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => { setEditing(undefined); setShowModal(true); }}>
+            <Plus className="w-4 h-4" />Nova pergunta
+          </Button>
+        </>
+      ) : (
+        <>
+          <div className="bg-muted/50 border border-border rounded-xl p-4 text-sm text-muted-foreground flex gap-3">
+            <ClipboardList className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>Selecione as categorias predefinidas que deseja incluir no formulário de anamnese do aluno.</span>
+          </div>
+
+          <div className="space-y-3">
+            {DEFAULT_CATEGORIES.map((cat) => (
+              <div key={cat.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3 flex-1">
+                    <button
+                      onClick={() => setExpandedCat((p) => p === cat.id ? null : cat.id)}
+                      className="text-muted-foreground hover:text-foreground transition-colors text-xs"
+                    >
+                      {expandedCat === cat.id ? "▼" : "▶"}
+                    </button>
+                    <span className="text-sm font-medium">{cat.label}</span>
+                  </div>
+                  <button
+                    onClick={() => toggleCategory(cat.id)}
+                    className={cn("relative w-11 h-6 rounded-full transition-colors shrink-0", enabledCategories.includes(cat.id) ? "bg-primary" : "bg-muted")}
+                  >
+                    <span className={cn("absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform", enabledCategories.includes(cat.id) && "translate-x-5")} />
+                  </button>
+                </div>
+                {expandedCat === cat.id && (
+                  <div className="px-4 pb-3 bg-muted/20">
+                    <ul className="space-y-1 pl-7">
+                      {cat.questions.map((q) => (
+                        <li key={q} className="text-xs text-muted-foreground flex items-start gap-2">
+                          <span className="mt-1.5 w-1 h-1 rounded-full bg-muted-foreground/50 shrink-0" />
+                          {q}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <Button onClick={saveSettings} disabled={saving} className="gap-2">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        Salvar configurações
+      </Button>
+
+      <AnimatePresence>
+        {showModal && (
+          <QuestionModal
+            question={editing}
+            onClose={() => { setShowModal(false); setEditing(undefined); }}
+            onSave={handleSaveQuestion}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const AccountSettingsPage = () => {
@@ -379,6 +690,7 @@ const AccountSettingsPage = () => {
               {section === "automations" && <AutomationsSection coachId={user.id} />}
               {section === "financial" && <FinancialSection coachId={user.id} />}
               {section === "integrations" && <IntegrationsSection coachId={user.id} />}
+              {section === "anamnesis" && <AnamnesisSection coachId={user.id} />}
             </>
           )}
         </div>
