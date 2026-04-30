@@ -54,6 +54,11 @@ import AccountSubscriptionPage from "@/pages/account/AccountSubscriptionPage";
 // Rota pública — Formulário de feedback
 import FeedbackFormPage from "@/pages/public/FeedbackFormPage";
 
+// Páginas extras
+import NotificationsPage from "@/pages/NotificationsPage";
+import AwardsPage from "@/pages/AwardsPage";
+import PatchNotesPage from "@/pages/PatchNotesPage";
+
 const queryClient = new QueryClient();
 
 const ProtectedRoutes = () => {
@@ -123,6 +128,10 @@ const AppRoutes = () => {
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/apps" element={<AppsPage />} />
         <Route path="/support" element={<SupportPage />} />
+        <Route path="/help" element={<SupportPage />} />
+        <Route path="/notifications/all" element={<NotificationsPage />} />
+        <Route path="/awards" element={<AwardsPage />} />
+        <Route path="/patch-notes" element={<PatchNotesPage />} />
 
         {/* Minha Conta */}
         <Route path="/account/settings" element={<AccountSettingsPage />} />

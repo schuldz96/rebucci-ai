@@ -31,6 +31,9 @@ import {
   Salad,
   CreditCard,
   User,
+  Trophy,
+  Bell,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -120,6 +123,21 @@ const coachingNav: NavGroup[] = [
       { label: "Configurações", path: "/account/settings" },
       { label: "Assinatura", path: "/account/subscription" },
     ],
+  },
+  {
+    label: "Notificações",
+    icon: Bell,
+    path: "/notifications/all",
+  },
+  {
+    label: "Conquistas",
+    icon: Trophy,
+    path: "/awards",
+  },
+  {
+    label: "Novidades",
+    icon: Sparkles,
+    path: "/patch-notes",
   },
   {
     label: "Suporte",

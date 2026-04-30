@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Filter, Grid, List, ChevronDown, ChevronUp, Search,
   MessageCircleWarning, AlertTriangle, Clock, CheckCircle2,
@@ -30,6 +31,7 @@ const avatarInitials = (name: string) =>
 // ─── FeedbackRow ─────────────────────────────────────────────────────────────
 
 const FeedbackRow = ({ fb, onMark }: { fb: Feedback; onMark: (id: string) => void }) => {
+  const navigate = useNavigate();
   const cfg = STATUS_CONFIG[fb.status] ?? STATUS_CONFIG.pending;
   const Icon = cfg.icon;
   const customer = fb.customers;
@@ -43,7 +45,12 @@ const FeedbackRow = ({ fb, onMark }: { fb: Feedback; onMark: (id: string) => voi
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-foreground truncate">{customer?.name ?? "—"}</p>
+          <button
+            onClick={() => fb.customer_id && navigate(`/customers/${fb.customer_id}`)}
+            className="text-sm font-semibold text-foreground truncate hover:text-primary hover:underline transition-colors"
+          >
+            {customer?.name ?? "—"}
+          </button>
           {fb.has_photos && (
             <span className="flex items-center gap-0.5 text-[10px] text-violet-400 bg-violet-400/10 px-1.5 py-0.5 rounded-full">
               <Image className="w-2.5 h-2.5" />
