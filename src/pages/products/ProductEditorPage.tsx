@@ -1,0 +1,300 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+const STEPS = [
+  { n: 1, label: "Tipo de Produto" },
+  { n: 2, label: "Configurações Iniciais" },
+  { n: 3, label: "Modalidade" },
+  { n: 4, label: "O que está incluso" },
+  { n: 5, label: "Informações Básicas" },
+  { n: 6, label: "Precificação" },
+  { n: 7, label: "Configurações Avançadas" },
+  { n: 8, label: "Upsell" },
+];
+
+const ProductEditorPage = () => {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const [step, setStep] = useState(1);
+  const [productType, setProductType] = useState<"plan" | "event" | "link" | "">("");
+  const [modality, setModality] = useState<"online" | "personal" | "consulta" | "">("");
+  const [includes, setIncludes] = useState<string[]>([]);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const isEdit = !!id;
+
+  const toggleInclude = (v: string) =>
+    setIncludes((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]);
+
+  const save = () => {
+    if (!name.trim()) { toast({ title: "Nome obrigatório", variant: "destructive" }); return; }
+    toast({ title: isEdit ? "Produto atualizado!" : "Produto criado!", description: "As alterações foram salvas." });
+    navigate("/products/list");
+  };
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="shrink-0 px-6 pt-6 pb-4 border-b border-border">
+        <button onClick={() => navigate("/products/list")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-3 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para produtos
+        </button>
+        <h1 className="text-2xl font-bold text-foreground">{isEdit ? "Editar Produto" : "Novo Produto"}</h1>
+
+        {/* Steps */}
+        <div className="flex items-center gap-1 mt-4 overflow-x-auto pb-1">
+          {STEPS.map((s, i) => (
+            <div key={s.n} className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => s.n < step && setStep(s.n)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+                  step === s.n
+                    ? "bg-primary text-primary-foreground"
+                    : s.n < step
+                    ? "bg-primary/20 text-primary cursor-pointer hover:bg-primary/30"
+                    : "bg-muted text-muted-foreground cursor-default"
+                )}
+              >
+                {s.n < step ? <Check className="w-3 h-3" /> : <span>{s.n}</span>}
+                <span className="hidden sm:inline">{s.label}</span>
+              </button>
+              {i < STEPS.length - 1 && <div className="w-4 h-px bg-border" />}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Conteúdo do step */}
+      <div className="flex-1 overflow-auto p-6">
+        {step === 1 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">Selecione o tipo de produto</h2>
+            {[
+              { value: "plan", emoji: "📄", title: "Plano", desc: "Período e prazo definidos" },
+              { value: "event", emoji: "📅", title: "Evento", desc: "Data, hora e local" },
+              { value: "link", emoji: "🔗", title: "Link Avulso", desc: "Cobrança avulsa" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setProductType(opt.value as any)}
+                className={cn(
+                  "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                  productType === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                )}
+              >
+                <span className="text-2xl">{opt.emoji}</span>
+                <div>
+                  <p className="font-semibold text-foreground">{opt.title}</p>
+                  <p className="text-sm text-muted-foreground">{opt.desc}</p>
+                </div>
+                {productType === opt.value && <Check className="w-5 h-5 text-primary ml-auto" />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">Configurações Iniciais</h2>
+            {[
+              { id: "active", label: "Habilitar produto", desc: "Produto ficará disponível para venda" },
+              { id: "general", label: "Exibir em listagem geral", desc: "Aparecerá na listagem pública de produtos" },
+              { id: "renewal", label: "Exibir em link de renovação", desc: "Disponível quando aluno for renovar" },
+              { id: "exclusive", label: "Não exibir outros produtos no link de renovação", desc: "Exclusividade no link de renovação" },
+            ].map((opt) => (
+              <label key={opt.id} className="flex items-start gap-3 p-4 rounded-xl border border-border hover:border-primary/40 cursor-pointer transition-colors">
+                <input type="checkbox" className="mt-0.5 accent-primary" />
+                <div>
+                  <p className="font-medium text-foreground">{opt.label}</p>
+                  <p className="text-sm text-muted-foreground">{opt.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">Modalidade do Produto</h2>
+            {[
+              { value: "online", emoji: "🌐", title: "Online", desc: "Apenas consultoria online" },
+              { value: "personal", emoji: "🏋️", title: "Personal", desc: "Personal trainer" },
+              { value: "consulta", emoji: "👤", title: "Consulta", desc: "Consulta nutricional" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setModality(opt.value as any)}
+                className={cn(
+                  "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                  modality === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                )}
+              >
+                <span className="text-2xl">{opt.emoji}</span>
+                <div>
+                  <p className="font-semibold text-foreground">{opt.title}</p>
+                  <p className="text-sm text-muted-foreground">{opt.desc}</p>
+                </div>
+                {modality === opt.value && <Check className="w-5 h-5 text-primary ml-auto" />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">O que está incluso</h2>
+            {[
+              { value: "diet", emoji: "🍴", title: "Dieta", desc: "Plano alimentar personalizado" },
+              { value: "workout", emoji: "🏋️", title: "Treino", desc: "Plano de treino personalizado" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => toggleInclude(opt.value)}
+                className={cn(
+                  "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                  includes.includes(opt.value) ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                )}
+              >
+                <span className="text-2xl">{opt.emoji}</span>
+                <div>
+                  <p className="font-semibold text-foreground">{opt.title}</p>
+                  <p className="text-sm text-muted-foreground">{opt.desc}</p>
+                </div>
+                {includes.includes(opt.value) && <Check className="w-5 h-5 text-primary ml-auto" />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">Informações Básicas</h2>
+            <div>
+              <label className="text-sm font-medium text-foreground">Nome do produto *</label>
+              <Input className="mt-1" placeholder="Ex: Consultoria Online Trimestral" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+              <p className="text-xs text-muted-foreground mt-1">{name.length}/100 caracteres</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Descrição</label>
+              <textarea className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring" rows={3} placeholder="Descreva o produto..." maxLength={250} value={description} onChange={(e) => setDescription(e.target.value)} />
+              <p className="text-xs text-muted-foreground mt-1">{description.length}/250 caracteres</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Prazo de entrega (dias)</label>
+              <Input className="mt-1 w-32" type="number" min={1} max={50} defaultValue={5} />
+            </div>
+          </div>
+        )}
+
+        {step === 6 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">Precificação e Pagamento</h2>
+            <div>
+              <label className="text-sm font-medium text-foreground">Preço</label>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                <Input className="pl-9" placeholder="0,00" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Período</label>
+                <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                  <option value="30">Mensal (30 dias)</option>
+                  <option value="60">Bimestral (60 dias)</option>
+                  <option value="90">Trimestral (90 dias)</option>
+                  <option value="180">Semestral (180 dias)</option>
+                  <option value="365">Anual (365 dias)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Parcelamento máximo</label>
+                <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                  {[1,2,3,4,5,6,7,8,9,10,11,12].map(n => <option key={n} value={n}>{n}x</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="accent-primary" />
+                <span className="text-sm text-foreground">Cobrança em formato de assinatura recorrente (cartão)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="accent-primary" />
+                <span className="text-sm text-foreground">Absorver juros do parcelamento</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {step === 7 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">Configurações Avançadas</h2>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-primary/40 transition-colors">
+                <input type="checkbox" className="mt-0.5 accent-primary" />
+                <div>
+                  <p className="font-medium text-foreground">Solicitar documentos na primeira compra</p>
+                  <p className="text-sm text-muted-foreground">Solicitar automaticamente anamnese, exames e fotos de progresso</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-primary/40 transition-colors">
+                <input type="checkbox" className="mt-0.5 accent-primary" />
+                <div>
+                  <p className="font-medium text-foreground">Habilitar agendamento automático de feedbacks</p>
+                  <p className="text-sm text-muted-foreground">Criar appointments de feedback automaticamente para alunos deste produto</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {step === 8 && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold">Oferta de Upsell</h2>
+            <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4 text-sm text-yellow-400">
+              Disponível apenas para produtos Online e sem recorrência ativa.
+            </div>
+            <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-primary/40 transition-colors">
+              <input type="checkbox" className="mt-0.5 accent-primary" />
+              <div>
+                <p className="font-medium text-foreground">Ativar oferta de upsell</p>
+                <p className="text-sm text-muted-foreground">Exibir upgrade no checkout deste produto</p>
+              </div>
+            </label>
+
+            {/* Aviso */}
+            <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4 text-sm text-yellow-400 mt-6">
+              As alterações realizadas neste produto não afetarão os clientes já adicionados. Modificações entram em vigor apenas para novas vendas.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer fixo */}
+      <div className="shrink-0 px-6 py-4 border-t border-border flex items-center justify-between bg-background">
+        <Button variant="outline" onClick={() => step > 1 ? setStep(step - 1) : navigate("/products/list")}>
+          {step === 1 ? "Cancelar" : "Voltar"}
+        </Button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">Etapa {step} de {STEPS.length}</span>
+          {step < STEPS.length ? (
+            <Button onClick={() => setStep(step + 1)}>Próximo</Button>
+          ) : (
+            <Button onClick={save}>Salvar alterações</Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductEditorPage;
