@@ -42,9 +42,9 @@ const ProfileSection = ({ coachId }: { coachId: string }) => {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({ id: coachId, name: form.name, phone: form.phone || null, bio: form.bio || null, specialty: form.specialty || null });
+    const payload: Record<string, any> = { id: coachId, name: form.name, phone: form.phone || null, bio: form.bio || null };
+    if (form.specialty) payload.specialty = form.specialty;
+    const { error } = await supabase.from("profiles").upsert(payload);
     setSaving(false);
     if (error) { toast({ title: "Erro ao salvar", variant: "destructive" }); return; }
     toast({ title: "Perfil salvo com sucesso!" });

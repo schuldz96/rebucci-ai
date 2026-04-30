@@ -50,10 +50,13 @@ const AffiliateModal = ({
       email: form.email || null,
       phone: form.phone || null,
       commission_pct: parseFloat(form.commission_pct) || 10,
+      commission_percent: parseFloat(form.commission_pct) || 10,
       referral_code: code,
+      link_code: code,
       total_sales: 0,
       total_commission: 0,
       status: "active",
+      active: true,
     });
     setSaving(false);
     if (error) { toast({ title: "Erro ao criar afiliado", variant: "destructive" }); return; }
@@ -134,7 +137,8 @@ const AffiliatesPage = () => {
 
   const toggleStatus = async (aff: Affiliate) => {
     const status = aff.status === "active" ? "inactive" : "active";
-    await supabase.from("affiliates").update({ status }).eq("id", aff.id);
+    const active = status === "active";
+    await supabase.from("affiliates").update({ status, active }).eq("id", aff.id);
     setAffiliates((prev) => prev.map((a) => a.id === aff.id ? { ...a, status } : a));
     toast({ title: status === "active" ? "Afiliado ativado" : "Afiliado desativado" });
   };

@@ -1,0 +1,35 @@
+{
+  "name": "Prime Coaching",
+  "short_name": "Prime Coaching",
+  "description": "Prime Coaching - Plataforma de coaching profissional",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "theme_color": "#449AFF",
+  "background_color": "#449AFF",
+  "categories": ["health", "fitness", "lifestyle"],
+  "lang": "pt-BR",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/images/favicon-dark.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/images/favicon-dark.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

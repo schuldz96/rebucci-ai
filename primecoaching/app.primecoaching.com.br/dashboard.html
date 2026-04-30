@@ -1,0 +1,2956 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Prime Coaching - Área do Profissional</title>
+
+    <!-- META TAGS -->
+    <meta name="csrf-token" content="bbf0dc183fe8cef6a7df59b790a7e41d47ddd7255830139be6197e52b5b60737">
+    <meta name="robots" content="noindex, nofollow, noarchive, noimageindex">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, noimageindex">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Prime Coaching">
+    <meta name="application-name" content="Prime Coaching">
+    <meta name="theme-color" content="#3D96FF">
+    <meta name="msapplication-TileColor" content="#3D96FF">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- stylesheets -->
+    <link href="/assets/select2/css/select2.min.css" rel="stylesheet">
+    <link href="/assets/admin.css?version=1777500492" rel="stylesheet">
+    <link href="/assets/fonts/inter.css?version=1777500492" rel="stylesheet">
+    <link href="/assets/fonts/onest.css?version=1777500492" rel="stylesheet">
+    <link href="/assets/cropperjs/cropper.min.css?version=1777500492" rel="stylesheet">
+    <link rel="icon" type="imagem/png" href="/assets/images/favicon-prime.png" />
+    <link rel="stylesheet" href="/assets/jquery-jsonview/jquery.jsonview.min.css?version=1777500492">
+    <link rel="stylesheet" href="/assets/intl-tel-input/intlTelInput.css?version=1777500492">
+    <link rel="stylesheet" href="/assets/fullcalendar/main.min.css?version=1777500492">
+    <link href="/assets/sweetalert2/sweetalert2.min.css?version=1777500492" rel="stylesheet">
+    <link href="/assets/output.css?version=1777500492" rel="stylesheet">
+    <link href="/assets/css/mobile-navbar.css?version=1777500492" rel="stylesheet">
+
+    <!-- Sidebar state - aplicar antes da renderização para evitar flash -->
+    <script>
+        (function() {
+            var isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            var isSmallScreen = window.innerWidth <= 1024;
+
+            if (isCollapsed && !isMobile && !isSmallScreen) {
+                // Adiciona estilo inline para aplicar collapsed imediatamente
+                document.documentElement.classList.add('sidebar-collapsed-initial');
+
+                // Injeta CSS para estado inicial sem transição
+                var style = document.createElement('style');
+                style.id = 'sidebar-initial-state';
+                style.textContent = '.sidebar-collapsed-initial .side-bar:not(.mobile) { width: 72px !important; transition: none !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .menu { padding: 0 12px 100px 12px !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .menu .item a span,' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .menu .item .sub-btn span { opacity: 0 !important; max-width: 0 !important; overflow: hidden !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .sidebar-toggle-btn { transform: rotate(180deg) !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .sidebar_header img:not(.sidebar-icon-mini) { display: none !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .sidebar-icon-mini { display: block !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .menu .item a,' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .menu .item .sub-btn { justify-content: center !important; padding: 12px 0 !important; gap: 0 !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .menu .item a img,' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .menu .item .sub-btn img { margin: 0 !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .sub-menu { display: none !important; }' +
+                    '.sidebar-collapsed-initial .side-bar:not(.mobile) .dropdown { display: none !important; }';
+                document.head.appendChild(style);
+            }
+        })();
+    </script>
+
+    <!-- CSRF interceptor: must load before any other script that issues fetch/XHR -->
+    <script src="/assets/js/csrf.js?version=1777500492"></script>
+
+    <!-- js libs — jQuery + plugins síncronos (dependências de scripts inline nas views) -->
+    <script src="/assets/jquery/jquery-3.7.1.min.js"></script>
+    <script src="/assets/jquery-mask/dist/jquery.mask.min.js"></script>
+    <script src="/assets/select2/js/select2.min.js"></script>
+    <script src="/assets/inputmask.min.js"></script>
+    <script src="/assets/vanilla-masker/vanilla-masker.min.js"></script>
+    <script src="/assets/sweetalert2/sweetalert2.min.js?version=1777500492"></script>
+    <script src="/assets/chart.js/dist/chart.umd.js?version=1777500492"></script>
+    <script src="/assets/flowbite/dist/flowbite.min.js?version=1777500492"></script>
+
+    <!-- libs standalone — defer para não bloquear renderização -->
+    <script defer src="/assets/fullcalendar/main.min.js?version=1777500492"></script>
+    <script defer src="/assets/fullcalendar/pt-br.js?version=1777500492"></script>
+    <script defer src="/assets/fontawesome/js/all.min.js"></script>
+    <script defer src="/assets/jquery-jsonview/jquery.jsonview.min.js?version=1777500492"></script>
+    <script defer src="/assets/cropperjs/cropper.min.js?version=1777500492"></script>
+    <script defer src="/assets/bootstrap-maxlength/bootstrap-maxlength.min.js?version=1777500492"></script>
+    <script defer src="/assets/apexcharts/apexcharts.min.js?version=1777500492"></script>
+    <script defer src="/assets/intl-tel-input/intlTelInput.min.js?version=1777500492"></script>
+    <script defer src="/assets/tinymce/tinymce.min.js"></script>
+
+    <!-- custom scripts — defer (executam em ordem, após HTML parsing, antes de DOMContentLoaded) -->
+    <script defer src="/assets/lib.js?version=1777500492"></script>
+    <script defer src="/assets/copy-to-clipboard.js?version=1777500492"></script>
+    <script defer src="/assets/notifications.js?version=1777500492"></script>
+    <script defer src="/assets/page-layout.js?version=1777500492"></script>
+    <script defer src="/assets/data-verification-popup.js?version=1777500492"></script>
+
+    <script defer src="/assets/alpinejs/alpine.min.js?version=1777500492"></script>
+
+    <!-- OneSignal Web Push SDK -->
+</head>
+
+<body class="bg-gray-50">
+    <div id="page-loader">
+        <img id="page-loader-spin" src="/assets/loader.svg?version=1777500492">
+    </div>
+
+
+
+    <script>
+        // Detectar iOS/Android PWA standalone mode e adicionar classe para CSS fallback
+        (function() {
+            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            var isAndroid = /Android/.test(navigator.userAgent);
+            var isStandalone = window.navigator.standalone === true ||
+                window.matchMedia('(display-mode: standalone)').matches;
+
+            if (isStandalone) {
+                if (isIOS) {
+                    document.documentElement.classList.add('ios-standalone');
+                } else if (isAndroid) {
+                    document.documentElement.classList.add('android-standalone');
+                }
+            }
+        })();
+
+        function toggleLogout(show) {
+            const modal = document.getElementById('logout-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                // Animation
+                setTimeout(() => {
+                    modal.querySelector('.logout-modal-content').classList.add('scale-100', 'opacity-100');
+                    modal.querySelector('.logout-modal-content').classList.remove('scale-95', 'opacity-0');
+                }, 10);
+            } else {
+                modal.querySelector('.logout-modal-content').classList.remove('scale-100', 'opacity-100');
+                modal.querySelector('.logout-modal-content').classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }, 200);
+            }
+        }
+
+        async function confirmLogout() {
+            const btn = document.getElementById('logout-confirm-btn');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoader = btn.querySelector('.btn-loader');
+
+            // Show loading state
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoader.classList.remove('hidden');
+
+            try {
+                if (window.OneSignal) {
+                    await Promise.race([
+                        OneSignal.logout(),
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('OneSignal timeout')), 2000)
+                        )
+                    ]);
+                }
+            } catch (e) {
+                console.log('OneSignal logout error:', e);
+            }
+
+            document.getElementById('logout-form').submit();
+        }
+    </script>
+
+    <!-- Logout Modal -->
+    <div id="logout-modal" class="hidden fixed inset-0 z-[9999] items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-200">
+        <div class="logout-modal-content scale-95 opacity-0 transition-all duration-200 ease-out bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <!-- Header -->
+            <div class="p-6 pb-0 text-center">
+                <div class="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mb-4">
+                    <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">Sair</h3>
+                <p class="text-sm text-gray-500">Você realmente deseja sair?</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="p-6 flex gap-3">
+                <button type="button" onclick="toggleLogout(false)" class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                    Voltar                </button>
+                <button type="button" id="logout-confirm-btn" onclick="confirmLogout()" class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors flex items-center justify-center min-w-[100px]">
+                    <span class="btn-text">Sair</span>
+                    <span class="btn-loader hidden">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <form id="logout-form" method="POST" action="/login/logout" class="hidden">
+        <!-- Hidden form that will be submitted when logout is confirmed -->
+    </form>
+
+
+    <!-- Dynamic System Popup (managed via /admin/system-popups) -->
+
+
+
+    <div id="page-main">
+
+        <div class="side-bar " id="main-sidebar">
+            <!-- Header para Mobile -->
+            <div class="flex justify-between items-center mobile-only-header py-6 px-4">
+                <div class="sidebar_header">
+                    <img src="/assets/images/sidebar-header.svg" alt="Prime Coaching">
+                </div>
+                <div class="close-btn" id="sidebar-close-btn-mobile">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+
+            <!-- Header para Desktop -->
+            <div class="sidebar-desktop-header desktop-small-header">
+                <div class="sidebar_header">
+                    <img src="/assets/images/sidebar-header.svg" alt="Prime Coaching">
+                    <img src="/assets/images/favicon-prime.png" alt="Prime" class="sidebar-icon-mini">
+                </div>
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Expandir/Recolher menu">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            </div>
+
+            <div class="menu">
+                <div class="item active"><a href="/dashboard" class="active"><img src="/assets/images/dashboard.svg"><span>Resumo</span></a></div>
+                <div class="item"><a href="/schedule"><img src="/assets/images/schedule.svg"><span>Agenda</span></a></div>
+                <div class="item"><a class="sub-btn"><img src="/assets/images/products.svg"><span>Produtos</span><i class="fas fa-angle-right dropdown"></i></a>
+                    <div class="sub-menu" style="display: none"><a href='/products/list' class='sub-item'>Meus Produtos</a><a href='/products/cart-recovery' class='sub-item'>Carrinho abandonado</a><a href='/products/affiliates' class='sub-item'>Afiliados</a></div>
+                </div>
+                <div class="item"><a class="sub-btn"><img src="/assets/images/customers.svg"><span>Clientes</span><i class="fas fa-angle-right dropdown"></i></a>
+                    <div class="sub-menu" style="display: none"><a href='/customers/actives' class='sub-item'>Ativos</a><a href='/customers/feedbacks' class='sub-item'>Feedbacks<span class='amount_pending'><img src='/assets/images/alert-square.svg'></span></a><a href='/customers/list' class='sub-item'>Todos os clientes</a>
+                        <a
+                            href='/customers/engagement' class='sub-item'>Engajamento</a><a href='/customers/dropouts' class='sub-item'>Desistências</a></div>
+                </div>
+                <div class="item"><a class="sub-btn"><img src="/assets/images/library.svg"><span>Bibliotecas</span><i class="fas fa-angle-right dropdown"></i></a>
+                    <div class="sub-menu" style="display: none"><a href='/library/diet' class='sub-item'>Dieta e protocolo</a><a href='/library/workout' class='sub-item'>Treino</a></div>
+                </div>
+                <div class="item"><a class="sub-btn"><img src="/assets/images/tools.svg"><span>Ferramentas</span><i class="fas fa-angle-right dropdown"></i></a>
+                    <div class="sub-menu" style="display: none"><a href='/tools/import/protocols' class='sub-item'>Importar treino/dieta</a><a href='/tools/import/customers' class='sub-item'>Importar clientes</a><a href='/tools/groups' class='sub-item'>Grupos</a></div>
+                </div>
+                <div class="item"><a href="/finance"><img src="/assets/images/finance.svg"><span>Financeiro</span></a></div>
+                <div class="item"><a href="/apps"><img src="/assets/images/apps.svg"><span>Apps</span></a></div>
+                <div class="item"><a class="sub-btn"><img src="/assets/images/settings.svg"><span>Minha conta</span><i class="fas fa-angle-right dropdown"></i></a>
+                    <div class="sub-menu" style="display: none"><a href='/account/settings' class='sub-item'>Configurações</a><a href='/account/subscription' class='sub-item'>Assinatura</a></div>
+                </div>
+                <div class="item"><a href="/help"><img src="/assets/images/message-question-circle.svg"><span>Suporte</span></a></div>
+            </div>
+        </div>
+
+        <script>
+            const SIDEBAR_COLLAPSED_KEY = 'sidebar_collapsed';
+
+            function updateSidebarClass() {
+                const sidebar = document.getElementById('main-sidebar');
+                const isSmallScreen = window.innerWidth <= 1024;
+                const isMobileDevice = false;
+
+                if (sidebar) {
+                    const wasMobile = sidebar.classList.contains('mobile');
+
+                    if (isSmallScreen && !isMobileDevice) {
+                        // Tela pequena de desktop - adicionar classes específicas
+                        sidebar.classList.add('mobile', 'desktop-small-screen');
+                        sidebar.classList.remove('collapsed'); // Remove collapsed em telas pequenas
+                    } else if (!isMobileDevice) {
+                        // Ao transitar de mobile para desktop, desabilitar transições
+                        // para evitar glitches de layout (especialmente no iPadOS Safari)
+                        if (wasMobile) {
+                            sidebar.style.transition = 'none';
+                        }
+
+                        sidebar.classList.remove('mobile', 'desktop-small-screen');
+
+                        // Restaurar estado de collapsed se salvo
+                        const isCollapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+                        if (isCollapsed) {
+                            sidebar.classList.add('collapsed');
+                        } else {
+                            sidebar.classList.remove('collapsed');
+                        }
+
+                        // Forçar reflow e reabilitar transições
+                        if (wasMobile) {
+                            void sidebar.offsetWidth;
+                            requestAnimationFrame(function() {
+                                sidebar.style.transition = '';
+                            });
+                        }
+                    }
+                    // Se for mobile device real, manter apenas a classe original do PHP (sem desktop-small-screen)
+                    if (isMobileDevice) {
+                        sidebar.classList.remove('desktop-small-screen', 'collapsed');
+                    }
+
+                    // Remover estado inicial (usado para evitar flash) e restaurar transições
+                    requestAnimationFrame(function() {
+                        document.documentElement.classList.remove('sidebar-collapsed-initial');
+                        const initialStyle = document.getElementById('sidebar-initial-state');
+                        if (initialStyle) {
+                            initialStyle.remove();
+                        }
+                    });
+                }
+            }
+
+            function toggleSidebar() {
+                const sidebar = document.getElementById('main-sidebar');
+                const isMobileDevice = false;
+                const isSmallScreen = window.innerWidth <= 1024;
+
+                if (sidebar && !isMobileDevice && !isSmallScreen) {
+                    sidebar.classList.toggle('collapsed');
+                    const isCollapsed = sidebar.classList.contains('collapsed');
+                    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, isCollapsed);
+
+                    // Dispara evento customizado para que outras partes do sistema possam reagir
+                    window.dispatchEvent(new CustomEvent('sidebarToggled', {
+                        detail: {
+                            collapsed: isCollapsed
+                        }
+                    }));
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                updateSidebarClass();
+
+                // Adicionar listener para o botão de toggle
+                const toggleBtn = document.getElementById('sidebar-toggle-btn');
+                if (toggleBtn) {
+                    toggleBtn.addEventListener('click', toggleSidebar);
+                }
+
+                // Adicionar tooltips aos itens do menu
+                const menuItems = document.querySelectorAll('.side-bar .menu .item');
+                menuItems.forEach(item => {
+                    const link = item.querySelector('a, .sub-btn');
+                    if (link) {
+                        // Pegar texto do span para ter texto limpo
+                        const span = link.querySelector('span');
+                        const text = span ? span.textContent.trim() : link.textContent.trim();
+                        item.setAttribute('data-tooltip', text);
+                    }
+                });
+            });
+
+            // Debounce para garantir que o viewport estabilizou (iPadOS Safari)
+            let sidebarResizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(sidebarResizeTimer);
+                sidebarResizeTimer = setTimeout(updateSidebarClass, 80);
+            });
+
+            // Atalho de teclado para toggle da sidebar (Ctrl + B)
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    toggleSidebar();
+                }
+            });
+        </script>
+
+        <!-- Chatbase Widget - Apenas Desktop -->
+        <script>
+            window.embeddedChatbotConfig = {
+                chatbotId: "QWrKMQ90yURVMUYyw1qhW",
+                domain: "www.chatbase.co"
+            };
+
+            // Add user identification data
+            window.embeddedChatbotConfig.user_id = "1464";
+            window.embeddedChatbotConfig.name = "Marco Rebucci";
+            window.embeddedChatbotConfig.email = "marcorebucci91@gmail.com";
+        </script>
+        <script src="https://www.chatbase.co/embed.min.js" chatbotId="QWrKMQ90yURVMUYyw1qhW" domain="www.chatbase.co" defer>
+        </script>
+
+        <script>
+            function identifyUserInChatbase() {
+                if (window.chatbase && typeof window.chatbase === 'function') {
+                    try {
+                        window.chatbase('identify', {
+                            user_id: '1464',
+                            user_metadata: {
+                                name: 'Marco Rebucci',
+                                email: 'marcorebucci91@gmail.com'
+                            }
+                        });
+                    } catch (error) {
+                        // Silent error handling
+                    }
+                }
+            }
+
+            function waitForChatbaseAndIdentify() {
+                let attempts = 0;
+                const maxAttempts = 20;
+
+                const check = () => {
+                    attempts++;
+                    if (window.chatbase && typeof window.chatbase === 'function') {
+                        identifyUserInChatbase();
+                    } else if (attempts < maxAttempts) {
+                        setTimeout(check, 500);
+                    }
+                };
+
+                check();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', waitForChatbaseAndIdentify);
+            } else {
+                waitForChatbaseAndIdentify();
+            }
+
+            window.addEventListener('load', function() {
+                setTimeout(waitForChatbaseAndIdentify, 1000);
+            });
+        </script>
+        <div class="main_container">
+
+            <nav id="page-nav" class="page_nav_cliente ">
+                <!-- Desktop: Busca e Agendar Demo (hidden em telas <= 1024px) -->
+                <div class="navbar-desktop-left flex items-center gap-3 ml-4">
+                    <button id="desktop-search-btn" class="p-2 text-gray-500 hover:text-primary-600 bg-white border shadow-sm rounded-lg transition-all duration-200" title="Buscar">
+            <i class="fas fa-search text-lg"></i>
+        </button>
+                    <a href="https://calendly.com/comercial-primecoaching/30min" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm transition-all duration-200"
+                        title="Agendar Demo">
+            <i class="fas fa-calendar-check"></i>
+            <span>Agendar Demo</span>
+        </a>
+                    <a href="/patch-notes" id="patch-notes-nav-btn" class="relative flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 bg-white border rounded-lg shadow-sm transition-all duration-200" title="Notas de Atualização">
+            <i class="fas fa-bullhorn"></i>
+            <span>Notas de Atualização</span>
+                            <span id="patch-notes-badge" class="absolute -top-1 -right-1 flex h-3 w-3 pointer-events-none">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 border border-white"></span>
+                </span>
+                    </a>
+                    <script>
+                        (function() {
+                            function removeBadge() {
+                                var b = document.getElementById('patch-notes-badge');
+                                if (b) b.remove();
+                            }
+
+                            // Remove on click
+                            var btn = document.getElementById('patch-notes-nav-btn');
+                            if (btn) btn.addEventListener('click', removeBadge);
+
+                            // Remove after SPA navigation to /patch-notes
+                            document.addEventListener('spa:contentLoaded', function() {
+                                if (location.pathname.indexOf('/patch-notes') === 0) removeBadge();
+                            });
+
+                            // Remove if already on /patch-notes (full page load)
+                            if (location.pathname.indexOf('/patch-notes') === 0) removeBadge();
+                        })();
+                    </script>
+                </div>
+
+                <div class="navbar-right-section flex flex-row gap-4 items-center">
+                    <a href="/awards" class="navbar-progress-bar gap-1 flex flex-col items-end cursor-pointer rounded no-underline">
+                    </a>
+
+
+                    <div class="relative" id="notification-bell-container">
+                        <button id="notification-bell" class="relative focus:outline-none">
+        <i class="fa-regular fa-bell text-xl text-warning-500"></i>
+        <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-2 min-w-2 flex items-center justify-center p-0.5 text-center hidden"></span>
+    </button>
+                        <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded shadow-lg z-50">
+                            <div class="p-4 border-b font-semibold">Notificações</div>
+                            <ul id="notification-list" class="max-h-80 overflow-y-auto"></ul>
+                            <div class="p-2 border-t text-center">
+                                <a href="/notifications/all" class="text-primary-600 hover:underline">Ver todas notificações</a>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" data-dropdown-toggle="profile-dropdown" class="profile_avatar">
+                            <img src="https://storage-prime.s3.amazonaws.com/profile/20250120032739a44845ac1d4ae64be1e6c06c28119b3d.jpg?X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA6GBMDUWE2ZHH4CUD%2F20260430%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260430T004703Z&X-Amz-SignedHeaders=host&X-Amz-Expires=900&X-Amz-Signature=041292956c4a9dc33418d2908e069e91b03a0a8d63b2d8044ae5518bb8f4d730">
+                    </button>
+                </div>
+            </nav>
+
+            <div id="profile-dropdown" class="hidden z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44">
+                <ul class="py-2 text-sm text-gray-700" aria-labelledby="dropdownDividerButton">
+
+
+
+
+                    <li>
+                        <a onclick="openCollaboratorPasswordModal(121)" class="flex flex-row justify-start py-2 items-center cursor-pointer">
+                                <svg class="mx-4 w-5 h-5 text-primary-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                </svg>
+                                Alterar senha                            </a>
+                    </li>
+
+                    <li>
+                        <div class="px-2 py-2">
+                            <form action="/lang/set" method="POST" id="language-form">
+                                <div class="flex items-center gap-2 px-2 py-1">
+                                    <span class="text-lg">
+                🇧🇷            </span>
+                                    <select name="lang" id="lang-select" class="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer w-full" onchange="this.form.submit()">
+                                    <option value="pt_BR" selected>
+                        Português                    </option>
+                                    <option value="en_US" >
+                        English                    </option>
+                                    <option value="es_ES" >
+                        Español                    </option>
+                            </select>
+                                </div>
+                            </form>
+                        </div>
+                    </li>
+
+                </ul>
+                <div class="py-2">
+                    <ul class="py-2 text-sm text-gray-700">
+                        <li>
+                            <a onclick="toggleLogout(true)" class="flex flex-row justify-start py-2 cursor-pointer items-center">
+                                <img class=" mx-4" src="/assets/images/logout.svg">
+                                Sair                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Modal de alteração de senha do colaborador -->
+            <div id="collaboratorPasswordModal" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-[9999] justify-center items-center w-full md:inset-0 h-screen bg-[#00000080] backdrop-blur-sm">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900">Alterar minha senha</h3>
+                        <button type="button" onclick="closeCollaboratorPasswordModal()" class="text-gray-400 hover:text-gray-500">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                    </div>
+
+                    <p class="text-sm text-gray-500 mb-4 mt-2">Digite sua nova senha abaixo para atualizar suas credenciais de acesso.</p>
+
+                    <form id="collaboratorPasswordForm" method="POST" class="space-y-4">
+                        <input type="hidden" id="collaboratorPasswordId" name="collaborator_id">
+
+                        <div>
+                            <label for="collab_new_password" class="block text-sm font-medium text-gray-700 mb-1">Nova senha</label>
+                            <div class="relative">
+                                <input type="password" id="collab_new_password" name="new_password" class="w-full px-3 py-2 border border-gray-300 rounded-md" required placeholder="Digite a nova senha">
+                                <button type="button" onclick="toggleCollaboratorPasswordVisibility('collab_new_password')" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <svg id="collab_new_password-eye" class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="collab_confirm_password" class="block text-sm font-medium text-gray-700 mb-1">Confirmar senha</label>
+                            <div class="relative">
+                                <input type="password" id="collab_confirm_password" name="confirm_password" class="w-full px-3 py-2 border border-gray-300 rounded-md" required placeholder="Confirme a nova senha">
+                                <button type="button" onclick="toggleCollaboratorPasswordVisibility('collab_confirm_password')" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <svg id="collab_confirm_password-eye" class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 mt-5">
+                            <button type="button" onclick="closeCollaboratorPasswordModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                                    Cancelar                                </button>
+                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+                                    Alterar senha                                </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                function openCollaboratorPasswordModal(id) {
+                    document.getElementById('collaboratorPasswordId').value = id;
+                    document.getElementById('collaboratorPasswordModal').classList.remove('hidden');
+                    document.getElementById('collaboratorPasswordModal').classList.add('flex');
+                    document.getElementById('collab_new_password').focus();
+
+                    // Configura o formulário com o endpoint correto
+                    document.getElementById('collaboratorPasswordForm').action = `/account/collaborators/update-password/${id}`;
+                }
+
+                function closeCollaboratorPasswordModal() {
+                    document.getElementById('collaboratorPasswordModal').classList.add('hidden');
+                    document.getElementById('collaboratorPasswordModal').classList.remove('flex');
+                    document.getElementById('collaboratorPasswordForm').reset();
+                }
+
+                function toggleCollaboratorPasswordVisibility(inputId) {
+                    const input = document.getElementById(inputId);
+                    const eye = document.getElementById(`${inputId}-eye`);
+
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        eye.innerHTML = `
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a10.05 10.05 0 011.208-2.344M9.464 9.464A5.978 5.978 0 0112 7c1.657 0 3.156.672 4.242 1.758M15.536 15.536A5.978 5.978 0 0112 17a5.978 5.978 0 01-3.536-1.464M2.458 12C3.732 16.057 7.523 19 12 19c4.477 0 8.268-2.943 9.542-7-.274-.837-.684-1.63-1.208-2.344" />
+                        `;
+                    } else {
+                        input.type = 'password';
+                        eye.innerHTML = `
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        `;
+                    }
+                }
+
+                document.getElementById('collaboratorPasswordForm').addEventListener('submit', function(e) {
+                    const password = document.getElementById('collab_new_password').value;
+                    const confirmPassword = document.getElementById('collab_confirm_password').value;
+
+                    if (password !== confirmPassword) {
+                        e.preventDefault();
+                        // Fecha o modal antes de mostrar o erro
+                        closeCollaboratorPasswordModal();
+                        Swal.fire({
+                            title: 'Erro',
+                            text: 'As senhas não coincidem!',
+                            icon: 'error',
+                            confirmButtonColor: '#3D96FF'
+                        });
+                    }
+                    // Se as senhas coincidem, o formulário será submetido e o colaborador será deslogado
+                });
+            </script>
+
+            <main id="page-contents" class="page_contents ">
+                <nav id="mobile-bottom-navbar" class="mobile-bottom-navbar" style="display: none;">
+                    <div class="mobile-navbar-container">
+                        <!-- Botão para abrir sidebar -->
+                        <button type="button" class="mobile-navbar-btn" id="mobile-sidebar-btn">
+            <i class="fas fa-bars"></i>
+            <span>Menu</span>
+        </button>
+
+                        <!-- Botão de busca -->
+                        <button type="button" class="mobile-navbar-btn" id="mobile-search-btn">
+            <i class="fas fa-search"></i>
+            <span>Buscar</span>
+        </button>
+
+                        <!-- Botão dashboard/home -->
+                        <a href="/dashboard" class="mobile-navbar-btn active">
+            <i class="fas fa-home"></i>
+            <span>Resumo</span>
+        </a>
+
+                        <!-- Botão ajuda -->
+                        <a href="/help" class="mobile-navbar-btn ">
+            <i class="fas fa-question-circle"></i>
+            <span>Suporte</span>
+        </a>
+                    </div>
+                </nav>
+
+                <script>
+                    function toggleMobileNavbar() {
+                        const navbar = document.getElementById('mobile-bottom-navbar');
+                        const isMobileDevice = false;
+                        const isSmallScreen = window.innerWidth <= 1024;
+
+                        if (navbar) {
+                            if (isMobileDevice || isSmallScreen) {
+                                navbar.style.display = 'block';
+                            } else {
+                                navbar.style.display = 'none';
+                            }
+                        }
+                    }
+
+                    document.addEventListener('DOMContentLoaded', toggleMobileNavbar);
+
+                    window.addEventListener('resize', toggleMobileNavbar);
+
+                    $(document).on('click', '#mobile-search-btn', function() {
+                        $('#mobile-search-modal').removeClass('hidden');
+                        setTimeout(function() {
+                            $('#mobile-search-input').focus();
+                        }, 100);
+                    });
+                </script>
+
+                <!-- Modal de busca (funciona tanto para mobile quanto desktop) -->
+                <div id="mobile-search-modal" class="mobile-search-modal hidden">
+                    <div class="mobile-search-modal-content">
+                        <div class="mobile-search-header">
+                            <h3>Buscar</h3>
+                            <button type="button" id="mobile-search-close" class="mobile-search-close">
+                <i class="fas fa-times"></i>
+            </button>
+                        </div>
+                        <div class="mobile-search-body">
+                            <input type="text" placeholder="Digite para buscar..." class="mobile-search-input" id="mobile-search-input">
+                            <div class="mobile-search-results" id="mobile-search-results">
+                                <!-- Resultados da busca aparecerão aqui -->
+                                <div class="text-gray-500 text-center py-8">
+                                    <i class="fas fa-search text-4xl mb-4 opacity-50"></i>
+                                    <p>Digite pelo menos 2 caracteres para buscar</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script src="/assets/js/spa-navigation.js?version=1777500492" defer></script>
+                <div id="container" class="!mx-auto !px-4 !sm:px-8">
+                    <div id="main-content" style="transition: opacity 0.15s ease-in-out;">
+
+
+
+
+                        <div class="mx-auto">
+                            <!-- Header Section -->
+                            <div class="my-6">
+                                <h1 id="welcome-title" class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+                                    Boa noite, Marcos! <span class="text-2xl">👋</span>
+                                </h1>
+                                <p class="text-gray-600 text-lg">Acompanhe o desempenho do seu negócio</p>
+                            </div>
+
+                            <!-- Onboarding Progress Panel -->
+
+                            <!-- Main Content Grid -->
+                            <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                                <!-- Left Column - Appointments & Metrics -->
+                                <div class="xl:col-span-3 space-y-6">
+                                    <!-- Appointments Section -->
+                                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 dashboard-block" data-block="appointments">
+                                        <button class="block-toggle" onclick="toggleBlock('appointments')" title="Expandir/recolher informações">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                        </svg>
+                    </button>
+                                        <div class="block-header">
+                                            <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+                                                <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                                            </div>
+                                            <h3 class="text-xl font-semibold text-gray-900">Agendamentos</h3>
+                                        </div>
+
+                                        <div class="block-content" id="appointments-content">
+                                            <div class="flex flex-wrap gap-2 mb-6">
+                                                <label class='radio_label bg-gray-50 border border-gray-200 flex flex-col justify-center items-center text-center p-3 rounded-lg cursor-pointer md:min-w-[80px] min-w-[60px] transition-all duration-200'><input class='hidden' type='radio' name='data-evento' value='2026-04-29'><span class='font-semibold text-gray-900 text-sm'>Qua</span><span class='text-xs text-gray-600 mt-1'>29/Abr</span></label>
+                                                <label
+                                                    class='radio_label bg-gray-50 border border-gray-200 flex flex-col justify-center items-center text-center p-3 rounded-lg cursor-pointer md:min-w-[80px] min-w-[60px] transition-all duration-200'><input class='hidden' type='radio' name='data-evento' value='2026-04-30'><span class='font-semibold text-gray-900 text-sm'>Qui</span><span class='text-xs text-gray-600 mt-1'>30/Abr</span></label><label class='radio_label bg-gray-50 border border-gray-200 flex flex-col justify-center items-center text-center p-3 rounded-lg cursor-pointer md:min-w-[80px] min-w-[60px] transition-all duration-200'><input class='hidden' type='radio' name='data-evento' value='2026-05-01'><span class='font-semibold text-gray-900 text-sm'>Sex</span><span class='text-xs text-gray-600 mt-1'>01/Mai</span></label>
+                                                    <label
+                                                        class='radio_label bg-gray-50 border border-gray-200 flex flex-col justify-center items-center text-center p-3 rounded-lg cursor-pointer md:min-w-[80px] min-w-[60px] transition-all duration-200'><input class='hidden' type='radio' name='data-evento' value='2026-05-02'><span class='font-semibold text-gray-900 text-sm'>Sáb</span><span class='text-xs text-gray-600 mt-1'>02/Mai</span></label>
+                                                        <label
+                                                            class='radio_label bg-gray-50 border border-gray-200 flex flex-col justify-center items-center text-center p-3 rounded-lg cursor-pointer md:min-w-[80px] min-w-[60px] transition-all duration-200'><input class='hidden' type='radio' name='data-evento' value='2026-05-03'><span class='font-semibold text-gray-900 text-sm'>Dom</span><span class='text-xs text-gray-600 mt-1'>03/Mai</span></label>
+                                            </div>
+
+                                            <div id="appointmentInfo" class="bg-gray-50 rounded-xl p-4 max-h-64 overflow-y-auto">
+                                                <!-- Appointment details will be loaded here -->
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Business Metrics Cards -->
+                                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 dashboard-block" data-block="metrics">
+                                        <button class="block-toggle" onclick="toggleBlock('metrics')" title="Expandir/recolher informações">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+                                        <div class="block-header">
+                                            <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+                                                <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                                            </div>
+                                            <h3 class="text-xl font-semibold text-gray-900">Dashboard</h3>
+                                        </div>
+
+                                        <div class="block-content" id="metrics-content">
+
+                                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                <!-- Pending Appointments -->
+                                                <div class="group p-5 bg-gray-50 border border-gray-200 rounded-xl hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                    <div class="flex items-start justify-between">
+                                                        <div class="flex-1">
+                                                            <p class="text-sm font-medium text-gray-700 mb-1">Atendimentos pendentes</p>
+                                                            <p class="text-2xl font-bold text-gray-900">
+                                                                <span class="skel inline-block w-12 h-8" data-metric="pendingConsultorias"></span>
+                                                            </p>
+                                                            <a href="/customers/actives?filter_status=0" class="inline-flex items-center text-sm text-primary-500 hover:text-primary-500 mt-2 group-hover:underline">
+                                            ver detalhes                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </a>
+                                                        </div>
+                                                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                                            <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Active Appointments -->
+                                                <div class="group p-5 bg-gray-50 border border-gray-200 rounded-xl hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                    <div class="flex items-start justify-between">
+                                                        <div class="flex-1">
+                                                            <p class="text-sm font-medium text-gray-700 mb-1">Atendimentos ativos</p>
+                                                            <p class="text-2xl font-bold text-gray-900">
+                                                                <span class="skel inline-block w-12 h-8" data-metric="activeConsultorias"></span>
+                                                            </p>
+                                                            <a href="/customers/actives?filter_status=1" class="inline-flex items-center text-sm text-primary-500 hover:text-primary-500 mt-2 group-hover:underline">
+                                            ver detalhes                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </a>
+                                                        </div>
+                                                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                                            <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Pending Feedbacks -->
+                                                <div class="group p-5 bg-gray-50 border border-gray-200 rounded-xl hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                    <div class="flex items-start justify-between">
+                                                        <div class="flex-1">
+                                                            <p class="text-sm font-medium text-gray-700 mb-1">Feedbacks pendentes</p>
+                                                            <p class="text-2xl font-bold text-gray-900">
+                                                                <span class="skel inline-block w-12 h-8" data-metric="pendingFeedbacks"></span>
+                                                            </p>
+                                                            <a href="/customers/feedbacks" class="inline-flex items-center text-sm text-primary-500 hover:text-primary-500 mt-2 group-hover:underline">
+                                            ver detalhes                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </a>
+                                                        </div>
+                                                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                                            <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
+                                        </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Unread Messages -->
+
+                                                <!-- Renewal Rate -->
+                                                <div class="group p-5 bg-gray-50 border border-gray-200 rounded-xl hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                    <div class="flex items-center justify-between">
+                                                        <p class="text-sm font-medium text-gray-700">Taxa de renovação</p>
+
+                                                        <select id="renewalPeriodSelect" onchange="updateRenewalRate(this.value)" class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white">
+                                        <option value="all" selected>Todo o período</option>
+                                        <option value="2026-04">Abril/26</option><option value="2026-03">Março/26</option><option value="2026-02">Fevereiro/26</option><option value="2026-01">Janeiro/26</option><option value="2025-12">Dezembro/25</option><option value="2025-11">Novembro/25</option>                                    </select>
+                                                    </div>
+                                                    <p class="text-2xl font-bold text-gray-900 renewal-rate-value my-1">
+                                                        <span class="skel inline-block w-16 h-8" data-metric="renewalRate"></span>
+                                                    </p>
+                                                    <p class="text-xs text-gray-500 renewal-rate-details">
+                                                        Histórico completo <span id="renewalRateComparison" class="ml-1"></span>
+                                                    </p>
+                                                </div>
+
+                                                <!-- Dropouts -->
+                                                <div class="group p-5 bg-gray-50 border border-gray-200 rounded-xl hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                    <div class="flex items-start justify-between">
+                                                        <div class="flex-1">
+                                                            <p class="text-sm font-medium text-gray-700 mb-1">Desistências (últimos 30 dias)</p>
+                                                            <p class="text-2xl font-bold text-gray-900">
+                                                                <span class="skel inline-block w-12 h-8" data-metric="dropouts"></span>
+                                                            </p>
+                                                            <a href="/customers/dropouts" class="inline-flex items-center text-sm text-primary-500 hover:text-primary-500 mt-2 group-hover:underline">
+                                            ver detalhes                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </a>
+                                                        </div>
+                                                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                                            <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Financial Metrics Row -->
+                                            <div class="mt-6 pt-6 border-t border-gray-200">
+                                                <div class="flex items-center justify-between mb-4">
+                                                    <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                                                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+                                                            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                                        </div>
+                                                        Métricas Financeiras </h4>
+                                                    <div class="flex items-center">
+                                                        <span class="text-xs text-gray-600 mr-2">Exibir valores</span>
+                                                        <button type="button" id="toggleFinancialValues" onclick="toggleFinancialDisplay()" class="relative inline-flex h-4 w-8 items-center rounded-full transition-colors bg-primary-600" aria-pressed="true">
+                                        <span class="sr-only">Exibir valores financeiros</span>
+                                        <span class="translate-x-4 inline-block h-3 w-3 transform rounded-full bg-white transition-transform"></span>
+                                    </button>
+                                                    </div>
+                                                </div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                    <!-- Daily Sales with Date Picker -->
+                                                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                        <div class="text-center mb-3">
+                                                            <p class="text-sm font-medium text-gray-700 mb-2">Resumo Diário</p>
+                                                            <input type="date" id="dailySalesDate" class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" value="2026-04-29" onchange="updateDailySales(this.value)" style="color-scheme: light;">
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <p id="dailySalesValue" class="text-2xl font-bold text-gray-900 financial-value ">R$ 0,00</p>
+                                                            <p class="text-2xl font-bold text-gray-900 financial-placeholder hidden">R$ ••••</p>
+                                                            <p id="dailySalesComparison" class="text-xs text-gray-500 mt-1"></p>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Period Sales with Select -->
+                                                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                        <div class="text-center mb-3">
+                                                            <p class="text-sm font-medium text-gray-700 mb-2">Vendas por Período</p>
+                                                            <select id="periodSalesSelect" class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" onchange="handlePeriodChange(this.value)">
+                                            <option value="week">Esta semana</option>
+                                            <option value="month">Este mês</option>
+                                            <option value="year">Este ano</option>
+                                            <option value="custom">Período personalizado</option>
+                                        </select>
+
+                                                            <!-- Custom Period Inputs (hidden by default) -->
+                                                            <div id="customPeriodInputs" class="hidden mt-3 space-y-2">
+                                                                <div class="grid grid-cols-2 gap-2">
+                                                                    <div>
+                                                                        <label class="block text-xs text-gray-600 mb-1">Data de início:</label>
+                                                                        <input type="date" id="customStartDate" class="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" style="color-scheme: light;">
+                                                                    </div>
+                                                                    <div>
+                                                                        <label class="block text-xs text-gray-600 mb-1">Data de término:</label>
+                                                                        <input type="date" id="customEndDate" class="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" style="color-scheme: light;">
+                                                                    </div>
+                                                                </div>
+                                                                <button type="button" onclick="updateCustomPeriodSales()" class="w-full px-3 py-1 text-xs bg-primary-700 text-white rounded-md">
+                                                Consultar                                            </button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <p id="periodSalesValue" class="text-2xl font-bold text-gray-900 financial-value ">R$ 0,00</p>
+                                                            <p class="text-2xl font-bold text-gray-900 financial-placeholder hidden">R$ ••••</p>
+                                                            <p id="periodSalesComparison" class="text-xs text-gray-500 mt-1"></p>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Monthly Sales with Month Selector -->
+                                                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                        <div class="text-center mb-3">
+                                                            <p class="text-sm font-medium text-gray-700 mb-2">Vendas Mensais</p>
+                                                            <select id="monthlySalesSelect" class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" onchange="updateMonthlySales(this.value)">
+                                            <option value='2026-04' selected>Abril/2026</option><option value='2026-03' >Março/2026</option><option value='2026-02' >Fevereiro/2026</option><option value='2026-01' >Janeiro/2026</option><option value='2025-12' >Dezembro/2025</option><option value='2025-11' >Novembro/2025</option><option value='2025-10' >Outubro/2025</option><option value='2025-09' >Setembro/2025</option><option value='2025-08' >Agosto/2025</option><option value='2025-07' >Julho/2025</option><option value='2025-06' >Junho/2025</option><option value='2025-05' >Maio/2025</option>                                        </select>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <p id="monthlySalesValue" class="text-2xl font-bold text-gray-900 financial-value ">R$ 0,00</p>
+                                                            <p class="text-2xl font-bold text-gray-900 financial-placeholder hidden">R$ ••••</p>
+                                                            <p id="monthlySalesComparison" class="text-xs text-gray-500 mt-1"></p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Additional Metrics Row -->
+                                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                                                    <!-- Average Ticket with Period Selector -->
+                                                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                        <div class="text-center mb-3">
+                                                            <p class="text-sm font-medium text-gray-700 mb-2">Ticket médio</p>
+                                                            <select id="averageTicketSelect" class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" onchange="updateAverageTicket(this.value)">
+                                            <option value="today">Hoje</option>
+                                            <option value="week" selected>Esta semana</option>
+                                            <option value="month">Este mês</option>
+                                            <option value="year">Este ano</option>
+                                            <option value="all_time">Todo o período</option>
+                                        </select>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <p id="averageTicketValue" class="text-2xl font-bold text-gray-900 financial-value ">R$ 0,00</p>
+                                                            <p class="text-2xl font-bold text-gray-900 financial-placeholder hidden">R$ ••••</p>
+                                                            <p class="text-xs text-gray-500 mt-1">Por transação</p>
+                                                            <p id="averageTicketComparison" class="text-xs text-gray-500 mt-1"></p>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Renewal Estimates with Period Selector -->
+                                                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                        <div class="text-center mb-3">
+                                                            <p class="text-sm font-medium text-gray-700 mb-2">Expectativa de Renovação</p>
+                                                            <select id="renewalEstimatesSelect" class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" onchange="updateRenewalEstimates(this.value)">
+                                            <option value="7">Próximos 7 dias</option>
+                                            <option value="15">Próximos 15 dias</option>
+                                            <option value="30" selected>Próximos 30 dias</option>
+                                            <option value="60">Próximos 60 dias</option>
+                                            <option value="90">Próximos 90 dias</option>
+                                        </select>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <p id="renewalEstimatesValue" class="text-2xl font-bold text-gray-900 financial-value ">R$ 0,00</p>
+                                                            <p class="text-2xl font-bold text-gray-900 financial-placeholder hidden">R$ ••••</p>
+                                                            <p id="renewalEstimatesClients" class="text-xs text-gray-500 mt-1">0 clientes</p>
+                                                            <p id="renewalEstimatesComparison" class="text-xs text-gray-500 mt-1"></p>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Monthly Goal Progress -->
+                                                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5 transition-all duration-300">
+                                                        <div class="text-center mb-3">
+                                                            <div class="flex items-center justify-center mb-2">
+                                                                <p class="text-sm font-medium text-gray-700">Meta Mensal</p>
+                                                                <button onclick="openEditGoalModal()" class="text-primary-500 p-1 rounded-md" title="Editar Meta Mensal">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            </button>
+                                                            </div>
+                                                            <select id="monthlyGoalSelect" class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none bg-white" onchange="updateMonthlyGoal(this.value)">>
+                                            <option value='2026-04' selected>Abril/2026</option><option value='2026-03' >Março/2026</option><option value='2026-02' >Fevereiro/2026</option><option value='2026-01' >Janeiro/2026</option><option value='2025-12' >Dezembro/2025</option><option value='2025-11' >Novembro/2025</option>                                        </select>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <div id="monthlyGoalProgress" class="mb-2">
+                                                                <div class="w-full bg-gray-200 rounded-full h-3 mb-2">
+                                                                    <div id="monthlyGoalProgressBar" class="h-3 rounded-full transition-all duration-300 ease-out bg-green-500" style="width: 0%"></div>
+                                                                </div>
+                                                                <div class="flex justify-between text-xs text-gray-600">
+                                                                    <span id="monthlyGoalCurrent" class="financial-value ">R$ 0,00</span>
+                                                                    <span class="financial-placeholder hidden">R$ ••••</span>
+                                                                    <span id="monthlyGoalTarget" class="financial-value ">R$ 0,00</span>
+                                                                    <span class="financial-placeholder hidden">R$ ••••</span>
+                                                                </div>
+                                                            </div>
+                                                            <p id="monthlyGoalPercentage" class="text-lg font-bold text-gray-900">0%</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Column - Student Stats -->
+                                <div class="xl:col-span-1 min-w-0">
+                                    <div class="space-y-6 xl:sticky xl:top-4">
+                                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                                            <div class="block-content">
+
+                                                <div id="studentStatsContainer">
+                                                    <!-- Skeleton Loading -->
+                                                    <div class="text-center mb-6">
+                                                        <div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                                            <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                                        </div>
+                                                        <h2 class="text-4xl font-bold text-gray-900 mb-2">
+                                                            <span class="skel inline-block w-16 h-10" data-metric="activeCount"></span>
+                                                        </h2>
+                                                        <p class="text-lg font-medium text-gray-600">Clientes ativos</p>
+                                                    </div>
+
+                                                    <div class="space-y-4">
+                                                        <div class="relative">
+                                                            <div class="flex h-6 bg-gray-100 rounded-full overflow-hidden">
+                                                                <div class="skel w-full h-full rounded-full"></div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="flex justify-between items-center text-sm">
+                                                            <div class="flex items-center">
+                                                                <div class="w-3 h-3 bg-gradient-to-r from-primary-400 to-primary-500 rounded-full mr-2"></div>
+                                                                <span class="text-gray-700 flex items-center">
+                                                Homens (<span class="skel inline-block w-6" data-metric="genderMale"></span>)
+                                                                </span>
+                                                            </div>
+                                                            <div class="flex items-center">
+                                                                <div class="w-3 h-3 bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full mr-2"></div>
+                                                                <span class="text-gray-700 flex items-center">
+                                                Mulheres (<span class="skel inline-block w-6" data-metric="genderFemale"></span>)
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+
+                                        <!-- Top Sellers Ranking - DESABILITADO TEMPORARIAMENTE - Reativar para desafios de faturamento pontuais -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart Section -->
+                        <div class="mx-auto mt-8">
+                            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 dashboard-block" data-block="chart">
+                                <button class="block-toggle" onclick="toggleBlock('chart')" title="Expandir/recolher informações">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+            </button>
+                                <div class="block-header">
+                                    <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                                    </div>
+                                    <h3 class="text-xl font-semibold text-gray-900">Último semestre</h3>
+                                </div>
+                                <div class="block-content" id="chart-content">
+                                    <div class="relative" style="height: 400px;">
+                                        <canvas id="history" class="w-full h-full"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
+<style>
+    .radio_label {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .radio_label:has(input:checked) {
+        background: var(--primary-700) !important;
+        color: white !important;
+        border-color: var(--primary-700) !important;
+        box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
+    }
+
+    .radio_label:has(input:checked) span {
+        color: white !important;
+    }
+
+    .radio_label:hover:not(:has(input:checked)) {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border-color: var(--gray-200);
+    }
+
+    /* Loading animation for cards */
+
+    .group:hover {
+        transform: translateY(2px);
+    }
+
+    /* Smooth transitions for all interactive elements */
+
+    .group,
+    .radio_label {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Custom period inputs animation */
+
+    #customPeriodInputs {
+        transition: all 0.3s ease-in-out;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+    }
+
+    #customPeriodInputs:not(.hidden) {
+        max-height: 200px;
+        opacity: 1;
+    }
+
+    /* Custom scrollbar for appointment info */
+
+    #appointmentInfo::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #appointmentInfo::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+    }
+
+    #appointmentInfo::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    #appointmentInfo::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Comparison indicators styling */
+
+    #dailySalesComparison,
+    #periodSalesComparison,
+    #monthlySalesComparison,
+    #averageTicketComparison,
+    #renewalEstimatesComparison {
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .comparison-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-weight: 600;
+        transition: transform 0.3s ease;
+    }
+
+    .comparison-badge-up {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: #16a34a;
+    }
+
+    .comparison-badge-down {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+    }
+
+    .comparison-badge-neutral {
+        background-color: rgba(107, 114, 128, 0.1);
+        color: #6b7280;
+    }
+
+    .comparison-up {
+        animation: bounce-up 1s ease-in-out;
+    }
+
+    .comparison-down {
+        animation: bounce-down 1s ease-in-out;
+    }
+
+    @keyframes bounce-up {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-2px);
+        }
+    }
+
+    @keyframes bounce-down {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(2px);
+        }
+    }
+
+    /* Responsive grid adjustments */
+
+    @media (max-width: 640px) {
+        .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (min-width: 641px) and (max-width: 1023px) {
+        .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Dashboard Block Toggle Styles */
+
+    .dashboard-block {
+        position: relative;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .block-toggle {
+        position: absolute;
+        top: 23px;
+        right: 23px;
+        z-index: 10;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .block-toggle:hover {
+        background: #f9fafb;
+        color: #374151;
+        border-color: #d1d5db;
+        transform: scale(1.05);
+    }
+
+    .block-toggle:active {
+        transform: scale(0.95);
+    }
+
+    .block-toggle svg {
+        width: 16px;
+        height: 16px;
+        transition: transform 0.2s ease;
+    }
+
+    .block-toggle.collapsed svg {
+        transform: rotate(180deg);
+    }
+
+    .block-toggle-inline {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+    }
+
+    .block-toggle-inline.collapsed svg {
+        transform: rotate(180deg);
+    }
+
+    .block-content {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .block-content.collapsed {
+        max-height: 0;
+        opacity: 0;
+        margin: 0 !important;
+        padding: 0;
+    }
+
+    .dashboard-block.collapsed {
+        min-height: auto;
+    }
+
+    .dashboard-block.collapsed>.block-content {
+        padding-bottom: 0;
+    }
+
+    /* Mobile optimizations for toggles */
+
+    @media (max-width: 768px) {
+        .block-toggle {
+            width: 36px;
+            height: 36px;
+            top: 22px;
+            right: 22px;
+        }
+        .block-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+        .dashboard-block.collapsed {
+            min-height: 54px;
+            margin-bottom: 12px;
+        }
+        .dashboard-block.collapsed .bg-white {
+            padding-bottom: 12px;
+        }
+        .block-header {
+            margin-bottom: 16px;
+        }
+        .dashboard-block.collapsed .block-header {
+            margin-bottom: 0;
+        }
+        /* Make sure collapsed blocks don't take up unnecessary space on mobile */
+        .block-content.collapsed {
+            display: none;
+        }
+        /* Adjust grid spacing on mobile for collapsed blocks */
+        .dashboard-block.collapsed+.dashboard-block {
+            margin-top: 8px;
+        }
+    }
+
+    /* Tablet optimizations */
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .block-toggle {
+            width: 34px;
+            height: 34px;
+        }
+        .dashboard-block.collapsed {
+            min-height: 58px;
+        }
+    }
+
+    /* Header row styling when collapsed */
+
+    .block-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 5;
+    }
+
+    .dashboard-block.collapsed .block-header {
+        margin-bottom: 0;
+    }
+</style>
+
+<script>
+    class AppointmentManager {
+        constructor() {
+            this.appointmentContainer = document.getElementById('appointmentInfo');
+            this.radioButtons = document.querySelectorAll('input[name="data-evento"]');
+            this.init();
+        }
+
+        init() {
+            this.attachEventListeners();
+            this.loadFirstAppointment();
+        }
+
+        attachEventListeners() {
+            this.radioButtons.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        this.loadAppointmentInfo(e.target.value);
+                    }
+                });
+            });
+        }
+
+        async loadAppointmentInfo(date) {
+            if (!date || !this.appointmentContainer) return;
+
+            try {
+                this.showLoading();
+
+                const response = await fetch(`/schedule/appointments/${date}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.html) {
+                    this.appointmentContainer.innerHTML = data.html;
+                } else {
+                    this.showError(data.message || 'Erro ao carregar agendamentos');
+                }
+
+            } catch (error) {
+                console.error('Error loading appointment info:', error);
+                this.showError('Erro ao carregar informações dos agendamentos');
+            }
+        }
+
+        loadFirstAppointment() {
+            const firstRadio = document.querySelector('input[name="data-evento"]:first-of-type');
+            if (firstRadio) {
+                firstRadio.checked = true;
+                this.loadAppointmentInfo(firstRadio.value);
+            }
+        }
+
+        showLoading() {
+            if (this.appointmentContainer) {
+                this.appointmentContainer.innerHTML = `
+                    <div class="p-4 space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="skel w-10 h-10 rounded-full flex-shrink-0"></div>
+                            <div class="flex-1 space-y-2">
+                                <div class="skel w-1/3 h-3"></div>
+                                <div class="skel w-1/2 h-2.5"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="skel w-10 h-10 rounded-full flex-shrink-0"></div>
+                            <div class="flex-1 space-y-2">
+                                <div class="skel w-2/5 h-3"></div>
+                                <div class="skel w-1/3 h-2.5"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="skel w-10 h-10 rounded-full flex-shrink-0"></div>
+                            <div class="flex-1 space-y-2">
+                                <div class="skel w-1/4 h-3"></div>
+                                <div class="skel w-2/5 h-2.5"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        showError(message) {
+            if (this.appointmentContainer) {
+                this.appointmentContainer.innerHTML = `
+                    <div class="flex items-center justify-center p-8 text-center">
+                        <div class="text-red-500">
+                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                            <p class="text-sm font-medium">${message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.getElementById('appointmentInfo') && document.querySelectorAll('input[name="data-evento"]').length > 0) {
+            new AppointmentManager();
+        }
+    });
+
+    // Helper function to check if financial values should be displayed
+    function shouldDisplayFinancialValues() {
+        const toggle = document.getElementById('toggleFinancialValues');
+        return toggle && toggle.getAttribute('aria-pressed') === 'true';
+    }
+
+    // Helper function to update value element respecting toggle state
+    function updateValueElement(element, value) {
+        if (shouldDisplayFinancialValues()) {
+            element.textContent = value;
+        } else {
+            // Keep the placeholder visible, don't update the hidden value
+            if (!element.classList.contains('hidden')) {
+                element.textContent = value;
+            }
+        }
+    }
+
+    // Helper function to generate comparison badge HTML
+    function generateComparisonBadge(direction, percentage, text, previousDate) {
+        const icon = direction === 'up' ? '↗' : (direction === 'down' ? '↘' : '→');
+        const badgeClass = direction === 'up' ? 'comparison-badge-up' : (direction === 'down' ? 'comparison-badge-down' : 'comparison-badge-neutral');
+        const animationClass = direction === 'up' ? 'comparison-up' : (direction === 'down' ? 'comparison-down' : '');
+        const textClass = direction === 'up' ? 'text-green-600' : (direction === 'down' ? 'text-red-600' : 'text-gray-500');
+
+        return {
+            html: `<span class="comparison-icon ${badgeClass} ${animationClass}">${icon} ${percentage}%</span> <span class="text-gray-600">${text} do que ${previousDate}</span>`,
+            className: `text-xs mt-1 flex items-center justify-center gap-1 ${textClass}`
+        };
+    }
+
+    // Financial Metrics Functions
+    function updateDailySales(date) {
+        const valueElement = document.getElementById('dailySalesValue');
+        const comparisonElement = document.getElementById('dailySalesComparison');
+        if (!date || !valueElement) return;
+
+        // Show loading state
+        valueElement.innerHTML = '<div class="skel h-6 w-24 mx-auto"></div>';
+        if (comparisonElement) comparisonElement.innerHTML = '<div class="skel h-3 w-32 mx-auto mt-2"></div>';
+
+        fetch(`/dashboard/sales-data?type=daily&date=${date}&comparison=true`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const responseData = data.data || data;
+                    valueElement.textContent = `R$ ${responseData.value}`;
+
+                    if (comparisonElement && responseData.comparison) {
+                        const comp = responseData.comparison;
+                        const badge = generateComparisonBadge(comp.direction, comp.percentage, comp.text, responseData.previousDate);
+
+                        comparisonElement.innerHTML = badge.html;
+                        comparisonElement.className = badge.className;
+                    }
+                } else {
+                    valueElement.textContent = 'R$ 0,00';
+                    if (comparisonElement) comparisonElement.textContent = '';
+                    console.error('Erro ao carregar dados diários:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados diários:', error);
+                valueElement.textContent = 'R$ 0,00';
+                if (comparisonElement) comparisonElement.textContent = '';
+            });
+    }
+
+    function updatePeriodSales(period) {
+        const valueElement = document.getElementById('periodSalesValue');
+        const comparisonElement = document.getElementById('periodSalesComparison');
+        if (!period || !valueElement) return;
+
+        // Show loading state
+        valueElement.innerHTML = '<div class="skel h-6 w-24 mx-auto"></div>';
+        if (comparisonElement) comparisonElement.innerHTML = '<div class="skel h-3 w-32 mx-auto mt-2"></div>';
+
+        fetch(`/dashboard/sales-data?type=period&period=${period}&comparison=true`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const responseData = data.data || data;
+                    valueElement.textContent = `R$ ${responseData.value}`;
+
+                    if (comparisonElement && responseData.comparison) {
+                        const comp = responseData.comparison;
+                        const badge = generateComparisonBadge(comp.direction, comp.percentage, comp.text, responseData.periodLabel);
+
+                        comparisonElement.innerHTML = badge.html;
+                        comparisonElement.className = badge.className;
+                    }
+                } else {
+                    valueElement.textContent = 'R$ 0,00';
+                    if (comparisonElement) comparisonElement.textContent = '';
+                    console.error('Erro ao carregar dados do período:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados do período:', error);
+                valueElement.textContent = 'R$ 0,00';
+                if (comparisonElement) comparisonElement.textContent = '';
+            });
+    }
+
+    // Handle period change to show/hide custom inputs
+    function handlePeriodChange(period) {
+        const customInputsDiv = document.getElementById('customPeriodInputs');
+
+        if (period === 'custom') {
+            // Show custom inputs with animation
+            customInputsDiv.classList.remove('hidden');
+
+            // Set default dates (last 30 days)
+            const endDate = new Date();
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - 30);
+
+            document.getElementById('customStartDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('customEndDate').value = endDate.toISOString().split('T')[0];
+
+            // Trigger initial calculation with default dates
+            setTimeout(() => {
+                updateCustomPeriodSales();
+            }, 300);
+        } else {
+            // Hide custom inputs with animation
+            customInputsDiv.classList.add('hidden');
+            updatePeriodSales(period);
+        }
+    }
+
+    // Update sales for custom period
+    function updateCustomPeriodSales() {
+        const valueElement = document.getElementById('periodSalesValue');
+        const comparisonElement = document.getElementById('periodSalesComparison');
+        const startDate = document.getElementById('customStartDate').value;
+        const endDate = document.getElementById('customEndDate').value;
+
+        if (!startDate || !endDate) {
+            alert('Por favor, selecione as datas de início e fim.');
+            return;
+        }
+
+        if (startDate > endDate) {
+            alert('A data de início deve ser anterior à data de fim.');
+            return;
+        }
+
+        // Show loading state
+        valueElement.innerHTML = '<div class="skel h-6 w-24 mx-auto"></div>';
+        if (comparisonElement) comparisonElement.innerHTML = '<div class="skel h-3 w-32 mx-auto mt-2"></div>';
+
+        fetch(`/dashboard/sales-data?type=custom&start_date=${startDate}&end_date=${endDate}&comparison=true`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const responseData = data.data || data;
+                    valueElement.textContent = `R$ ${responseData.value}`;
+
+                    if (comparisonElement && responseData.comparison) {
+                        const comp = responseData.comparison;
+                        const badge = generateComparisonBadge(comp.direction, comp.percentage, comp.text, responseData.previousPeriod);
+
+                        comparisonElement.innerHTML = badge.html;
+                        comparisonElement.className = badge.className;
+                    }
+                } else {
+                    valueElement.textContent = 'R$ 0,00';
+                    if (comparisonElement) comparisonElement.textContent = '';
+                    console.error('Erro ao carregar dados do período personalizado:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar dados do período personalizado:', error);
+                valueElement.textContent = 'R$ 0,00';
+                if (comparisonElement) comparisonElement.textContent = '';
+            });
+    }
+
+    function updateMonthlySales(monthYear) {
+        const valueElement = document.getElementById('monthlySalesValue');
+        const comparisonElement = document.getElementById('monthlySalesComparison');
+        if (!monthYear || !valueElement) return;
+
+        // Show loading state
+        valueElement.innerHTML = '<div class="skel h-6 w-24 mx-auto"></div>';
+        if (comparisonElement) comparisonElement.innerHTML = '<div class="skel h-3 w-32 mx-auto mt-2"></div>';
+
+        fetch(`/dashboard/sales-data?type=monthly&month=${monthYear}&comparison=true`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const responseData = data.data || data;
+                    valueElement.textContent = `R$ ${responseData.value}`;
+
+                    if (comparisonElement && responseData.comparison) {
+                        const comp = responseData.comparison;
+                        const badge = generateComparisonBadge(comp.direction, comp.percentage, comp.text, responseData.previousMonth);
+
+                        comparisonElement.innerHTML = badge.html;
+                        comparisonElement.className = badge.className;
+                    }
+                } else {
+                    valueElement.textContent = 'R$ 0,00';
+                    if (comparisonElement) comparisonElement.textContent = '';
+                    console.error('Erro ao carregar dados mensais:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados mensais:', error);
+                valueElement.textContent = 'R$ 0,00';
+                if (comparisonElement) comparisonElement.textContent = '';
+            });
+    }
+
+    function updateAverageTicket(period) {
+        const valueElement = document.getElementById('averageTicketValue');
+        const comparisonElement = document.getElementById('averageTicketComparison');
+        if (!period || !valueElement) return;
+
+        // Show loading state
+        valueElement.innerHTML = '<div class="skel h-6 w-20 mx-auto"></div>';
+        if (comparisonElement) comparisonElement.innerHTML = '<div class="skel h-3 w-28 mx-auto mt-2"></div>';
+
+        fetch(`/dashboard/sales-data?type=average_ticket&period=${period}&comparison=true`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const responseData = data.data || data;
+                    valueElement.textContent = `R$ ${responseData.value}`;
+
+                    if (comparisonElement && responseData.comparison) {
+                        const comp = responseData.comparison;
+                        const badge = generateComparisonBadge(comp.direction, comp.percentage, comp.text, responseData.periodLabel);
+
+                        comparisonElement.innerHTML = badge.html;
+                        comparisonElement.className = badge.className;
+                    }
+                } else {
+                    valueElement.textContent = 'R$ 0,00';
+                    if (comparisonElement) comparisonElement.textContent = '';
+                    console.error('Erro ao carregar ticket médio:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar ticket médio:', error);
+                valueElement.textContent = 'R$ 0,00';
+                if (comparisonElement) comparisonElement.textContent = '';
+            });
+    }
+
+    function updateMonthlyGoal(monthYear) {
+        const progressBar = document.getElementById('monthlyGoalProgressBar');
+        const percentageElement = document.getElementById('monthlyGoalPercentage');
+        const currentElement = document.getElementById('monthlyGoalCurrent');
+        const targetElement = document.getElementById('monthlyGoalTarget');
+
+        if (!monthYear || !progressBar || !percentageElement) return;
+
+        // Show loading state
+        percentageElement.textContent = '...';
+        if (currentElement) currentElement.textContent = 'R$ ...';
+        if (targetElement) targetElement.textContent = 'R$ ...';
+
+        fetch(`/dashboard/sales-data?type=monthly_goal&month=${monthYear}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const responseData = data.data || data;
+
+                    // Update progress bar
+                    const percentage = responseData.percentage || 0;
+                    progressBar.style.width = `${percentage}%`;
+
+                    // Change color based on progress
+                    if (percentage >= 100) {
+                        progressBar.className = 'h-3 rounded-full transition-all duration-300 ease-out bg-green-500';
+                    } else if (percentage >= 75) {
+                        progressBar.className = 'h-3 rounded-full transition-all duration-300 ease-out bg-yellow-500';
+                    } else if (percentage >= 50) {
+                        progressBar.className = 'h-3 rounded-full transition-all duration-300 ease-out bg-orange-500';
+                    } else {
+                        progressBar.className = 'h-3 rounded-full transition-all duration-300 ease-out bg-red-500';
+                    }
+
+                    // Update text elements
+                    percentageElement.textContent = `${percentage}%`;
+                    if (currentElement) currentElement.textContent = `R$ ${responseData.current}`;
+                    if (targetElement) targetElement.textContent = `R$ ${responseData.goal}`;
+                } else {
+                    percentageElement.textContent = '0%';
+                    progressBar.style.width = '0%';
+                    if (currentElement) currentElement.textContent = 'R$ 0,00';
+                    if (targetElement) targetElement.textContent = 'R$ 0,00';
+                    console.error('Erro ao carregar meta mensal:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar meta mensal:', error);
+                percentageElement.textContent = '0%';
+                progressBar.style.width = '0%';
+                if (currentElement) currentElement.textContent = 'R$ 0,00';
+                if (targetElement) targetElement.textContent = 'R$ 0,00';
+            });
+    }
+
+    function updateRenewalEstimates(periodDays) {
+        const valueElement = document.getElementById('renewalEstimatesValue');
+        const comparisonElement = document.getElementById('renewalEstimatesComparison');
+        const clientsElement = document.getElementById('renewalEstimatesClients');
+
+        if (!periodDays || !valueElement) return;
+
+        // Show loading state
+        valueElement.innerHTML = '<div class="skel h-6 w-24 mx-auto"></div>';
+        if (comparisonElement) comparisonElement.innerHTML = '<div class="skel h-3 w-32 mx-auto mt-2"></div>';
+        if (clientsElement) clientsElement.innerHTML = '<span class="skel inline-block w-16 h-4"></span>';
+
+        fetch(`/dashboard/renewal-estimates?period=${periodDays}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const responseData = data.data || data;
+                    valueElement.textContent = `R$ ${responseData.formatted_revenue}`;
+
+                    if (clientsElement) {
+                        const clientText = responseData.total_clients == 1 ? 'cliente' : 'clientes';
+                        clientsElement.textContent = `${responseData.total_clients} ${clientText}`;
+                    }
+
+                    if (comparisonElement && responseData.comparison) {
+                        const comp = responseData.comparison;
+                        const badge = generateComparisonBadge(comp.direction, comp.percentage, comp.text, 'período anterior');
+
+                        comparisonElement.innerHTML = badge.html;
+                        comparisonElement.className = badge.className;
+                    }
+                } else {
+                    valueElement.textContent = 'R$ 0,00';
+                    if (clientsElement) clientsElement.textContent = '0 clientes';
+                    if (comparisonElement) comparisonElement.textContent = '';
+                    console.error('Erro ao carregar estimativas de renovação:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar estimativas de renovação:', error);
+                valueElement.textContent = 'R$ 0,00';
+                if (clientsElement) clientsElement.textContent = '0 clientes';
+                if (comparisonElement) comparisonElement.textContent = '';
+            });
+    }
+
+    function skipDiet() {
+        Swal.fire({
+            title: 'Pular configuração de dieta?',
+            text: 'Tem certeza que deseja pular a configuração de dieta?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, pular',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280',
+            customClass: {
+                popup: 'rounded-2xl',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Processando...',
+                    text: 'Atualizando suas configurações',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch('/dashboard/skip-diet', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Sucesso!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonColor: '#10b981',
+                                customClass: {
+                                    popup: 'rounded-2xl',
+                                    confirmButton: 'rounded-lg'
+                                }
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Erro!',
+                                text: data.message,
+                                icon: 'error',
+                                confirmButtonColor: '#ef4444',
+                                customClass: {
+                                    popup: 'rounded-2xl',
+                                    confirmButton: 'rounded-lg'
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        Swal.fire({
+                            title: 'Erro!',
+                            text: 'Erro ao processar solicitação',
+                            icon: 'error',
+                            confirmButtonColor: '#ef4444',
+                            customClass: {
+                                popup: 'rounded-2xl',
+                                confirmButton: 'rounded-lg'
+                            }
+                        });
+                    });
+            }
+        });
+    }
+
+    function skipWorkout() {
+        Swal.fire({
+            title: 'Pular configuração de treino?',
+            text: 'Tem certeza que deseja pular a configuração de treino?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, pular',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280',
+            customClass: {
+                popup: 'rounded-2xl',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Processando...',
+                    text: 'Atualizando suas configurações',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch('/dashboard/skip-workout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Sucesso!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonColor: '#10b981',
+                                customClass: {
+                                    popup: 'rounded-2xl',
+                                    confirmButton: 'rounded-lg'
+                                }
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Erro!',
+                                text: data.message,
+                                icon: 'error',
+                                confirmButtonColor: '#ef4444',
+                                customClass: {
+                                    popup: 'rounded-2xl',
+                                    confirmButton: 'rounded-lg'
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        Swal.fire({
+                            title: 'Erro!',
+                            text: 'Erro ao processar solicitação',
+                            icon: 'error',
+                            confirmButtonColor: '#ef4444',
+                            customClass: {
+                                popup: 'rounded-2xl',
+                                confirmButton: 'rounded-lg'
+                            }
+                        });
+                    });
+            }
+        });
+    }
+
+    function initHistoryChart() {
+        const ctx = document.getElementById('history');
+        if (!ctx) {
+            console.warn('Chart canvas element not found');
+            return;
+        }
+
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded');
+            return;
+        }
+
+        const userLang = typeof window.userLang !== 'undefined' ? window.userLang : 'pt_BR';
+
+        let chartLabels;
+        if (userLang === 'en_US') {
+            chartLabels = {
+                newCustomers: 'New customers',
+                renewals: 'Renewals'
+            };
+        } else {
+            chartLabels = {
+                newCustomers: 'Apenas novos clientes',
+                renewals: 'Renovações'
+            };
+        }
+
+        const areaConfig = {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                        label: chartLabels.newCustomers,
+                        data: [],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.3)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                    },
+                    {
+                        label: chartLabels.renewals,
+                        data: [],
+                        borderColor: 'rgb(99, 102, 241)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.3)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: 'rgb(99, 102, 241)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                        titleColor: 'rgb(243, 244, 246)',
+                        bodyColor: 'rgb(243, 244, 246)',
+                        borderColor: 'rgba(75, 85, 99, 0.2)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        usePointStyle: true
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11,
+                                weight: '500'
+                            },
+                            color: 'rgb(107, 114, 128)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(229, 231, 235, 0.8)',
+                            borderDash: [2, 2]
+                        },
+                        ticks: {
+                            font: {
+                                size: 11,
+                                weight: '500'
+                            },
+                            color: 'rgb(107, 114, 128)',
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        };
+
+        const areaChart = new Chart(ctx, areaConfig);
+
+        // Load chart data with better error handling
+        fetch('/dashboard/chart-data')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(response => {
+                if (response.success && response.data) {
+                    const chartData = response.data;
+                    const data = chartData.map(item => [item.month_year, item.new, item.renew]);
+
+                    areaChart.data.labels = data.map(item => item[0]);
+                    areaChart.data.datasets[0].data = data.map(item => item[1]);
+                    areaChart.data.datasets[1].data = data.map(item => item[2]);
+                    areaChart.update('active');
+                } else {
+                    console.error('Erro ao carregar dados do gráfico:', response.message);
+                    showChartError('Erro ao carregar dados do gráfico');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados do gráfico:', error);
+                showChartError('Erro ao conectar com o servidor');
+            });
+
+        function showChartError(message) {
+            const chartContainer = ctx.closest('.bg-white');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'absolute inset-0 flex items-center justify-center bg-white rounded-2xl';
+            errorDiv.innerHTML = `
+                <div class="text-center text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <p class="text-sm font-medium">${message}</p>
+                </div>
+            `;
+            chartContainer.querySelector('.relative').appendChild(errorDiv);
+            ctx.style.display = 'none';
+        }
+    }
+
+    function waitForChartJS() {
+        if (typeof Chart !== 'undefined') {
+            initHistoryChart();
+        } else {
+            setTimeout(waitForChartJS, 100);
+        }
+    }
+
+    // Load metrics summary asynchronously
+    async function loadMetricsSummary() {
+        try {
+            const response = await fetch('/dashboard/metrics-summary');
+            const result = await response.json();
+
+            if (result.success) {
+                const data = result;
+
+                // Update metric cards
+                updateMetricValue('pendingConsultorias', data.pendingConsultorias);
+                updateMetricValue('activeConsultorias', data.activeConsultorias);
+                updateMetricValue('pendingFeedbacks', data.pendingFeedbacks);
+                updateMetricValue('pendingChats', data.pendingChats);
+                updateMetricValue('dropouts', data.dropouts);
+
+                // Update renewal rate with percentage
+                const renewalRateElement = document.querySelector('[data-metric="renewalRate"]');
+                if (renewalRateElement && renewalRateElement.classList.contains('skel')) {
+                    const formattedRate = data.renewalRate ? parseFloat(data.renewalRate).toFixed(2).replace('.', ',') : '0,00';
+                    renewalRateElement.textContent = formattedRate + '%';
+                    renewalRateElement.classList.remove('skel', 'inline-block', 'w-16', 'h-8');
+                }
+
+                // Update student stats (gender data and active count)
+                updateStudentStats(data.genderData, data.activeCount);
+            }
+        } catch (error) {
+            console.error('Error loading metrics summary:', error);
+        }
+    }
+
+    function updateMetricValue(metricName, value) {
+        const element = document.querySelector(`[data-metric="${metricName}"]`);
+        if (element && element.classList.contains('skel')) {
+            element.textContent = value !== undefined && value !== null ? value : '0';
+            element.classList.remove('skel', 'inline-block', 'w-12', 'h-8', 'w-16', 'h-10');
+        }
+    }
+
+    function updateStudentStats(genderData, activeCount) {
+        const container = document.getElementById('studentStatsContainer');
+        if (!container) return;
+
+        const men = genderData.total_masculino || 0;
+        const women = genderData.total_feminino || 0;
+        const total = parseInt(men) + parseInt(women);
+
+        if (total === 0) {
+            // Show empty state
+            container.innerHTML = `<div class="text-center py-8"><div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div><p class="text-gray-500">Nenhum cliente encontrado</p></div>`;
+            return;
+        }
+
+        // Calculate percentages
+        const men_percentage = Math.round((men / total) * 100);
+        const women_percentage = 100 - men_percentage;
+
+        const men_class = (women_percentage === 0 && men_percentage > 0) ? "rounded-full" : "rounded-l-xl";
+        const women_class = (men_percentage === 0 && women_percentage > 0) ? "rounded-full" : "rounded-r-xl";
+
+        // Build men bar HTML
+        let menBarHtml = '';
+        if (men_percentage > 0) {
+            menBarHtml = `<div class="bg-gradient-to-r from-primary-400 to-primary-500 h-full flex items-center justify-center text-white text-sm font-semibold transition-all duration-300 ${men_class}" style="width: ${men_percentage}%;">${men_percentage > 20 ? men_percentage + '%' : ''}</div>`;
+        }
+
+        // Build women bar HTML
+        let womenBarHtml = '';
+        if (women_percentage > 0) {
+            womenBarHtml = `<div class="bg-gradient-to-r from-indigo-400 to-indigo-500 h-full flex items-center justify-center text-white text-sm font-semibold transition-all duration-300 ${women_class}" style="width: ${women_percentage}%;">${women_percentage > 20 ? women_percentage + '%' : ''}</div>`;
+        }
+
+        // Build HTML with actual data
+        container.innerHTML = `<div class="text-center mb-6"><div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg></div><h2 class="text-4xl font-bold text-gray-900 mb-2">${activeCount}</h2><p class="text-lg font-medium text-gray-600">Clientes ativos</p></div><div class="space-y-4"><div class="relative"><div class="flex h-6 bg-gray-100 rounded-full overflow-hidden">${menBarHtml}${womenBarHtml}</div></div><div class="flex justify-between items-center text-sm"><div class="flex items-center"><div class="w-3 h-3 bg-gradient-to-r from-primary-400 to-primary-500 rounded-full mr-2"></div><span class="text-gray-700 flex items-center">Homens (${men})</span></div><div class="flex items-center"><div class="w-3 h-3 bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full mr-2"></div><span class="text-gray-700 flex items-center">Mulheres (${women})</span></div></div></div>`;
+    }
+
+    // Enhanced DOMContentLoaded initialization
+    document.addEventListener('DOMContentLoaded', () => {
+        // Load metrics asynchronously
+        loadMetricsSummary();
+
+        // Initialize appointment manager if elements exist
+        if (document.getElementById('appointmentInfo') && document.querySelectorAll('input[name="data-evento"]').length > 0) {
+            new AppointmentManager();
+        }
+
+        // Initialize chart
+        waitForChartJS();
+
+        // Load initial comparisons for financial metrics
+        loadInitialComparisons();
+
+        // Add loading states to metric cards
+        const metricCards = document.querySelectorAll('.group');
+        metricCards.forEach(card => {
+            const link = card.querySelector('a[href]');
+            if (link) {
+                link.addEventListener('click', function(e) {
+                    // Add subtle loading state
+                    this.style.opacity = '0.7';
+                    this.style.pointerEvents = 'none';
+
+                    // Reset after a short delay (in case navigation fails)
+                    setTimeout(() => {
+                        this.style.opacity = '1';
+                        this.style.pointerEvents = 'auto';
+                    }, 3000);
+                });
+            }
+        });
+    });
+
+    function loadInitialComparisons() {
+        // Load initial daily comparison (today)
+        const dailyDateInput = document.getElementById('dailySalesDate');
+        if (dailyDateInput) {
+            updateDailySales(dailyDateInput.value);
+        }
+
+        // Load initial period comparison (this week)
+        updatePeriodSales('week');
+
+        // Load initial monthly comparison (current month)
+        const monthlySelect = document.getElementById('monthlySalesSelect');
+        if (monthlySelect && monthlySelect.value) {
+            updateMonthlySales(monthlySelect.value);
+        }
+
+        // Load initial average ticket (this week)
+        const averageTicketSelect = document.getElementById('averageTicketSelect');
+        if (averageTicketSelect && averageTicketSelect.value) {
+            updateAverageTicket(averageTicketSelect.value);
+        }
+
+        // Load initial monthly goal (current month)
+        const monthlyGoalSelect = document.getElementById('monthlyGoalSelect');
+        if (monthlyGoalSelect && monthlyGoalSelect.value) {
+            updateMonthlyGoal(monthlyGoalSelect.value);
+        }
+
+        // Load initial renewal estimates (30 days)
+        const renewalEstimatesSelect = document.getElementById('renewalEstimatesSelect');
+        if (renewalEstimatesSelect && renewalEstimatesSelect.value) {
+            updateRenewalEstimates(renewalEstimatesSelect.value);
+        }
+    }
+
+    // Financial Display Toggle Functions
+    function toggleFinancialDisplay() {
+        const toggle = document.getElementById('toggleFinancialValues');
+        const isCurrentlyVisible = toggle.getAttribute('aria-pressed') === 'true';
+        const newState = !isCurrentlyVisible;
+
+        // Update toggle appearance
+        updateToggleState(toggle, newState);
+
+        // Toggle visibility of financial values and placeholders
+        toggleFinancialValues(newState);
+
+        // Save preference to backend
+        saveFinancialDisplayPreference(newState);
+    }
+
+    function updateToggleState(toggle, isVisible) {
+        toggle.setAttribute('aria-pressed', isVisible.toString());
+
+        if (isVisible) {
+            toggle.classList.remove('bg-gray-200');
+            toggle.classList.add('bg-primary-600');
+            toggle.querySelector('span:last-child').classList.remove('translate-x-0.5');
+            toggle.querySelector('span:last-child').classList.add('translate-x-4');
+        } else {
+            toggle.classList.remove('bg-primary-600');
+            toggle.classList.add('bg-gray-200');
+            toggle.querySelector('span:last-child').classList.remove('translate-x-4');
+            toggle.querySelector('span:last-child').classList.add('translate-x-0.5');
+        }
+    }
+
+    function toggleFinancialValues(isVisible) {
+        const valueElements = document.querySelectorAll('.financial-value');
+        const placeholderElements = document.querySelectorAll('.financial-placeholder');
+
+        valueElements.forEach(element => {
+            if (isVisible) {
+                element.classList.remove('hidden');
+            } else {
+                element.classList.add('hidden');
+            }
+        });
+
+        placeholderElements.forEach(element => {
+            if (isVisible) {
+                element.classList.add('hidden');
+            } else {
+                element.classList.remove('hidden');
+            }
+        });
+    }
+
+    function saveFinancialDisplayPreference(isVisible) {
+        fetch('/dashboard/update-financial-display', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    display_financial_dashboard: isVisible
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Erro ao salvar preferência:', data.message);
+                    // Revert toggle state on error
+                    const toggle = document.getElementById('toggleFinancialValues');
+                    updateToggleState(toggle, !isVisible);
+                    toggleFinancialValues(!isVisible);
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição::', error);
+                // Revert toggle state on error
+                const toggle = document.getElementById('toggleFinancialValues');
+                updateToggleState(toggle, !isVisible);
+                toggleFinancialValues(!isVisible);
+            });
+    }
+
+    // Enhanced appointment loading
+    document.querySelector('input[name="data-evento"]') ? .addEventListener('change', function() {
+        // Update appointment info
+        const appointmentContainer = document.getElementById('appointmentInfo');
+        if (appointmentContainer) {
+            appointmentContainer.innerHTML = `
+                <div class="p-4 space-y-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="skel w-10 h-10 rounded-full flex-shrink-0"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="skel w-1/3 h-3"></div>
+                            <div class="skel w-1/2 h-2.5"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="skel w-10 h-10 rounded-full flex-shrink-0"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="skel w-2/5 h-3"></div>
+                            <div class="skel w-1/3 h-2.5"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    // Page visibility API to refresh data when user returns to tab
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            // Optionally refresh appointment data or other live data
+            const checkedRadio = document.querySelector('input[name="data-evento"]:checked');
+            if (checkedRadio && window.appointmentManager) {
+                window.appointmentManager.loadAppointmentInfo(checkedRadio.value);
+            }
+        }
+    });
+
+    // Monthly Goal Modal Functions
+    function openEditGoalModal() {
+        const selectedMonth = document.getElementById('monthlyGoalSelect').value;
+        const currentGoalElement = document.getElementById('monthlyGoalTarget');
+        const currentGoal = currentGoalElement ? currentGoalElement.textContent.replace('R$ ', '').replace('.', '').replace(',', '.') : '0';
+
+        Swal.fire({
+            title: 'Editar Meta Mensal',
+            html: `
+                <div class="text-left">
+                    <label for="goalAmount" class="block text-sm font-medium text-gray-700 mb-2">
+                        Valor da Meta                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R$</span>
+                        <input 
+                            type="number" 
+                            id="goalAmount" 
+                            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
+                            placeholder="Digite o valor da meta mensal"
+                            value="${currentGoal !== 'R$ 0,00' ? currentGoal : ''}"
+                            step="0.01"
+                            min="0"
+                        />
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Salvar Meta',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280',
+            customClass: {
+                popup: 'rounded-2xl',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            },
+            preConfirm: () => {
+                const amount = document.getElementById('goalAmount').value;
+                if (!amount || parseFloat(amount) < 0) {
+                    Swal.showValidationMessage('Por favor, insira um valor válido para a meta');
+                    return false;
+                }
+                return parseFloat(amount);
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveMonthlyGoal(selectedMonth, result.value);
+            }
+        });
+    }
+
+    function saveMonthlyGoal(month, amount) {
+        // Show loading state
+        Swal.fire({
+            title: 'Salvando...',
+            text: 'Atualizando sua meta mensal',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('/dashboard/save-monthly-goal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    month: month,
+                    goal_amount: amount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Sucesso!',
+                        text: 'Meta mensal atualizada com sucesso',
+                        icon: 'success',
+                        confirmButtonColor: '#10b981',
+                        customClass: {
+                            popup: 'rounded-2xl',
+                            confirmButton: 'rounded-lg'
+                        }
+                    }).then(() => {
+                        // Refresh the monthly goal display
+                        updateMonthlyGoal(month);
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Erro!',
+                        text: data.message || 'Erro ao salvar a meta mensal',
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444',
+                        customClass: {
+                            popup: 'rounded-2xl',
+                            confirmButton: 'rounded-lg'
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao salvar meta:', error);
+                Swal.fire({
+                    title: 'Erro!',
+                    text: 'Erro ao conectar com o servidor',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444',
+                    customClass: {
+                        popup: 'rounded-2xl',
+                        confirmButton: 'rounded-lg'
+                    }
+                });
+            });
+    }
+
+    function getFormattedMonth(monthYear) {
+        const [year, month] = monthYear.split('-');
+        const date = new Date(year, month - 1);
+        const monthNames = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+        return `${monthNames[date.getMonth()]}/${year}`;
+    }
+
+    // Dashboard Block Toggle Functions
+    function toggleBlock(blockId) {
+        const block = document.querySelector(`[data-block="${blockId}"]`);
+        const content = document.getElementById(`${blockId}-content`);
+        const toggleButton = block.querySelector('.block-toggle') || block.querySelector('.block-toggle-inline');
+        const toggleIcon = toggleButton ? .querySelector('svg');
+
+        if (!block || !content) return;
+
+        const isCollapsed = block.classList.contains('collapsed');
+
+        if (isCollapsed) {
+            // Expand block
+            block.classList.remove('collapsed');
+            content.classList.remove('collapsed');
+            if (toggleButton) toggleButton.classList.remove('collapsed');
+            if (toggleIcon) toggleIcon.style.transform = 'rotate(0deg)';
+        } else {
+            // Collapse block
+            block.classList.add('collapsed');
+            content.classList.add('collapsed');
+            if (toggleButton) toggleButton.classList.add('collapsed');
+            if (toggleIcon) toggleIcon.style.transform = 'rotate(180deg)';
+        }
+
+        // Save preference to localStorage
+        saveBlockPreference(blockId, !isCollapsed);
+    }
+
+    function saveBlockPreference(blockId, isCollapsed) {
+        try {
+            const preferences = getBlockPreferences();
+            preferences[blockId] = isCollapsed;
+            localStorage.setItem('dashboardBlockPreferences', JSON.stringify(preferences));
+        } catch (error) {
+            console.warn('Could not save block preference:', error);
+        }
+    }
+
+    function getBlockPreferences() {
+        try {
+            const stored = localStorage.getItem('dashboardBlockPreferences');
+            return stored ? JSON.parse(stored) : {};
+        } catch (error) {
+            console.warn('Could not load block preferences:', error);
+            return {};
+        }
+    }
+
+    function initializeBlockStates() {
+        const preferences = getBlockPreferences();
+        const blocks = ['onboarding', 'appointments', 'metrics', 'students', 'chart'];
+
+        blocks.forEach(blockId => {
+            const block = document.querySelector(`[data-block="${blockId}"]`);
+            if (!block) return;
+
+            const isCollapsed = preferences[blockId] === true;
+
+            if (isCollapsed) {
+                const content = document.getElementById(`${blockId}-content`);
+                const toggleButton = block.querySelector('.block-toggle');
+                const toggleIcon = toggleButton.querySelector('svg');
+
+                if (content && toggleButton && toggleIcon) {
+                    block.classList.add('collapsed');
+                    content.classList.add('collapsed');
+                    toggleButton.classList.add('collapsed');
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                }
+            }
+        });
+    }
+
+    // Mobile-friendly toggle handling
+    function handleMobileToggle() {
+        if (window.innerWidth <= 768) {
+            // On mobile, make sure collapsed blocks don't interfere with scrolling
+            const collapsedBlocks = document.querySelectorAll('.dashboard-block.collapsed');
+            collapsedBlocks.forEach(block => {
+                block.style.marginBottom = '12px';
+            });
+        }
+    }
+
+    // Renewal Rate Functions
+    function updateRenewalRate(period) {
+        const rateElement = document.querySelector('.renewal-rate-value');
+        const detailsElement = document.querySelector('.renewal-rate-details');
+        const comparisonElement = document.getElementById('renewalRateComparison');
+
+        if (!rateElement) return;
+
+        // Show loading state
+        rateElement.innerHTML = '<div class="skel h-6 w-16 mx-auto"></div>';
+        if (detailsElement) detailsElement.innerHTML = '<div class="skel h-3 w-24 mx-auto mt-1"></div>';
+        if (comparisonElement) comparisonElement.textContent = '';
+
+        if (period === 'all') {
+            // Renewal rate data will be loaded asynchronously, no action needed here
+            if (comparisonElement) comparisonElement.innerHTML = '';
+            return;
+        }
+
+        // Fetch monthly renewal rate
+        fetch(`/dashboard/monthly-renewal-rate?month=${period}&comparison=true`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const result = data;
+                    rateElement.textContent = result.monthly_renewal_rate.toFixed(2).replace('.', ',') + '%';
+
+                    if (detailsElement) {
+                        let detailsText = '';
+
+                        if (result.comparison) {
+                            const comp = result.comparison;
+                            const badgeClass = comp.direction === 'up' ? 'comparison-badge-up' : (comp.direction === 'down' ? 'comparison-badge-down' : 'comparison-badge-neutral');
+                            const animationClass = comp.direction === 'up' ? 'comparison-up' : (comp.direction === 'down' ? 'comparison-down' : '');
+                            const icon = comp.direction === 'up' ? '↗' : (comp.direction === 'down' ? '↘' : '→');
+
+                            let compText = comp.text;
+                            if (comp.text === 'equal') compText = 'igual ao mês anterior';
+                            else if (comp.text.includes('more')) compText = 'a mais que o mês anterior';
+                            else if (comp.text.includes('less')) compText = 'a menos que o mês anterior';
+
+                            detailsText = `<span class="comparison-icon ${badgeClass} ${animationClass} text-xs font-medium">${icon} ${comp.percentage}%</span> <span class="text-gray-600 text-xs">${compText}</span>`;
+                        }
+
+                        detailsElement.innerHTML = detailsText;
+                    }
+                } else {
+                    rateElement.textContent = '0,00%';
+                    if (detailsElement) detailsElement.textContent = 'Erro ao carregar';
+                    if (comparisonElement) comparisonElement.innerHTML = '';
+                }
+            })
+            .catch(error => {
+                rateElement.textContent = '0,00%';
+                if (detailsElement) detailsElement.textContent = 'Erro ao carregar';
+                if (comparisonElement) comparisonElement.innerHTML = '';
+            });
+    }
+
+    // Initialize dashboard toggles when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait a bit for all other scripts to load
+        setTimeout(() => {
+            initializeBlockStates();
+            handleMobileToggle();
+        }, 100);
+
+        // DESABILITADO TEMPORARIAMENTE - Reativar para desafios de faturamento pontuais
+        // Load top sellers ranking (collapsed by default)
+        // loadTopSellersRanking(3);
+
+        // Collapse ranking block by default
+        // const rankingBlock = document.querySelector('[data-block="ranking"]');
+        // if (rankingBlock) {
+        //     const toggle = rankingBlock.querySelector('.block-toggle');
+        //     const content = document.getElementById('ranking-content');
+        //     if (toggle && content) {
+        //         toggle.classList.add('collapsed');
+        //         content.classList.add('collapsed');
+        //         rankingBlock.classList.add('collapsed');
+        //     }
+        // }
+    });
+
+    // Handle window resize for mobile optimization
+    window.addEventListener('resize', handleMobileToggle);
+
+    // DESABILITADO TEMPORARIAMENTE - Reativar para desafios de faturamento pontuais
+    // Top Sellers Ranking Functions
+    /*
+    function loadTopSellersRanking(limit = 3) {
+        const loadingEl = document.getElementById('ranking-loading');
+        const listEl = document.getElementById('ranking-list');
+        const emptyEl = document.getElementById('ranking-empty');
+        const monthLabel = document.getElementById('ranking-month-label');
+
+        if (!loadingEl || !listEl || !emptyEl) return;
+
+        fetch(`/dashboard/top-sellers?limit=${limit}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingEl.classList.add('hidden');
+
+                if (data.success && data.ranking && data.ranking.length > 0) {
+                    if (monthLabel) {
+                        monthLabel.textContent = data.month_name;
+                    }
+
+                    listEl.innerHTML = renderRankingList(data.ranking);
+                    listEl.classList.remove('hidden');
+                    emptyEl.classList.add('hidden');
+                } else {
+                    listEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                    if (monthLabel && data.month_name) {
+                        monthLabel.textContent = data.month_name || '';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading ranking:', error);
+                loadingEl.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+            });
+    }
+
+    function renderRankingList(ranking) {
+        const medals = ['🥇', '🥈', '🥉'];
+
+        return ranking.map((item, index) => {
+            const medal = medals[item.position - 1] || `${item.position}º`;
+
+            const isDefaultAvatar = item.foto === 'profile/default.jpg';
+            const fotoUrl = (item.foto && !isDefaultAvatar) ? `https://storage-prime.s3.amazonaws.com/${item.foto}` : null;
+            const logoUrl = item.logo ? `https://storage-prime.s3.amazonaws.com/${item.logo}` : null;
+            const imageUrl = fotoUrl || logoUrl;
+            const avatarHtml = imageUrl ?
+                `<img src="${imageUrl}" alt="" class="w-8 h-8 rounded-full object-cover">` :
+                `<div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center"><span class="text-xs font-bold text-primary-600">${escapeHtml(item.consultancy_name.charAt(0).toUpperCase())}</span></div>`;
+
+            // Instagram link
+            const instagramHtml = item.instagram ?
+                `<a href="https://instagram.com/${escapeHtml(item.instagram.replace('@', ''))}" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-400 hover:text-primary-500 transition-colors">@${escapeHtml(item.instagram.replace('@', ''))}</a>` : '';
+
+            return `
+                <div class="flex items-center px-4 py-3 transition-colors ${index < ranking.length - 1 ? 'border-b border-gray-100' : ''}">
+                    <span class="text-lg w-8 text-center flex-shrink-0 mr-2">${medal}</span>
+                    <div class="flex-shrink-0 mr-2">
+                        ${avatarHtml}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(item.consultancy_name)}</p>
+                            ${instagramHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    */
+</script>

@@ -48,7 +48,14 @@ const CartRecoveryPage = () => {
       .select("*")
       .eq("coach_id", user.id)
       .order("created_at", { ascending: false });
-    setItems(data ?? []);
+    // Normaliza: usa `name` se existir, senão `lead_name`; mesmo para email/phone
+    setItems((data ?? []).map((r: any) => ({
+      ...r,
+      name: r.name ?? r.lead_name,
+      email: r.email ?? r.lead_email,
+      phone: r.phone ?? r.lead_phone,
+      status: r.status ?? "pending",
+    })));
     setLoading(false);
   };
 

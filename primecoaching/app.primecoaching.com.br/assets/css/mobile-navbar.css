@@ -1,0 +1,586 @@
+/* Mobile Bottom Navbar Styles - Design Clean */
+
+.mobile-bottom-navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    padding: 8px 16px 12px 16px;
+    display: block;
+}
+
+.mobile-navbar-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 100%;
+    margin: 0 auto;
+    gap: 4px;
+}
+
+.mobile-navbar-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: #6b7280;
+    text-decoration: none;
+    padding: 10px 12px 8px 12px;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 64px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-navbar-btn:hover,
+.mobile-navbar-btn.active {
+    background-color: var(--primary-100);
+    color: var(--primary-700);
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.mobile-navbar-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background-color: var(--primary-700);
+    border-radius: 0 0 4px 4px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        width: 0;
+        opacity: 0;
+    }
+    to {
+        width: 24px;
+        opacity: 1;
+    }
+}
+
+.mobile-navbar-btn i {
+    font-size: 22px;
+    margin-bottom: 4px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-navbar-btn:hover i,
+.mobile-navbar-btn.active i {
+    transform: scale(1.15);
+    filter: drop-shadow(0 2px 4px rgba(37, 99, 235, 0.2));
+}
+
+.mobile-navbar-btn span {
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1;
+    letter-spacing: 0.025em;
+    transition: all 0.3s ease;
+}
+
+.mobile-navbar-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Mobile Search Modal - Design Melhorado */
+
+.mobile-search-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.mobile-search-modal.hidden {
+    display: none !important;
+}
+
+.mobile-search-modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.mobile-search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+}
+
+.mobile-search-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.mobile-search-close {
+    background: #f8fafc;
+    border: none;
+    font-size: 16px;
+    color: #64748b;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-search-close:hover {
+    background: #e2e8f0;
+    color: #475569;
+    transform: scale(1.05);
+}
+
+.mobile-search-body {
+    padding: 24px;
+}
+
+.mobile-search-input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+    background: #f8fafc;
+    box-sizing: border-box;
+}
+
+.mobile-search-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    background: white;
+}
+
+.mobile-search-input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.mobile-search-results {
+    max-height: 350px;
+    overflow-y: auto;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.mobile-search-results p {
+    color: #64748b;
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Estilos para os resultados da busca - Melhorados */
+
+.search-results-section {
+    margin-bottom: 20px;
+}
+
+.search-results-title {
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+    padding: 0 4px;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin: 4px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    background: #ffffff;
+}
+
+.search-result-item:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.search-result-item:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-result-icon {
+    width: 40px;
+    height: 40px;
+    background-color: var(--primary-100);
+    color: var(--primary-900);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.search-result-icon i {
+    color: #3b82f6;
+    font-size: 16px;
+}
+
+.search-result-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: cover;
+    margin-right: 12px;
+    flex-shrink: 0;
+    border: 2px solid #f1f5f9;
+}
+
+.search-result-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 2px 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.search-result-description {
+    font-size: 12px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.search-result-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.search-result-category {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--primary-500);
+    background: var(--primary-50);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.search-result-arrow {
+    color: #cbd5e1;
+    font-size: 12px;
+    margin-left: 8px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.search-result-item:hover .search-result-arrow {
+    color: #3b82f6;
+    transform: translateX(2px);
+}
+
+/* Loading state */
+
+.search-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    color: #64748b;
+}
+
+.search-loading i {
+    font-size: 24px;
+    color: #3b82f6;
+    margin-bottom: 12px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.search-loading p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Scrollbar customizada */
+
+.mobile-search-results::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mobile-search-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.mobile-search-results::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+.mobile-search-results::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Garantir que o modal apareça em telas pequenas */
+
+@media (max-width: 1024px) {
+    .mobile-search-modal {
+        z-index: 9999 !important;
+        position: fixed !important;
+    }
+    .mobile-search-modal-content {
+        position: relative !important;
+    }
+    /* Adicionar padding-bottom ao main content para compensar a navbar fixa */
+    .main_container {
+        padding-bottom: 88px !important;
+        /* Aumentado para o novo design */
+    }
+    /* Exibir navbar mobile em telas pequenas */
+    .mobile-bottom-navbar {
+        display: block !important;
+    }
+}
+
+/* Para dispositivos móveis também */
+
+@media (max-width: 768px) {
+    .mobile-search-modal {
+        z-index: 9999 !important;
+        position: fixed !important;
+    }
+    .mobile-search-modal-content {
+        position: relative !important;
+    }
+    /* Adicionar padding-bottom ao main content para compensar a navbar fixa */
+    .main_container {
+        padding-bottom: 88px !important;
+        /* Aumentado para o novo design */
+    }
+}
+
+/* Adicionar padding-bottom ao page contents */
+
+@media (max-width: 1024px) {
+    .page_contents {
+        padding-bottom: 88px !important;
+    }
+}
+
+/* Para dispositivos móveis também */
+
+@media (max-width: 768px) {
+    .page_contents {
+        padding-bottom: 88px !important;
+    }
+}
+
+/* Ocultar o menu da navbar superior em telas pequenas */
+
+@media (max-width: 1024px) {
+    .page_nav_cliente #nav-menu,
+    .page_nav_cliente.mobile #nav-menu {
+        display: none !important;
+    }
+}
+
+/* ========================================
+   NAVBAR RESPONSIVA - Desktop vs Mobile
+   ======================================== */
+
+/* Desktop: mostrar seção esquerda, esconder botão mobile */
+
+.navbar-desktop-left {
+    display: flex;
+}
+
+.navbar-mobile-demo-btn {
+    display: none;
+}
+
+.navbar-right-section {
+    width: auto;
+}
+
+.navbar-progress-bar {
+    width: fit-content;
+}
+
+/* Telas intermediárias: esconder texto dos botões, mostrar só ícones */
+
+@media (max-width: 1380px) and (min-width: 1025px) {
+    .navbar-desktop-left {
+        gap: 6px !important;
+        margin-left: 8px !important;
+    }
+    .navbar-desktop-left a span {
+        display: none;
+    }
+    .navbar-desktop-left a {
+        padding: 8px !important;
+    }
+}
+
+/* Mobile: esconder seção esquerda, mostrar botão mobile */
+
+@media (max-width: 1024px) {
+    .navbar-desktop-left {
+        display: none !important;
+    }
+    .navbar-mobile-demo-btn {
+        display: flex !important;
+    }
+    .navbar-right-section {
+        width: 100%;
+        margin-left: 10px;
+    }
+    .navbar-progress-bar {
+        width: 100%;
+    }
+}
+
+.side-bar.mobile {
+    bottom: 0;
+    height: 100vh;
+    width: 280px;
+    max-height: calc(100vh - 88px);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+@media (display-mode: standalone) {
+    .side-bar.mobile {
+        max-height: calc(100vh - 88px);
+        top: 0;
+    }
+}
+
+.side-bar.mobile.active {
+    z-index: 999;
+}
+
+.close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+    transition: all 0.3s ease;
+    width: 35px;
+    display: flex;
+    height: 35px;
+    justify-content: center;
+    align-items: center;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+/* Esconder chatbase no mobile */
+
+@media (max-width: 1024px) {
+    /* Vários seletores para garantir que o chatbase seja ocultado */
+    script[src*="chatbase.co"]+div,
+    [id*="chatbase"],
+    [class*="chatbase"],
+    [id*="Chatbase"],
+    [class*="Chatbase"],
+    div[style*="chatbase"],
+    iframe[src*="chatbase"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+}

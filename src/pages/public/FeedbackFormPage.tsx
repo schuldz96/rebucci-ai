@@ -85,18 +85,25 @@ const FeedbackFormPage = () => {
     (async () => {
       const { data, error } = await supabase
         .from("feedback_tokens")
-        .select("feedback_id, expires_at, feedbacks(customers(name)), profiles(name)")
+        .select("id, customer_id, coach_id, expires_at, used_at, customers(name), profiles(name)")
         .eq("token", token)
-        .eq("used", false)
+        .is("used_at", null)
         .maybeSingle();
 
       if (error || !data) { setPhase("invalid"); return; }
 
       if (new Date(data.expires_at) < new Date()) { setPhase("expired"); return; }
 
+      // Busca o feedback pendente para este token
+      const { data: fb } = await supabase
+        .from("feedbacks")
+        .select("id")
+        .eq("token_id", data.id)
+        .maybeSingle();
+
       setTokenData({
-        feedback_id: data.feedback_id,
-        customer_name: (data.feedbacks as any)?.customers?.name ?? "Aluno",
+        feedback_id: fb?.id ?? "",
+        customer_name: (data.customers as any)?.name ?? "Aluno",
         coach_name: (data.profiles as any)?.name ?? "Coach",
         expires_at: data.expires_at,
       });
@@ -118,7 +125,7 @@ const FeedbackFormPage = () => {
       answered_at: new Date().toISOString(),
     }).eq("id", tokenData.feedback_id);
 
-    await supabase.from("feedback_tokens").update({ used: true }).eq("token", token!);
+    await supabase.from("feedback_tokens").update({ used_at: new Date().toISOString() }).eq("token", token!);
 
     setPhase("done");
   };
