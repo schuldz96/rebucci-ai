@@ -125,3 +125,62 @@ Para publicar alterações:
 - Todo texto de UI em **português**
 - Novos dados mock em `src/data/mockData.ts`
 - Componentes shadcn adicionados via CLI, nunca editados manualmente
+
+---
+
+## Regras Obrigatórias de Qualidade
+
+### Uso de Agentes AIOX — TODOS SEM EXCEÇÃO
+
+Todos os agentes do framework Synkra AIOX devem ser utilizados em seus respectivos domínios. Nenhum agente pode ser pulado ou ignorado:
+
+| Agente | Quando usar |
+|--------|------------|
+| `@sm` | Criação de todas as stories |
+| `@po` | Validação de toda story antes de implementar |
+| `@dev` | Toda implementação de código |
+| `@qa` | Gate de qualidade após cada implementação |
+| `@architect` | Decisões de arquitetura e design técnico |
+| `@data-engineer` | Schema, RLS, policies, migrações |
+| `@ux-design-expert` | Design de interfaces e UX |
+| `@pm` | Epics, requirements, spec pipeline |
+| `@analyst` | Pesquisa, análise, brownfield discovery |
+| `@devops` | Git push, PRs, CI/CD (EXCLUSIVO) |
+| `@aiox-master` | Governança, escalações, override |
+
+**Nunca pular etapas do ciclo:** `@sm draft → @po validate → @dev implement → @qa gate → @devops push`
+
+---
+
+### Agente Planejador — Pensamento Completo
+
+O agente responsável por planejamento (`@architect`, `@pm`, `@po`) **deve pensar por completo**, não apenas o mínimo necessário:
+
+- Mapear **todos** os impactos da mudança (componentes, stores, rotas, tipos)
+- Listar **todos** os arquivos que serão criados ou modificados
+- Identificar **todos** os edge cases e riscos antes de implementar
+- Nunca iniciar implementação com planejamento parcial
+
+---
+
+### UI — Todos os Botões e Elementos Devem Ser Funcionais
+
+**REGRA INVIOLÁVEL:** Nenhum botão, link, aba, menu ou elemento interativo pode existir sem funcionalidade real implementada.
+
+- Proibido usar `onClick={() => {}}` vazio ou `href="#"` sem ação
+- Proibido renderizar botões que não executam nenhuma ação
+- Todo elemento clicável deve: executar uma ação, navegar para uma rota, abrir um modal, ou exibir um toast informativo
+- Se a funcionalidade ainda não existe, exibir toast: `"Funcionalidade em desenvolvimento"`
+- Antes de entregar qualquer feature, verificar **todos** os elementos interativos da tela
+
+---
+
+### Segurança — RLS e Policies em Todas as Tabelas
+
+O agente `@data-engineer` (e `@qa` na revisão) deve garantir:
+
+- **Toda tabela** no banco de dados deve ter RLS (Row Level Security) habilitado
+- **Toda tabela** deve ter ao menos uma policy definida (SELECT, INSERT, UPDATE, DELETE conforme necessário)
+- Nenhuma migração pode ser aprovada sem RLS configurado na tabela correspondente
+- Revisar RLS existente a cada nova tabela adicionada
+- Documentar policies no arquivo de migration com comentários explicando o escopo de acesso
