@@ -127,7 +127,7 @@ const ImportCustomersPage = () => {
           whatsapp: row.whatsapp || null,
           phone: row.phone || null,
           gender: row.gender || null,
-          birthdate: row.birthdate || null,
+          birth_date: row.birthdate || null,
         })
         .select("id")
         .single();

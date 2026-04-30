@@ -148,7 +148,11 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
       .order("end_date", { ascending: true });
 
     if (error) { set({ loading: false, error: error.message }); return; }
-    set({ consultorias: data ?? [], loading: false });
+    const normalized = (data ?? []).map((c: any) => ({
+      ...c,
+      customers: c.customers ? { ...c.customers, birthdate: c.customers.birth_date ?? c.customers.birthdate } : c.customers,
+    }));
+    set({ consultorias: normalized, loading: false });
   },
 
   fetchPlans: async (coachId) => {
@@ -183,7 +187,8 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
       .select("*")
       .eq("id", customerId)
       .maybeSingle();
-    return data;
+    if (!data) return null;
+    return { ...data, birthdate: data.birth_date ?? data.birthdate };
   },
 
   fetchConsultoriaByCustomer: async (customerId, coachId) => {
@@ -238,7 +243,7 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
         phone: payload.phone,
         whatsapp: payload.whatsapp,
         gender: payload.gender,
-        birthdate: payload.birthdate || null,
+        birth_date: payload.birthdate || null,
         height_cm: payload.height_cm || null,
       })
       .select()
