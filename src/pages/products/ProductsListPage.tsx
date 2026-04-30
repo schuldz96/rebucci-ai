@@ -1,37 +1,155 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Filter, ChevronDown, ChevronUp, Search, Plus, Copy, Package, Link } from "lucide-react";
+import {
+  Filter, ChevronDown, ChevronUp, Search, Plus, Copy, Package,
+  Link, Edit2, Trash2, MoreHorizontal, ToggleLeft, ToggleRight,
+  Users, DollarSign,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/authStore";
+import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  duration_days: number;
+  modality: string;
+  active: boolean;
+  auto_schedule_feedbacks: boolean;
+  feedback_frequency_days: number;
+  created_at: string;
+  active_count?: number;
+}
+
+const MODALITY_LABEL: Record<string, string> = {
+  online: "Online",
+  personal: "Personal",
+  consulta: "Consulta",
+};
+
+const MODALITY_COLOR: Record<string, string> = {
+  online: "text-blue-400 bg-blue-400/10",
+  personal: "text-violet-400 bg-violet-400/10",
+  consulta: "text-teal-400 bg-teal-400/10",
+};
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 const ProductsListPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterModality, setFilterModality] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+
+  const load = async () => {
+    if (!user) return;
+    setLoading(true);
+    // Busca planos + contagem de alunos ativos em cada
+    const { data: plansData } = await supabase
+      .from("plans")
+      .select("*")
+      .eq("coach_id", user.id)
+      .order("name");
+
+    if (!plansData) { setLoading(false); return; }
+
+    // Para cada plano, busca a contagem de consultorias ativas
+    const withCounts = await Promise.all(
+      plansData.map(async (p) => {
+        const { count } = await supabase
+          .from("consultorias")
+          .select("id", { count: "exact", head: true })
+          .eq("coach_id", user.id)
+          .eq("plan_id", p.id)
+          .eq("status", "active");
+        return { ...p, active_count: count ?? 0 };
+      })
+    );
+
+    setPlans(withCounts);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [user]);
+
+  const handleToggleActive = async (plan: Plan) => {
+    await supabase.from("plans").update({ active: !plan.active }).eq("id", plan.id);
+    setPlans((prev) => prev.map((p) => p.id === plan.id ? { ...p, active: !p.active } : p));
+    toast({ title: plan.active ? "Produto desativado" : "Produto ativado" });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Excluir este produto? Alunos já vinculados não serão afetados.")) return;
+    await supabase.from("plans").delete().eq("id", id);
+    toast({ title: "Produto excluído" });
+    load();
+    setMenuOpen(null);
+  };
+
+  const handleDuplicate = async (plan: Plan) => {
+    await supabase.from("plans").insert({
+      coach_id: user!.id,
+      name: `${plan.name} (cópia)`,
+      price: plan.price,
+      duration_days: plan.duration_days,
+      modality: plan.modality,
+      active: false,
+      auto_schedule_feedbacks: plan.auto_schedule_feedbacks,
+      feedback_frequency_days: plan.feedback_frequency_days,
+    });
+    toast({ title: "Produto duplicado!" });
+    load();
+    setMenuOpen(null);
+  };
 
   const copyUrl = () => {
-    navigator.clipboard.writeText(window.location.origin + "/produtos");
+    navigator.clipboard.writeText(`${window.location.origin}/produtos`);
     toast({ title: "URL copiada!", description: "Link de produtos copiado para a área de transferência." });
   };
 
+  const filtered = plans.filter((p) => {
+    if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterModality !== "all" && p.modality !== filterModality) return false;
+    if (filterStatus === "active" && !p.active) return false;
+    if (filterStatus === "inactive" && p.active) return false;
+    return true;
+  });
+
+  const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden" onClick={() => setMenuOpen(null)}>
       {/* Header */}
       <div className="shrink-0 px-6 pt-6 pb-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Gerencie os seus produtos</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{plans.length} produtos cadastrados</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2" onClick={copyUrl}>
               <Link className="w-4 h-4" />
-              URL Prime — Todos os planos
+              URL — Todos os planos
             </Button>
-            <Button variant="outline" size="sm" onClick={() => toast({ title: "Simulação de venda", description: "Funcionalidade em desenvolvimento" })}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast({ title: "Simular Venda", description: "Funcionalidade em desenvolvimento" })}
+            >
               Simular Venda
             </Button>
             <Button size="sm" className="gap-2" onClick={() => navigate("/products/new")}>
@@ -49,67 +167,167 @@ const ProductsListPage = () => {
             {filtersOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
 
-          {filtersOpen && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Produto e Status</p>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Buscar por nome..." className="pl-9 w-[320px]" />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Select><SelectTrigger><SelectValue placeholder="Tipo de produto" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os tipos</SelectItem>
-                    <SelectItem value="plan">Plano</SelectItem>
-                    <SelectItem value="event">Evento</SelectItem>
-                    <SelectItem value="link">Link Avulso</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select><SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select><SelectTrigger><SelectValue placeholder="Atendimento" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os serviços</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
-                    <SelectItem value="personal">Personal</SelectItem>
-                    <SelectItem value="consulta">Consulta</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select><SelectTrigger><SelectValue placeholder="Período" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="quarterly">Trimestral</SelectItem>
-                    <SelectItem value="semiannual">Semestral</SelectItem>
-                    <SelectItem value="annual">Anual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm">Filtrar</Button>
-                <Button size="sm" variant="outline">Limpar filtros</Button>
-              </div>
-            </motion.div>
-          )}
+          <AnimatePresence initial={false}>
+            {filtersOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-3 space-y-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input placeholder="Buscar por nome..." className="pl-9 w-[280px]" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    </div>
+                    <Select value={filterModality} onValueChange={setFilterModality}>
+                      <SelectTrigger className="w-[160px]"><SelectValue placeholder="Modalidade" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas</SelectItem>
+                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="personal">Personal</SelectItem>
+                        <SelectItem value="consulta">Consulta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        <SelectItem value="active">Ativo</SelectItem>
+                        <SelectItem value="inactive">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" variant="outline" onClick={() => { setSearch(""); setFilterModality("all"); setFilterStatus("all"); }}>
+                      Limpar
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* Lista de produtos */}
+      {/* Conteúdo */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-          <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">Nenhum produto cadastrado</p>
-          <p className="text-xs mt-1">Crie seu primeiro produto clicando em "Novo produto"</p>
-          <Button size="sm" className="mt-4 gap-2" onClick={() => navigate("/products/new")}>
-            <Plus className="w-4 h-4" />
-            Criar primeiro produto
-          </Button>
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+            <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-medium">{plans.length === 0 ? "Nenhum produto cadastrado" : "Nenhum produto encontrado"}</p>
+            {plans.length === 0 && (
+              <Button size="sm" className="mt-4 gap-2" onClick={() => navigate("/products/new")}>
+                <Plus className="w-4 h-4" />Criar primeiro produto
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((plan) => (
+              <div
+                key={plan.id}
+                className={cn(
+                  "bg-card border rounded-xl p-4 transition-all group relative",
+                  plan.active ? "border-border hover:border-primary/40" : "border-border/50 opacity-70"
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Badge ativo/inativo */}
+                <div className="absolute top-3 left-3">
+                  <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", plan.active ? "text-green-400 bg-green-400/10" : "text-muted-foreground bg-muted")}>
+                    {plan.active ? "Ativo" : "Inativo"}
+                  </span>
+                </div>
+
+                {/* Menu */}
+                <div className="absolute top-3 right-3">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === plan.id ? null : plan.id); }}
+                    className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                  <AnimatePresence>
+                    {menuOpen === plan.id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        className="absolute right-0 top-8 bg-popover border border-border rounded-xl shadow-xl z-20 py-1 min-w-[160px]"
+                      >
+                        <button onClick={() => { navigate(`/products/${plan.id}`); setMenuOpen(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted">
+                          <Edit2 className="w-3.5 h-3.5" />Editar
+                        </button>
+                        <button onClick={() => handleDuplicate(plan)} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted">
+                          <Copy className="w-3.5 h-3.5" />Duplicar
+                        </button>
+                        <button onClick={() => handleToggleActive(plan)} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted">
+                          {plan.active ? <ToggleLeft className="w-3.5 h-3.5" /> : <ToggleRight className="w-3.5 h-3.5" />}
+                          {plan.active ? "Desativar" : "Ativar"}
+                        </button>
+                        <div className="border-t border-border my-1" />
+                        <button onClick={() => handleDelete(plan.id)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10">
+                          <Trash2 className="w-3.5 h-3.5" />Excluir
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Conteúdo */}
+                <div className="mt-5">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                    <Package className="w-5 h-5 text-primary" />
+                  </div>
+
+                  <h3 className="font-semibold text-foreground text-sm pr-2 line-clamp-2">{plan.name}</h3>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {plan.modality && (
+                      <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", MODALITY_COLOR[plan.modality] ?? "bg-muted text-muted-foreground")}>
+                        {MODALITY_LABEL[plan.modality] ?? plan.modality}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      {plan.duration_days}d
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{fmtBRL(plan.price)}</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Users className="w-3 h-3" />
+                      <span>{plan.active_count} ativos</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-7 text-xs"
+                    onClick={() => navigate(`/products/${plan.id}`)}
+                  >
+                    <Edit2 className="w-3 h-3 mr-1" />
+                    Editar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs px-2"
+                    onClick={() => handleToggleActive(plan)}
+                    title={plan.active ? "Desativar" : "Ativar"}
+                  >
+                    {plan.active ? <ToggleRight className="w-3.5 h-3.5 text-green-400" /> : <ToggleLeft className="w-3.5 h-3.5 text-muted-foreground" />}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/authStore";
+import { supabase } from "@/lib/supabase";
 
 const STEPS = [
   { n: 1, label: "Tipo de Produto" },
@@ -17,26 +19,87 @@ const STEPS = [
   { n: 8, label: "Upsell" },
 ];
 
+const DURATION_OPTIONS = [
+  { label: "Mensal (30 dias)", value: 30 },
+  { label: "Bimestral (60 dias)", value: 60 },
+  { label: "Trimestral (90 dias)", value: 90 },
+  { label: "Semestral (180 dias)", value: 180 },
+  { label: "Anual (365 dias)", value: 365 },
+];
+
 const ProductEditorPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(!!id);
+  const isEdit = !!id;
+
+  // Form state
   const [productType, setProductType] = useState<"plan" | "event" | "link" | "">("");
   const [modality, setModality] = useState<"online" | "personal" | "consulta" | "">("");
   const [includes, setIncludes] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const isEdit = !!id;
+  const [price, setPrice] = useState("");
+  const [durationDays, setDurationDays] = useState(90);
+  const [autoFeedbacks, setAutoFeedbacks] = useState(false);
+  const [feedbackFreq, setFeedbackFreq] = useState(14);
+  const [active, setActive] = useState(true);
 
   const toggleInclude = (v: string) =>
     setIncludes((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]);
 
-  const save = () => {
+  // Carregar plano existente ao editar
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      const { data } = await supabase.from("plans").select("*").eq("id", id).maybeSingle();
+      if (data) {
+        setName(data.name ?? "");
+        setDescription(data.description ?? "");
+        setPrice(String(data.price ?? ""));
+        setDurationDays(data.duration_days ?? 90);
+        setModality(data.modality ?? "");
+        setAutoFeedbacks(data.auto_schedule_feedbacks ?? false);
+        setFeedbackFreq(data.feedback_frequency_days ?? 14);
+        setActive(data.active ?? true);
+        setProductType("plan");
+      }
+      setLoading(false);
+    })();
+  }, [id]);
+
+  const save = async () => {
     if (!name.trim()) { toast({ title: "Nome obrigatório", variant: "destructive" }); return; }
-    toast({ title: isEdit ? "Produto atualizado!" : "Produto criado!", description: "As alterações foram salvas." });
+    if (!user) return;
+    setSaving(true);
+    const payload = {
+      coach_id: user.id,
+      name,
+      price: parseFloat(price) || 0,
+      duration_days: durationDays,
+      modality: modality || "online",
+      active,
+      auto_schedule_feedbacks: autoFeedbacks,
+      feedback_frequency_days: feedbackFreq,
+    };
+    const { error } = isEdit
+      ? await supabase.from("plans").update(payload).eq("id", id!)
+      : await supabase.from("plans").insert(payload);
+    setSaving(false);
+    if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); return; }
+    toast({ title: isEdit ? "Produto atualizado!" : "Produto criado!" });
     navigate("/products/list");
   };
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-full text-muted-foreground">
+      <Loader2 className="w-6 h-6 animate-spin" />
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -198,40 +261,33 @@ const ProductEditorPage = () => {
           <div className="max-w-lg space-y-4">
             <h2 className="text-lg font-semibold">Precificação e Pagamento</h2>
             <div>
-              <label className="text-sm font-medium text-foreground">Preço</label>
+              <label className="text-sm font-medium text-foreground">Preço (R$)</label>
               <div className="relative mt-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                <Input className="pl-9" placeholder="0,00" />
+                <Input className="pl-9" placeholder="0,00" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Período</label>
-                <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="30">Mensal (30 dias)</option>
-                  <option value="60">Bimestral (60 dias)</option>
-                  <option value="90">Trimestral (90 dias)</option>
-                  <option value="180">Semestral (180 dias)</option>
-                  <option value="365">Anual (365 dias)</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Parcelamento máximo</label>
-                <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  {[1,2,3,4,5,6,7,8,9,10,11,12].map(n => <option key={n} value={n}>{n}x</option>)}
-                </select>
-              </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Período / Duração</label>
+              <select
+                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={durationDays}
+                onChange={(e) => setDurationDays(parseInt(e.target.value))}
+              >
+                {DURATION_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+                <option value={durationDays} hidden>{durationDays} dias (personalizado)</option>
+              </select>
             </div>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="accent-primary" />
-                <span className="text-sm text-foreground">Cobrança em formato de assinatura recorrente (cartão)</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="accent-primary" />
-                <span className="text-sm text-foreground">Absorver juros do parcelamento</span>
-              </label>
+            <div>
+              <label className="text-sm font-medium text-foreground">Duração personalizada (dias)</label>
+              <Input className="mt-1 w-32" type="number" min={1} value={durationDays} onChange={(e) => setDurationDays(parseInt(e.target.value) || 90)} />
             </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" className="accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} />
+              <span className="text-sm text-foreground">Produto ativo (disponível para novos alunos)</span>
+            </label>
           </div>
         )}
 
@@ -240,19 +296,31 @@ const ProductEditorPage = () => {
             <h2 className="text-lg font-semibold">Configurações Avançadas</h2>
             <div className="space-y-3">
               <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-primary/40 transition-colors">
-                <input type="checkbox" className="mt-0.5 accent-primary" />
-                <div>
-                  <p className="font-medium text-foreground">Solicitar documentos na primeira compra</p>
-                  <p className="text-sm text-muted-foreground">Solicitar automaticamente anamnese, exames e fotos de progresso</p>
-                </div>
-              </label>
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-primary/40 transition-colors">
-                <input type="checkbox" className="mt-0.5 accent-primary" />
+                <input type="checkbox" className="mt-0.5 accent-primary" checked={autoFeedbacks} onChange={(e) => setAutoFeedbacks(e.target.checked)} />
                 <div>
                   <p className="font-medium text-foreground">Habilitar agendamento automático de feedbacks</p>
-                  <p className="text-sm text-muted-foreground">Criar appointments de feedback automaticamente para alunos deste produto</p>
+                  <p className="text-sm text-muted-foreground">Criar feedbacks automaticamente para alunos deste produto</p>
                 </div>
               </label>
+              {autoFeedbacks && (
+                <div className="ml-8">
+                  <label className="text-sm font-medium text-foreground">Frequência (dias)</label>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {[7, 14, 15, 21, 30].map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => setFeedbackFreq(d)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg border text-sm transition-colors",
+                          feedbackFreq === d ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40"
+                        )}
+                      >
+                        {d} dias
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -289,7 +357,9 @@ const ProductEditorPage = () => {
           {step < STEPS.length ? (
             <Button onClick={() => setStep(step + 1)}>Próximo</Button>
           ) : (
-            <Button onClick={save}>Salvar alterações</Button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Salvando...</> : isEdit ? "Salvar alterações" : "Criar produto"}
+            </Button>
           )}
         </div>
       </div>
