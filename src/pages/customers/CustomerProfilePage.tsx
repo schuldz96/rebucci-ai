@@ -4,7 +4,7 @@ import {
   ArrowLeft, TrendingUp, Calendar, ClipboardList, Star, Salad, Dumbbell,
   Activity, FlaskConical, MessageCircle, Camera, StickyNote,
   Check, Eye, Mail, CalendarDays, MessageSquare, Pin, Loader2,
-  Plus, Trash2, Weight, Droplets, Percent, Edit2, X, Link,
+  Plus, Trash2, Weight, Droplets, Percent, Edit2, X, Link, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -928,7 +928,10 @@ const PhotosTab = ({ customerId, coachId }: { customerId: string; coachId: strin
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ photo_url: "", type: "front", taken_at: format(new Date(), "yyyy-MM-dd") });
+  const [type, setType] = useState("front");
+  const [takenAt, setTakenAt] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -939,21 +942,45 @@ const PhotosTab = ({ customerId, coachId }: { customerId: string; coachId: strin
 
   useEffect(() => { load(); }, [customerId]);
 
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
   const handleSave = async () => {
-    if (!form.photo_url) { toast({ title: "URL da foto obrigatória", variant: "destructive" }); return; }
+    if (!file) { toast({ title: "Selecione uma foto", variant: "destructive" }); return; }
     setSaving(true);
+    const ext = file.name.split(".").pop();
+    const path = `${coachId}/${customerId}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from("progress-photos").upload(path, file, { upsert: false });
+    if (uploadError) {
+      toast({ title: "Erro ao enviar foto", description: uploadError.message, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+    const { data: { publicUrl } } = supabase.storage.from("progress-photos").getPublicUrl(path);
     await supabase.from("progress_photos").insert({
       coach_id: coachId, customer_id: customerId,
-      photo_url: form.photo_url, type: form.type, taken_at: form.taken_at,
+      photo_url: publicUrl, type, taken_at: takenAt,
     });
     toast({ title: "Foto adicionada!" });
     setShowForm(false);
-    setForm({ photo_url: "", type: "front", taken_at: format(new Date(), "yyyy-MM-dd") });
+    setFile(null);
+    setPreview(null);
+    setType("front");
+    setTakenAt(format(new Date(), "yyyy-MM-dd"));
     await load();
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, photoUrl: string) => {
+    // Remove from storage if it's a Supabase Storage URL
+    if (photoUrl.includes("progress-photos")) {
+      const pathMatch = photoUrl.match(/progress-photos\/(.+)$/);
+      if (pathMatch) await supabase.storage.from("progress-photos").remove([pathMatch[1]]);
+    }
     await supabase.from("progress_photos").delete().eq("id", id);
     setPhotos((prev) => prev.filter((p) => p.id !== id));
     toast({ title: "Foto removida" });
@@ -973,26 +1000,41 @@ const PhotosTab = ({ customerId, coachId }: { customerId: string; coachId: strin
       {showForm && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div>
-            <label className="text-xs font-medium text-foreground flex items-center gap-1"><Link className="w-3 h-3" /> URL da foto *</label>
-            <Input className="mt-1" placeholder="https://..." value={form.photo_url} onChange={(e) => setForm((p) => ({ ...p, photo_url: e.target.value }))} />
+            <label className="text-xs font-medium text-foreground flex items-center gap-1"><Upload className="w-3 h-3" /> Foto *</label>
+            <label className="mt-1 flex items-center gap-3 cursor-pointer">
+              <div className="flex-1 h-9 rounded-lg border border-input bg-background px-3 flex items-center gap-2 text-sm text-muted-foreground hover:border-primary/50 transition-colors">
+                <Camera className="w-4 h-4 shrink-0" />
+                <span className="truncate">{file ? file.name : "Clique para selecionar imagem..."}</span>
+              </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            </label>
+            {preview && (
+              <div className="mt-2 relative w-24 h-32 rounded-lg overflow-hidden border border-border">
+                <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                <button onClick={() => { setFile(null); setPreview(null); }} className="absolute top-1 right-1 p-0.5 rounded bg-black/60 text-white">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-foreground">Ângulo</label>
               <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"
-                value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
+                value={type} onChange={(e) => setType(e.target.value)}>
                 {PHOTO_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-medium text-foreground">Data</label>
-              <Input type="date" className="mt-1" value={form.taken_at} onChange={(e) => setForm((p) => ({ ...p, taken_at: e.target.value }))} />
+              <Input type="date" className="mt-1" value={takenAt} onChange={(e) => setTakenAt(e.target.value)} />
             </div>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
-            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
+            <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />Enviando...</> : "Salvar"}</Button>
+            <Button size="sm" variant="outline" onClick={() => { setShowForm(false); setFile(null); setPreview(null); }}>Cancelar</Button>
           </div>
+          <p className="text-[10px] text-muted-foreground">Requer bucket <code>progress-photos</code> público no Supabase Storage.</p>
         </div>
       )}
 
@@ -1009,7 +1051,7 @@ const PhotosTab = ({ customerId, coachId }: { customerId: string; coachId: strin
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
                 <div className="w-full p-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between">
                   <span className="text-[10px] text-white font-medium">{PHOTO_TYPES.find((t) => t.value === photo.type)?.label}</span>
-                  <button onClick={() => handleDelete(photo.id)} className="p-1 rounded bg-destructive/80 text-white hover:bg-destructive transition-colors">
+                  <button onClick={() => handleDelete(photo.id, photo.photo_url)} className="p-1 rounded bg-destructive/80 text-white hover:bg-destructive transition-colors">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
