@@ -2,186 +2,388 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, UserCheck, UserX, CalendarClock, AlertTriangle,
-  Loader2,
+  Users, UserCheck, CalendarClock, AlertTriangle, MessageCircleWarning,
+  Loader2, TrendingUp, DollarSign, Clock, CheckCircle2, ArrowRight,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
+import { format, parseISO, differenceInDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-interface Stats {
-  total: number;
-  active: number;
-  inactive: number;
-  expiring30: number;
-  expired30: number;
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+interface DashStats {
+  totalAtivos: number;
+  vencendo7: number;
+  vencendo30: number;
+  feedbacksPendentes: number;
+  feedbacksRespondidos: number;
+  receitaMes: number;
+  aReceber: number;
 }
 
-interface FeedbackItem {
+interface RecentFeedback {
   id: string;
-  name: string;
-  phone: string;
-  nextFeedback: string;
+  customerName: string;
+  status: string;
+  answeredAt: string | null;
+  scheduledFor: string | null;
+  hasPhotos: boolean;
+  customerId: string;
+}
+
+interface ExpiringConsultoria {
+  id: string;
+  customerId: string;
+  customerName: string;
+  endDate: string;
+  planName: string | null;
   daysLeft: number;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const STATUS_COLOR: Record<string, string> = {
+  pending: "text-blue-400 bg-blue-400/10",
+  partial: "text-yellow-400 bg-yellow-400/10",
+  answered: "text-green-400 bg-green-400/10",
+  seen: "text-muted-foreground bg-muted",
+  expired: "text-destructive bg-destructive/10",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pendente",
+  partial: "Parcial",
+  answered: "Respondido",
+  seen: "Visto",
+  expired: "Expirado",
+};
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const { user } = useAuthStore();
+  const [stats, setStats] = useState<DashStats | null>(null);
+  const [recentFeedbacks, setRecentFeedbacks] = useState<RecentFeedback[]>([]);
+  const [expiring, setExpiring] = useState<ExpiringConsultoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fbPage, setFbPage] = useState(0);
-  const FB_PAGE_SIZE = 10;
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const today = new Date().toISOString().slice(0, 10);
-      const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-      const ago30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    if (!user) return;
+    load(user.id);
+  }, [user]);
 
-      // Busca stats em paralelo
-      const [totalRes, activeRes, inactiveRes, expiringRes, expiredRes, feedbackRes] = await Promise.all([
-        supabase.from("contacts").select("id", { count: "exact", head: true }),
-        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "inactive"),
-        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "active").gte("end_date", today).lte("end_date", in30),
-        supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "inactive").gte("end_date", ago30).lte("end_date", today),
-        supabase.from("contacts").select("id, name, phone, next_feedback").not("next_feedback", "is", null).gte("next_feedback", today).order("next_feedback", { ascending: true }).limit(200),
-      ]);
+  const load = async (coachId: string) => {
+    setLoading(true);
+    const today = format(new Date(), "yyyy-MM-dd");
+    const in7 = format(new Date(Date.now() + 7 * 86400000), "yyyy-MM-dd");
+    const in30 = format(new Date(Date.now() + 30 * 86400000), "yyyy-MM-dd");
+    const firstOfMonth = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
 
-      setStats({
-        total: totalRes.count ?? 0,
-        active: activeRes.count ?? 0,
-        inactive: inactiveRes.count ?? 0,
-        expiring30: expiringRes.count ?? 0,
-        expired30: expiredRes.count ?? 0,
-      });
+    const [
+      activesRes,
+      exp7Res,
+      exp30Res,
+      feedbacksRes,
+      revenueRes,
+      pendingRevenueRes,
+      recentFbRes,
+      expiringRes,
+    ] = await Promise.all([
+      // Consultorias ativas
+      supabase.from("consultorias").select("id", { count: "exact", head: true })
+        .eq("coach_id", coachId).eq("status", "active"),
 
-      if (feedbackRes.data) {
-        setFeedbacks(feedbackRes.data.map((r) => {
-          const diff = Math.ceil((new Date(r.next_feedback as string).getTime() - Date.now()) / 86400000);
-          return {
-            id: r.id as string,
-            name: r.name as string,
-            phone: r.phone as string,
-            nextFeedback: r.next_feedback as string,
-            daysLeft: diff,
-          };
-        }));
-      }
+      // Vencendo em 7 dias
+      supabase.from("consultorias").select("id", { count: "exact", head: true })
+        .eq("coach_id", coachId).eq("status", "active")
+        .gte("end_date", today).lte("end_date", in7),
 
-      setLoading(false);
-    };
-    load();
-  }, []);
+      // Vencendo em 30 dias
+      supabase.from("consultorias").select("id", { count: "exact", head: true })
+        .eq("coach_id", coachId).eq("status", "active")
+        .gte("end_date", today).lte("end_date", in30),
 
-  const statCards = stats ? [
-    { label: "Total Alunos", value: stats.total.toLocaleString(), icon: Users, color: "text-primary", bgColor: "bg-primary/10" },
-    { label: "Alunos Ativos", value: stats.active.toLocaleString(), icon: UserCheck, color: "text-success", bgColor: "bg-success/10" },
-    { label: "Alunos Inativos", value: stats.inactive.toLocaleString(), icon: UserX, color: "text-muted-foreground", bgColor: "bg-muted" },
-    { label: "Vencendo próx. 30 dias", value: stats.expiring30.toLocaleString(), icon: CalendarClock, color: "text-warning", bgColor: "bg-warning/10" },
-    { label: "Vencidos últimos 30 dias", value: stats.expired30.toLocaleString(), icon: AlertTriangle, color: "text-destructive", bgColor: "bg-destructive/10" },
-  ] : [];
+      // Feedbacks pendentes/respondidos
+      supabase.from("feedbacks").select("status", { count: "exact" })
+        .eq("coach_id", coachId).in("status", ["pending", "partial", "answered"]),
+
+      // Receita do mês
+      supabase.from("transactions").select("amount")
+        .eq("coach_id", coachId).eq("type", "income")
+        .gte("date", firstOfMonth),
+
+      // A receber (consultorias ativas com pagamento pendente)
+      supabase.from("consultorias").select("value")
+        .eq("coach_id", coachId).eq("status", "active").eq("payment_status", "pending"),
+
+      // Feedbacks recentes (últimos 10)
+      supabase.from("feedbacks")
+        .select("id, status, answered_at, scheduled_for, has_photos, customer_id, customers(name)")
+        .eq("coach_id", coachId)
+        .in("status", ["pending", "partial", "answered"])
+        .order("created_at", { ascending: false })
+        .limit(8),
+
+      // Consultorias vencendo em breve
+      supabase.from("consultorias")
+        .select("id, customer_id, end_date, customers(name), plans(name)")
+        .eq("coach_id", coachId).eq("status", "active")
+        .gte("end_date", today).lte("end_date", in30)
+        .order("end_date", { ascending: true })
+        .limit(5),
+    ]);
+
+    // Feedbacks por status
+    const allFb = feedbacksRes.data ?? [];
+    const pending = allFb.filter((f) => f.status === "pending" || f.status === "partial").length;
+    const answered = allFb.filter((f) => f.status === "answered").length;
+
+    // Receita
+    const receita = (revenueRes.data ?? []).reduce((sum, t) => sum + (t.amount ?? 0), 0);
+    const aReceber = (pendingRevenueRes.data ?? []).reduce((sum, c) => sum + (c.value ?? 0), 0);
+
+    setStats({
+      totalAtivos: activesRes.count ?? 0,
+      vencendo7: exp7Res.count ?? 0,
+      vencendo30: exp30Res.count ?? 0,
+      feedbacksPendentes: pending,
+      feedbacksRespondidos: answered,
+      receitaMes: receita,
+      aReceber,
+    });
+
+    setRecentFeedbacks(
+      (recentFbRes.data ?? []).map((f) => ({
+        id: f.id,
+        customerName: (f.customers as any)?.name ?? "—",
+        status: f.status,
+        answeredAt: f.answered_at,
+        scheduledFor: f.scheduled_for,
+        hasPhotos: f.has_photos,
+        customerId: f.customer_id,
+      }))
+    );
+
+    setExpiring(
+      (expiringRes.data ?? []).map((c) => ({
+        id: c.id,
+        customerId: c.customer_id,
+        customerName: (c.customers as any)?.name ?? "—",
+        endDate: c.end_date,
+        planName: (c.plans as any)?.name ?? null,
+        daysLeft: differenceInDays(parseISO(c.end_date), new Date()),
+      }))
+    );
+
+    setLoading(false);
+  };
+
+  const fmtBRL = (v: number) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const statCards = stats
+    ? [
+        {
+          label: "Alunos Ativos",
+          value: stats.totalAtivos.toString(),
+          icon: Users,
+          color: "text-primary",
+          bg: "bg-primary/10",
+          onClick: () => navigate("/customers/actives"),
+        },
+        {
+          label: "Vencendo em 7 dias",
+          value: stats.vencendo7.toString(),
+          icon: CalendarClock,
+          color: "text-orange-400",
+          bg: "bg-orange-400/10",
+          onClick: () => navigate("/customers/actives"),
+        },
+        {
+          label: "Vencendo em 30 dias",
+          value: stats.vencendo30.toString(),
+          icon: AlertTriangle,
+          color: "text-yellow-400",
+          bg: "bg-yellow-400/10",
+          onClick: () => navigate("/customers/actives"),
+        },
+        {
+          label: "Feedbacks Pendentes",
+          value: stats.feedbacksPendentes.toString(),
+          icon: MessageCircleWarning,
+          color: "text-blue-400",
+          bg: "bg-blue-400/10",
+          onClick: () => navigate("/customers/feedbacks"),
+        },
+        {
+          label: "Feedbacks Respondidos",
+          value: stats.feedbacksRespondidos.toString(),
+          icon: CheckCircle2,
+          color: "text-green-400",
+          bg: "bg-green-400/10",
+          onClick: () => navigate("/customers/feedbacks"),
+        },
+        {
+          label: "Receita do Mês",
+          value: fmtBRL(stats.receitaMes),
+          icon: TrendingUp,
+          color: "text-emerald-400",
+          bg: "bg-emerald-400/10",
+          onClick: () => navigate("/finance"),
+        },
+        {
+          label: "A Receber",
+          value: fmtBRL(stats.aReceber),
+          icon: DollarSign,
+          color: "text-violet-400",
+          bg: "bg-violet-400/10",
+          onClick: () => navigate("/finance"),
+        },
+      ]
+    : [];
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-auto p-6 lg:p-8 space-y-8 max-w-7xl">
+      <div className="flex-1 overflow-auto p-6 lg:p-8 space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Visão geral dos alunos</p>
+          <p className="text-sm text-muted-foreground mt-1">Visão geral do seu coaching</p>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="w-7 h-7 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <>
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {statCards.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 12 }}
+            {/* ── Stat cards ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+              {statCards.map((s, i) => (
+                <motion.button
+                  key={s.label}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  className="surface-elevated p-5"
+                  transition={{ delay: i * 0.05 }}
+                  onClick={s.onClick}
+                  className="surface-elevated p-4 text-left hover:border-primary/40 transition-colors group"
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", stat.bgColor)}>
-                      <stat.icon className={cn("w-4.5 h-4.5", stat.color)} />
-                    </div>
+                  <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center mb-3", s.bg)}>
+                    <s.icon className={cn("w-4 h-4", s.color)} />
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-                </motion.div>
+                  <p className="text-xl font-bold text-foreground">{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{s.label}</p>
+                </motion.button>
               ))}
             </div>
 
-            {/* Próximos Feedbacks */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="surface-elevated p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Próximos Feedbacks</h2>
-                {feedbacks.length > 0 && <span className="text-xs text-muted-foreground">{feedbacks.length} agendados</span>}
-              </div>
-              {feedbacks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum feedback agendado nos próximos dias.</p>
-              ) : (
-                <>
-                  <div className="overflow-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Aluno</th>
-                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Telefone</th>
-                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Data</th>
-                          <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Em</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {feedbacks.slice(fbPage * FB_PAGE_SIZE, (fbPage + 1) * FB_PAGE_SIZE).map((fb) => (
-                          <tr
-                            key={fb.id}
-                            onClick={() => navigate(`/contacts/${fb.id}`)}
-                            className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
-                          >
-                            <td className="px-4 py-2.5 text-sm font-medium text-foreground">{fb.name}</td>
-                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.phone}</td>
-                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{fb.nextFeedback}</td>
-                            <td className="px-4 py-2.5">
-                              <span className={cn("text-xs px-2 py-0.5 rounded-lg font-medium",
-                                fb.daysLeft <= 3 ? "bg-destructive/20 text-destructive" :
-                                fb.daysLeft <= 7 ? "bg-warning/20 text-warning" :
-                                "bg-muted text-muted-foreground"
-                              )}>
-                                {fb.daysLeft === 0 ? "Hoje" : fb.daysLeft === 1 ? "Amanhã" : `${fb.daysLeft} dias`}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* ── Feedbacks recentes ── */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="surface-elevated p-5"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-foreground flex items-center gap-2">
+                    <MessageCircleWarning className="w-4 h-4 text-primary" />
+                    Feedbacks Recentes
+                  </h2>
+                  <button
+                    onClick={() => navigate("/customers/feedbacks")}
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                  >
+                    Ver todos <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {recentFeedbacks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">Nenhum feedback pendente.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {recentFeedbacks.map((fb) => (
+                      <button
+                        key={fb.id}
+                        onClick={() => navigate(`/customers/${fb.customerId}`)}
+                        className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+                          {fb.customerName.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{fb.customerName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {fb.answeredAt
+                              ? `Respondido ${format(parseISO(fb.answeredAt), "dd/MM HH:mm", { locale: ptBR })}`
+                              : fb.scheduledFor
+                              ? `Previsto ${format(parseISO(fb.scheduledFor), "dd/MM", { locale: ptBR })}`
+                              : "Aguardando"}
+                          </p>
+                        </div>
+                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", STATUS_COLOR[fb.status])}>
+                          {STATUS_LABEL[fb.status]}
+                        </span>
+                      </button>
+                    ))}
                   </div>
-                  {feedbacks.length > FB_PAGE_SIZE && (
-                    <div className="flex items-center justify-between pt-3 border-t border-border mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {fbPage * FB_PAGE_SIZE + 1}–{Math.min((fbPage + 1) * FB_PAGE_SIZE, feedbacks.length)} de {feedbacks.length}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setFbPage((p) => Math.max(0, p - 1))} disabled={fbPage === 0} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">‹</button>
-                        <span className="text-xs text-foreground px-2">{fbPage + 1} / {Math.ceil(feedbacks.length / FB_PAGE_SIZE)}</span>
-                        <button onClick={() => setFbPage((p) => Math.min(Math.ceil(feedbacks.length / FB_PAGE_SIZE) - 1, p + 1))} disabled={(fbPage + 1) * FB_PAGE_SIZE >= feedbacks.length} className="px-2 py-1 text-xs rounded-lg hover:bg-secondary disabled:opacity-30 text-muted-foreground">›</button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </motion.div>
+                )}
+              </motion.div>
+
+              {/* ── Vencendo em breve ── */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="surface-elevated p-5"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-foreground flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-400" />
+                    Vencendo em Breve
+                  </h2>
+                  <button
+                    onClick={() => navigate("/customers/actives")}
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                  >
+                    Ver todos <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {expiring.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">Nenhum aluno vencendo nos próximos 30 dias.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {expiring.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => navigate(`/customers/${c.customerId}`)}
+                        className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-orange-400/15 flex items-center justify-center text-orange-400 text-xs font-bold shrink-0">
+                          {c.customerName.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{c.customerName}</p>
+                          <p className="text-xs text-muted-foreground">{c.planName ?? "Sem plano"}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs font-medium text-foreground">{format(parseISO(c.endDate), "dd/MM/yyyy")}</p>
+                          <span className={cn(
+                            "text-[10px] font-semibold px-1.5 py-0.5 rounded-full",
+                            c.daysLeft <= 7 ? "text-orange-400 bg-orange-400/10" : "text-yellow-400 bg-yellow-400/10"
+                          )}>
+                            {c.daysLeft === 0 ? "Hoje" : c.daysLeft === 1 ? "Amanhã" : `${c.daysLeft}d`}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </div>
           </>
         )}
       </div>
