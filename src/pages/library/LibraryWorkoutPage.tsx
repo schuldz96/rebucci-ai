@@ -146,6 +146,35 @@ const ExerciseModal = ({ coachId, exercise, onClose, onSaved }: { coachId: strin
 
 // ─── Seção Exercícios ─────────────────────────────────────────────────────────
 
+const ExerciseVideoCard = ({ thumb, embed, name }: { thumb: string | null; embed: string; name: string }) => {
+  const [playing, setPlaying] = useState(false);
+  return (
+    <div className="relative aspect-video bg-black">
+      {playing ? (
+        <iframe
+          src={embed}
+          className="w-full h-full"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          title={name}
+        />
+      ) : (
+        <>
+          {thumb && <img src={thumb} alt={name} className="w-full h-full object-cover opacity-90" />}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <button
+              onClick={() => setPlaying(true)}
+              className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/90 hover:scale-110 transition-all"
+            >
+              <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const ExercisesSection = ({ coachId }: { coachId: string }) => {
   const { toast } = useToast();
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -182,6 +211,12 @@ const ExercisesSection = ({ coachId }: { coachId: string }) => {
     return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
   };
 
+  const getYoutubeEmbed = (url?: string) => {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&\s]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : null;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
@@ -211,17 +246,11 @@ const ExercisesSection = ({ coachId }: { coachId: string }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(ex => {
             const thumb = getYoutubeThumb(ex.video_url);
+            const embed = getYoutubeEmbed(ex.video_url);
             return (
               <div key={ex.id} className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-colors group">
-                {thumb ? (
-                  <div className="relative aspect-video bg-black">
-                    <img src={thumb} alt={ex.name} className="w-full h-full object-cover opacity-90" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <a href={ex.video_url} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors">
-                        <Play className="w-5 h-5 text-white fill-white" />
-                      </a>
-                    </div>
-                  </div>
+                {embed ? (
+                  <ExerciseVideoCard thumb={thumb} embed={embed} name={ex.name} />
                 ) : (
                   <div className="aspect-video bg-muted/30 flex items-center justify-center">
                     <Video className="w-8 h-8 text-muted-foreground/30" />
