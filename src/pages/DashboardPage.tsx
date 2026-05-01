@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Users, UserCheck, CalendarClock, AlertTriangle, MessageCircleWarning,
-  Loader2, TrendingUp, DollarSign, Clock, CheckCircle2, ArrowRight, Search, X,
+  Loader2, TrendingUp, DollarSign, Clock, CheckCircle2, ArrowRight, Search, X, Calendar,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
@@ -42,6 +42,16 @@ interface ExpiringConsultoria {
   daysLeft: number;
 }
 
+interface TodayAppointment {
+  id: string;
+  title: string;
+  time: string;
+  type: string;
+  status: string;
+  customerId: string | null;
+  customerName: string | null;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = {
@@ -68,6 +78,7 @@ const DashboardPage = () => {
   const [stats, setStats] = useState<DashStats | null>(null);
   const [recentFeedbacks, setRecentFeedbacks] = useState<RecentFeedback[]>([]);
   const [expiring, setExpiring] = useState<ExpiringConsultoria[]>([]);
+  const [todayAppointments, setTodayAppointments] = useState<TodayAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<{ id: string; name: string; email: string | null }[]>([]);
@@ -95,6 +106,7 @@ const DashboardPage = () => {
       pendingRevenueRes,
       recentFbRes,
       expiringRes,
+      todayApptRes,
     ] = await Promise.all([
       // Consultorias ativas
       supabase.from("consultorias").select("id", { count: "exact", head: true })
@@ -138,6 +150,15 @@ const DashboardPage = () => {
         .gte("end_date", today).lte("end_date", in30)
         .order("end_date", { ascending: true })
         .limit(5),
+
+      // Agendamentos de hoje
+      supabase.from("appointments")
+        .select("id, title, scheduled_at, type, status, customer_id, customers(name)")
+        .eq("coach_id", coachId)
+        .gte("scheduled_at", `${today}T00:00:00`)
+        .lte("scheduled_at", `${today}T23:59:59`)
+        .neq("status", "cancelled")
+        .order("scheduled_at", { ascending: true }),
     ]);
 
     // Feedbacks por status
@@ -179,6 +200,18 @@ const DashboardPage = () => {
         endDate: c.end_date,
         planName: (c.plans as any)?.name ?? null,
         daysLeft: differenceInDays(parseISO(c.end_date), new Date()),
+      }))
+    );
+
+    setTodayAppointments(
+      (todayApptRes.data ?? []).map((a) => ({
+        id: a.id,
+        title: a.title,
+        time: a.scheduled_at ? format(parseISO(a.scheduled_at), "HH:mm") : "",
+        type: a.type ?? "other",
+        status: a.status,
+        customerId: a.customer_id ?? null,
+        customerName: (a.customers as any)?.name ?? null,
       }))
     );
 
@@ -357,6 +390,70 @@ const DashboardPage = () => {
                 </motion.button>
               ))}
             </div>
+
+            {/* ── Agendamentos de hoje ── */}
+            {todayAppointments.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="surface-elevated p-5"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Agendamentos de Hoje
+                    <span className="text-xs font-normal px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">{todayAppointments.length}</span>
+                  </h2>
+                  <button
+                    onClick={() => navigate("/agenda")}
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                  >
+                    Ver agenda <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {todayAppointments.map((a) => {
+                    const typeColor: Record<string, string> = {
+                      feedback: "bg-blue-500/15 text-blue-400",
+                      consultation: "bg-violet-500/15 text-violet-400",
+                      checkin: "bg-green-500/15 text-green-400",
+                      return: "bg-green-500/15 text-green-400",
+                      birthday: "bg-pink-500/15 text-pink-400",
+                      renewal: "bg-orange-500/15 text-orange-400",
+                      other: "bg-muted text-muted-foreground",
+                    };
+                    const typeLabel: Record<string, string> = {
+                      feedback: "Feedback", consultation: "Consulta", checkin: "Check-in",
+                      return: "Retorno", birthday: "Aniversário", renewal: "Renovação", other: "Outro",
+                    };
+                    const done = a.status === "completed" || a.status === "done";
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => a.customerId && navigate(`/customers/${a.customerId}`)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-2.5 rounded-xl border transition-colors text-left",
+                          done ? "border-border opacity-50" : "border-border hover:border-primary/40 hover:bg-muted/30"
+                        )}
+                      >
+                        <div className="shrink-0 text-center w-10">
+                          <p className="text-sm font-bold text-foreground">{a.time}</p>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn("text-sm font-medium text-foreground truncate", done && "line-through")}>{a.title}</p>
+                          {a.customerName && <p className="text-xs text-muted-foreground truncate">{a.customerName}</p>}
+                        </div>
+                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", typeColor[a.type] ?? typeColor.other)}>
+                          {typeLabel[a.type] ?? "Outro"}
+                        </span>
+                        {done && <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* ── Feedbacks recentes ── */}

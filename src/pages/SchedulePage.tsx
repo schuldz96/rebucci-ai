@@ -25,7 +25,7 @@ interface Appointment {
   title: string;
   date: string;
   time?: string;
-  status: "pending" | "done" | "cancelled";
+  status: "scheduled" | "completed" | "cancelled" | "pending" | "done";
   customer_id?: string;
   customer_name?: string;
   type: "feedback" | "consultation" | "return" | "other";
@@ -78,13 +78,13 @@ const NewAppointmentModal = ({
   const handleSave = async () => {
     if (!form.title.trim()) { toast({ title: "Título é obrigatório", variant: "destructive" }); return; }
     setSaving(true);
+    const scheduled_at = `${form.date}T${form.time || "00:00"}`;
     const { error } = await supabase.from("appointments").insert({
       coach_id: coachId,
       title: form.title,
-      date: form.date,
-      time: form.time || null,
+      scheduled_at,
       type: form.type,
-      status: "pending",
+      status: "scheduled",
       notes: form.notes || null,
     });
     setSaving(false);
@@ -182,29 +182,31 @@ const SchedulePage = () => {
   const fetchAppointments = async () => {
     if (!user) return;
     setLoading(true);
-    const monthStart = format(startOfMonth(currentDate), "yyyy-MM-dd");
-    const monthEnd = format(endOfMonth(currentDate), "yyyy-MM-dd");
+    const monthStart = format(startOfMonth(currentDate), "yyyy-MM-dd'T'00:00:00");
+    const monthEnd = format(endOfMonth(currentDate), "yyyy-MM-dd'T'23:59:59");
 
     const { data } = await supabase
       .from("appointments")
       .select("*, customers(name)")
       .eq("coach_id", user.id)
-      .gte("date", monthStart)
-      .lte("date", monthEnd)
-      .order("date", { ascending: true })
-      .order("time", { ascending: true });
+      .gte("scheduled_at", monthStart)
+      .lte("scheduled_at", monthEnd)
+      .order("scheduled_at", { ascending: true });
 
     setAppointments(
-      (data ?? []).map((a) => ({
-        id: a.id,
-        title: a.title,
-        date: a.date,
-        time: a.time,
-        status: a.status,
-        type: a.type ?? "other",
-        customer_id: a.customer_id,
-        customer_name: (a.customers as any)?.name,
-      }))
+      (data ?? []).map((a) => {
+        const dt = a.scheduled_at ? parseISO(a.scheduled_at) : null;
+        return {
+          id: a.id,
+          title: a.title,
+          date: dt ? format(dt, "yyyy-MM-dd") : (a.date ?? ""),
+          time: dt ? format(dt, "HH:mm") : (a.time ?? ""),
+          status: a.status,
+          type: a.type ?? "other",
+          customer_id: a.customer_id,
+          customer_name: (a.customers as any)?.name,
+        };
+      })
     );
     setLoading(false);
   };
@@ -224,7 +226,7 @@ const SchedulePage = () => {
   })();
 
   const toggleDone = async (appt: Appointment) => {
-    const newStatus = appt.status === "done" ? "pending" : "done";
+    const newStatus = appt.status === "completed" ? "scheduled" : "completed";
     await supabase.from("appointments").update({ status: newStatus }).eq("id", appt.id);
     setAppointments((prev) => prev.map((a) => a.id === appt.id ? { ...a, status: newStatus } : a));
   };
@@ -331,7 +333,7 @@ const SchedulePage = () => {
                             className={cn(
                               "text-[10px] px-1.5 py-0.5 rounded font-medium text-white truncate",
                               TYPE_COLOR[a.type],
-                              a.status === "done" && "opacity-50 line-through"
+                              (a.status === "done" || a.status === "completed") && "opacity-50 line-through"
                             )}
                           >
                             {a.time ? `${a.time.slice(0, 5)} ` : ""}{a.title}
@@ -391,18 +393,18 @@ const SchedulePage = () => {
                   key={a.id}
                   className={cn(
                     "rounded-xl border p-3 space-y-1.5 transition-colors",
-                    a.status === "done" ? "border-border opacity-60" : "border-border hover:border-primary/30"
+                    (a.status === "done" || a.status === "completed") ? "border-border opacity-60" : "border-border hover:border-primary/30"
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className={cn("w-2 h-2 rounded-full shrink-0", TYPE_COLOR[a.type])} />
-                      <p className={cn("text-sm font-medium text-foreground truncate", a.status === "done" && "line-through")}>
+                      <p className={cn("text-sm font-medium text-foreground truncate", (a.status === "done" || a.status === "completed") && "line-through")}>
                         {a.title}
                       </p>
                     </div>
                     <button onClick={() => toggleDone(a)} className="shrink-0">
-                      {a.status === "done"
+                      {(a.status === "done" || a.status === "completed")
                         ? <CheckCircle2 className="w-4 h-4 text-green-400" />
                         : <Circle className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
                       }
