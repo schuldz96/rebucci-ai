@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useCustomerStore, Customer, Consultoria, CustomerNote, WeightLog, Feedback } from "@/store/customerStore";
@@ -181,6 +183,9 @@ const SchedulingTab = ({ customerId, coachId }: { customerId: string; coachId: s
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ type: "checkin", title: "", scheduled_at: "", notes: "" });
+  const [pickerDate, setPickerDate] = useState<Date | undefined>(undefined);
+  const [pickerTime, setPickerTime] = useState("09:00");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -203,6 +208,8 @@ const SchedulingTab = ({ customerId, coachId }: { customerId: string; coachId: s
     toast({ title: "Agendamento criado!" });
     setShowForm(false);
     setForm({ type: "checkin", title: "", scheduled_at: "", notes: "" });
+    setPickerDate(undefined);
+    setPickerTime("09:00");
     await load();
     setSaving(false);
   };
@@ -241,7 +248,55 @@ const SchedulingTab = ({ customerId, coachId }: { customerId: string; coachId: s
             </div>
             <div>
               <label className="text-xs font-medium text-foreground">Data e hora</label>
-              <Input type="datetime-local" className="mt-1" value={form.scheduled_at} onChange={(e) => setForm((p) => ({ ...p, scheduled_at: e.target.value }))} />
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button className={cn(
+                    "mt-1 w-full flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-sm text-left transition-colors hover:border-primary/60",
+                    !pickerDate && "text-muted-foreground"
+                  )}>
+                    <CalendarDays className="w-4 h-4 shrink-0" />
+                    {pickerDate
+                      ? `${format(pickerDate, "dd/MM/yyyy", { locale: ptBR })} às ${pickerTime}`
+                      : "Selecionar data e hora"}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={pickerDate}
+                    onSelect={(d) => {
+                      setPickerDate(d);
+                      if (d) {
+                        const [h, m] = pickerTime.split(":");
+                        const dt = new Date(d);
+                        dt.setHours(parseInt(h), parseInt(m));
+                        setForm((p) => ({ ...p, scheduled_at: format(dt, "yyyy-MM-dd'T'HH:mm") }));
+                      }
+                    }}
+                    locale={ptBR}
+                    initialFocus
+                  />
+                  <div className="border-t border-border px-4 py-3 flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Hora:</span>
+                    <Input
+                      type="time"
+                      value={pickerTime}
+                      className="w-28 h-8 text-sm"
+                      onChange={(e) => {
+                        setPickerTime(e.target.value);
+                        if (pickerDate) {
+                          const [h, m] = e.target.value.split(":");
+                          const dt = new Date(pickerDate);
+                          dt.setHours(parseInt(h), parseInt(m));
+                          setForm((p) => ({ ...p, scheduled_at: format(dt, "yyyy-MM-dd'T'HH:mm") }));
+                        }
+                      }}
+                    />
+                    <Button size="sm" className="ml-auto" onClick={() => setPickerOpen(false)}>OK</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <div>
