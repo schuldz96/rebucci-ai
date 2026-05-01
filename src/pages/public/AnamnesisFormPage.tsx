@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { Loader2, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -18,7 +17,7 @@ interface Question {
   sort_order: number;
 }
 
-// ─── Categorias padrão (espelhadas das configurações) ─────────────────────────
+// ─── Categorias padrão ────────────────────────────────────────────────────────
 
 const CATEGORY_QUESTIONS: Record<string, { label: string; type: string; options?: string[] }[]> = {
   habVida: [
@@ -57,19 +56,20 @@ const CATEGORY_QUESTIONS: Record<string, { label: string; type: string; options?
   ],
 };
 
-// ─── Componentes de resposta ──────────────────────────────────────────────────
+// ─── Campos de resposta ───────────────────────────────────────────────────────
 
 const ScaleInput = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
   <div className="flex gap-2 flex-wrap">
     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
       <button
         key={n}
+        type="button"
         onClick={() => onChange(String(n))}
         className={cn(
           "w-10 h-10 rounded-xl text-sm font-semibold border-2 transition-all",
           value === String(n)
-            ? "bg-primary text-primary-foreground border-primary"
-            : "bg-background border-border text-foreground hover:border-primary/50"
+            ? "bg-violet-600 text-white border-violet-600"
+            : "bg-white border-gray-200 text-gray-700 hover:border-violet-400"
         )}
       >
         {n}
@@ -83,12 +83,13 @@ const YesNoInput = ({ value, onChange }: { value: string; onChange: (v: string) 
     {["Sim", "Não"].map((opt) => (
       <button
         key={opt}
+        type="button"
         onClick={() => onChange(opt)}
         className={cn(
-          "flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-all",
+          "flex-1 max-w-[140px] py-2.5 rounded-xl text-sm font-semibold border-2 transition-all",
           value === opt
-            ? "bg-primary text-primary-foreground border-primary"
-            : "bg-background border-border text-foreground hover:border-primary/50"
+            ? "bg-violet-600 text-white border-violet-600"
+            : "bg-white border-gray-200 text-gray-700 hover:border-violet-400"
         )}
       >
         {opt}
@@ -98,21 +99,72 @@ const YesNoInput = ({ value, onChange }: { value: string; onChange: (v: string) 
 );
 
 const SelectInput = ({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) => (
-  <div className="space-y-2">
+  <div className="flex flex-wrap gap-2">
     {options.map((opt) => (
       <button
         key={opt}
+        type="button"
         onClick={() => onChange(opt)}
         className={cn(
-          "w-full text-left px-4 py-3 rounded-xl text-sm border-2 transition-all",
+          "px-4 py-2 rounded-xl text-sm border-2 transition-all",
           value === opt
-            ? "bg-primary text-primary-foreground border-primary"
-            : "bg-background border-border text-foreground hover:border-primary/50"
+            ? "bg-violet-600 text-white border-violet-600"
+            : "bg-white border-gray-200 text-gray-700 hover:border-violet-400"
         )}
       >
         {opt}
       </button>
     ))}
+  </div>
+);
+
+// ─── Bloco de pergunta ────────────────────────────────────────────────────────
+
+const QuestionBlock = ({
+  index,
+  question,
+  value,
+  onChange,
+  error,
+}: {
+  index: number;
+  question: Question;
+  value: string;
+  onChange: (v: string) => void;
+  error: boolean;
+}) => (
+  <div className={cn("bg-white rounded-2xl border-2 p-5 transition-all", error ? "border-red-300" : "border-gray-100")}>
+    <p className="text-sm font-semibold text-gray-900 mb-3">
+      <span className="text-violet-500 mr-1.5">{index + 1}.</span>
+      {question.label}
+      {question.required && <span className="text-red-400 ml-1">*</span>}
+    </p>
+
+    {question.type === "scale" && <ScaleInput value={value} onChange={onChange} />}
+    {question.type === "yesno" && <YesNoInput value={value} onChange={onChange} />}
+    {question.type === "select" && question.options && (
+      <SelectInput value={value} onChange={onChange} options={question.options} />
+    )}
+    {question.type === "textarea" && (
+      <textarea
+        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none bg-gray-50"
+        rows={3}
+        placeholder="Descreva aqui..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    )}
+    {(question.type === "text" || question.type === "number") && (
+      <Input
+        type={question.type === "number" ? "number" : "text"}
+        placeholder="Digite aqui..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-gray-50 border-gray-200 focus:ring-violet-400"
+      />
+    )}
+
+    {error && <p className="text-xs text-red-400 mt-2">Esta pergunta é obrigatória.</p>}
   </div>
 );
 
@@ -124,7 +176,7 @@ const AnamnesisFormPage = () => {
   const [tokenData, setTokenData] = useState<{ id: string; coach_id: string; customer_id: string } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [step, setStep] = useState(0);
+  const [errors, setErrors] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -143,7 +195,6 @@ const AnamnesisFormPage = () => {
 
       setTokenData({ id: tk.id, coach_id: tk.coach_id, customer_id: tk.customer_id });
 
-      // Buscar configurações do coach
       const { data: settings } = await supabase
         .from("coach_settings")
         .select("anamnesis_mode, anamnesis_categories")
@@ -176,15 +227,24 @@ const AnamnesisFormPage = () => {
     load();
   }, [token]);
 
-  const current = questions[step];
-  const progress = questions.length > 0 ? ((step + 1) / questions.length) * 100 : 0;
-  const canNext = !current?.required || !!answers[current?.id];
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!tokenData) return;
+
+    // Validação
+    const missing = new Set<string>();
+    questions.forEach((q) => {
+      if (q.required && !answers[q.id]?.trim()) missing.add(q.id);
+    });
+    if (missing.size > 0) {
+      setErrors(missing);
+      const firstId = questions.find((q) => missing.has(q.id))?.id;
+      if (firstId) document.getElementById(`q-${firstId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     setSubmitting(true);
 
-    // Salva ou atualiza anamnese
     const { data: existing } = await supabase
       .from("anamnesis")
       .select("id")
@@ -245,83 +305,65 @@ const AnamnesisFormPage = () => {
     </div>
   );
 
+  const answered = Object.values(answers).filter((v) => v.trim()).length;
+  const progress = Math.round((answered / questions.length) * 100);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-600 to-violet-800 flex flex-col">
-      {/* Header */}
-      <div className="px-6 pt-10 pb-6 text-white">
-        <p className="text-xs text-violet-300 uppercase tracking-widest font-medium mb-1">Anamnese</p>
-        <h1 className="text-xl font-bold">Formulário inicial</h1>
-        <p className="text-xs text-violet-200 mt-1">{step + 1} de {questions.length}</p>
-        <div className="mt-4 h-1.5 bg-violet-500/40 rounded-full overflow-hidden">
-          <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header fixo */}
+      <div className="sticky top-0 z-10 bg-violet-600 px-4 pt-8 pb-5 shadow-sm">
+        <div className="max-w-2xl mx-auto">
+          <p className="text-xs text-violet-300 uppercase tracking-widest font-medium mb-1">Anamnese</p>
+          <h1 className="text-xl font-bold text-white">Formulário inicial</h1>
+          <div className="flex items-center gap-3 mt-3">
+            <div className="flex-1 h-1.5 bg-violet-500/50 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-xs text-violet-200 shrink-0">{answered}/{questions.length}</span>
+          </div>
         </div>
       </div>
 
-      {/* Pergunta */}
-      <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-6 flex flex-col">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1 flex flex-col"
+      {/* Formulário */}
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {questions.map((q, i) => (
+          <div key={q.id} id={`q-${q.id}`}>
+            <QuestionBlock
+              index={i}
+              question={q}
+              value={answers[q.id] ?? ""}
+              onChange={(v) => {
+                setAnswers((p) => ({ ...p, [q.id]: v }));
+                if (errors.has(q.id)) setErrors((prev) => { const s = new Set(prev); s.delete(q.id); return s; });
+              }}
+              error={errors.has(q.id)}
+            />
+          </div>
+        ))}
+
+        {errors.size > 0 && (
+          <p className="text-sm text-red-500 text-center">
+            Preencha todas as perguntas obrigatórias antes de enviar.
+          </p>
+        )}
+
+        <div className="pt-2 pb-8">
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="w-full h-12 text-base font-semibold bg-violet-600 hover:bg-violet-700 rounded-2xl gap-2"
           >
-            <p className="text-lg font-semibold text-gray-900 mb-6">{current.label}</p>
-
-            {current.type === "scale" && (
-              <ScaleInput value={answers[current.id] ?? ""} onChange={(v) => setAnswers((p) => ({ ...p, [current.id]: v }))} />
+            {submitting ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Enviando...</>
+            ) : (
+              <><CheckCircle2 className="w-5 h-5" /> Enviar anamnese</>
             )}
-            {current.type === "yesno" && (
-              <YesNoInput value={answers[current.id] ?? ""} onChange={(v) => setAnswers((p) => ({ ...p, [current.id]: v }))} />
-            )}
-            {current.type === "select" && current.options && (
-              <SelectInput value={answers[current.id] ?? ""} onChange={(v) => setAnswers((p) => ({ ...p, [current.id]: v }))} options={current.options} />
-            )}
-            {current.type === "textarea" && (
-              <textarea
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
-                rows={4}
-                placeholder="Descreva aqui..."
-                value={answers[current.id] ?? ""}
-                onChange={(e) => setAnswers((p) => ({ ...p, [current.id]: e.target.value }))}
-              />
-            )}
-            {(current.type === "text" || current.type === "number") && (
-              <Input
-                type={current.type === "number" ? "number" : "text"}
-                className="text-base"
-                placeholder="Digite aqui..."
-                value={answers[current.id] ?? ""}
-                onChange={(e) => setAnswers((p) => ({ ...p, [current.id]: e.target.value }))}
-              />
-            )}
-
-            {current.required && !answers[current.id] && (
-              <p className="text-xs text-gray-400 mt-3">* Resposta obrigatória</p>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Navegação */}
-        <div className="flex items-center justify-between mt-8 gap-3">
-          <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="gap-2">
-            <ChevronLeft className="w-4 h-4" />Anterior
           </Button>
-
-          {step < questions.length - 1 ? (
-            <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext} className="gap-2 bg-violet-600 hover:bg-violet-700">
-              Próxima<ChevronRight className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={!canNext || submitting} className="gap-2 bg-violet-600 hover:bg-violet-700">
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-              Enviar anamnese
-            </Button>
-          )}
         </div>
-      </div>
+      </form>
     </div>
   );
 };
