@@ -332,6 +332,7 @@ const ProductEditorPage = () => {
                     {[7, 14, 15, 21, 30].map((d) => (
                       <button
                         key={d}
+                        type="button"
                         onClick={() => setFeedbackFreq(d)}
                         className={cn(
                           "px-3 py-1.5 rounded-lg border text-sm transition-colors",
@@ -341,7 +342,30 @@ const ProductEditorPage = () => {
                         {d} dias
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => { if ([7,14,15,21,30].includes(feedbackFreq)) setFeedbackFreq(0); }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg border text-sm transition-colors",
+                        ![7,14,15,21,30].includes(feedbackFreq) ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40"
+                      )}
+                    >
+                      Personalizado
+                    </button>
                   </div>
+                  {![7,14,15,21,30].includes(feedbackFreq) && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={feedbackFreq || ""}
+                        placeholder="Ex: 90"
+                        onChange={(e) => setFeedbackFreq(parseInt(e.target.value) || 1)}
+                        className="w-28"
+                      />
+                      <span className="text-sm text-muted-foreground">dias</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
