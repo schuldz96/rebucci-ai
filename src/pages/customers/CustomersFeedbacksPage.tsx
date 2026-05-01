@@ -179,7 +179,7 @@ const CustomersFeedbacksPage = () => {
     const customerIds = [...new Set(apts.map(a => a.customer_id).filter(Boolean))];
     const { data: customers } = await supabase
       .from("customers")
-      .select("id, name, photo_url")
+      .select("id, name, avatar_url")
       .eq("coach_id", user.id)
       .in("id", customerIds);
 
