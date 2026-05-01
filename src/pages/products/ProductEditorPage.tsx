@@ -52,6 +52,7 @@ const ProductEditorPage = () => {
   const [autoFeedbacks, setAutoFeedbacks] = useState(false);
   const [feedbackFreq, setFeedbackFreq] = useState(14);
   const [active, setActive] = useState(true);
+  const [deliveryDays, setDeliveryDays] = useState(5);
 
   const toggleInclude = (v: string) =>
     setIncludes((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]);
@@ -72,6 +73,11 @@ const ProductEditorPage = () => {
         setAutoFeedbacks(data.auto_schedule_feedbacks ?? false);
         setFeedbackFreq(data.feedback_frequency_days ?? 14);
         setActive(data.active ?? true);
+        setDeliveryDays(data.delivery_days ?? 5);
+        const inc: string[] = [];
+        if (data.includes_diet) inc.push("diet");
+        if (data.includes_workout) inc.push("workout");
+        setIncludes(inc);
         setProductType("plan");
       }
       setLoading(false);
@@ -85,12 +91,16 @@ const ProductEditorPage = () => {
     const payload = {
       coach_id: user.id,
       name,
+      description: description || null,
       price: parseFloat(price) || 0,
       duration_days: durationDays,
       modality: modality || "online",
       active,
       auto_schedule_feedbacks: autoFeedbacks,
       feedback_frequency_days: feedbackFreq,
+      delivery_days: deliveryDays,
+      includes_diet: includes.includes("diet"),
+      includes_workout: includes.includes("workout"),
     };
     const { error } = isEdit
       ? await supabase.from("plans").update(payload).eq("id", id!)
@@ -173,8 +183,14 @@ const ProductEditorPage = () => {
         {step === 2 && (
           <div className="max-w-lg space-y-4">
             <h2 className="text-lg font-semibold">Configurações Iniciais</h2>
+            <label className="flex items-start gap-3 p-4 rounded-xl border border-border hover:border-primary/40 cursor-pointer transition-colors">
+              <input type="checkbox" className="mt-0.5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} />
+              <div>
+                <p className="font-medium text-foreground">Habilitar produto</p>
+                <p className="text-sm text-muted-foreground">Produto ficará disponível para venda</p>
+              </div>
+            </label>
             {[
-              { id: "active", label: "Habilitar produto", desc: "Produto ficará disponível para venda" },
               { id: "general", label: "Exibir em listagem geral", desc: "Aparecerá na listagem pública de produtos" },
               { id: "renewal", label: "Exibir em link de renovação", desc: "Disponível quando aluno for renovar" },
               { id: "exclusive", label: "Não exibir outros produtos no link de renovação", desc: "Exclusividade no link de renovação" },
@@ -258,7 +274,7 @@ const ProductEditorPage = () => {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Prazo de entrega (dias)</label>
-              <Input className="mt-1 w-32" type="number" min={1} max={50} defaultValue={5} />
+              <Input className="mt-1 w-32" type="number" min={1} max={50} value={deliveryDays} onChange={(e) => setDeliveryDays(parseInt(e.target.value) || 1)} />
             </div>
           </div>
         )}
