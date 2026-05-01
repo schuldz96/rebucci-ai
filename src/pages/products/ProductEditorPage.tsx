@@ -122,12 +122,12 @@ const ProductEditorPage = () => {
           {STEPS.map((s, i) => (
             <div key={s.n} className="flex items-center gap-1 shrink-0">
               <button
-                onClick={() => s.n < step && setStep(s.n)}
+                onClick={() => (isEdit || s.n < step) && setStep(s.n)}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
                   step === s.n
                     ? "bg-primary text-primary-foreground"
-                    : s.n < step
+                    : (isEdit || s.n < step)
                     ? "bg-primary/20 text-primary cursor-pointer hover:bg-primary/30"
                     : "bg-muted text-muted-foreground cursor-default"
                 )}
@@ -401,11 +401,20 @@ const ProductEditorPage = () => {
         </Button>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">Etapa {step} de {STEPS.length}</span>
-          {step < STEPS.length ? (
+          {isEdit ? (
+            <>
+              {step < STEPS.length && (
+                <Button variant="outline" onClick={() => setStep(step + 1)}>Próximo</Button>
+              )}
+              <Button onClick={save} disabled={saving}>
+                {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Salvando...</> : "Salvar alterações"}
+              </Button>
+            </>
+          ) : step < STEPS.length ? (
             <Button onClick={() => setStep(step + 1)}>Próximo</Button>
           ) : (
             <Button onClick={save} disabled={saving}>
-              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Salvando...</> : isEdit ? "Salvar alterações" : "Criar produto"}
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Salvando...</> : "Criar produto"}
             </Button>
           )}
         </div>
