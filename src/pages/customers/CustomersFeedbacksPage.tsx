@@ -38,6 +38,12 @@ const FeedbackRow = ({ fb, onMark }: { fb: Feedback; onMark: (id: string) => voi
   const customer = fb.customers;
   const planName = fb.consultorias?.plans?.name ?? "—";
 
+  const deadline = fb.scheduled_for
+    ? (() => { const d = parseISO(fb.scheduled_for); d.setDate(d.getDate() + 5); return d; })()
+    : null;
+  const daysLeft = deadline ? Math.ceil((deadline.getTime() - Date.now()) / 86400000) : null;
+  const deadlineUrgent = daysLeft !== null && daysLeft <= 2 && fb.status === "pending";
+
   return (
     <div className="flex items-center gap-4 px-4 py-3 border-b border-border hover:bg-muted/20 transition-colors">
       <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0">
@@ -66,8 +72,20 @@ const FeedbackRow = ({ fb, onMark }: { fb: Feedback; onMark: (id: string) => voi
         {fb.scheduled_for ? format(parseISO(fb.scheduled_for), "dd/MM/yyyy", { locale: ptBR }) : "—"}
       </div>
 
-      <div className="text-xs text-muted-foreground shrink-0">
-        {fb.answered_at ? format(parseISO(fb.answered_at), "dd/MM HH:mm", { locale: ptBR }) : "—"}
+      {/* Data limite */}
+      <div className="shrink-0 text-right">
+        {deadline && fb.status === "pending" ? (
+          <div className={cn("text-xs font-medium", deadlineUrgent ? "text-red-400" : "text-muted-foreground")}>
+            <p>Limite: {format(deadline, "dd/MM/yyyy", { locale: ptBR })}</p>
+            <p className={cn("text-[10px]", deadlineUrgent ? "text-red-400" : "text-muted-foreground")}>
+              {daysLeft! > 0 ? `${daysLeft} dia${daysLeft !== 1 ? "s" : ""} restante${daysLeft !== 1 ? "s" : ""}` : "Vence hoje"}
+            </p>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            {fb.answered_at ? format(parseISO(fb.answered_at), "dd/MM HH:mm", { locale: ptBR }) : "—"}
+          </div>
+        )}
       </div>
 
       <span className={cn("flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
