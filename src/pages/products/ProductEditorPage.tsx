@@ -25,7 +25,10 @@ const DURATION_OPTIONS = [
   { label: "Trimestral (90 dias)", value: 90 },
   { label: "Semestral (180 dias)", value: 180 },
   { label: "Anual (365 dias)", value: 365 },
+  { label: "Personalizado", value: 0 },
 ];
+
+const PRESET_VALUES = [30, 60, 90, 180, 365];
 
 const ProductEditorPage = () => {
   const navigate = useNavigate();
@@ -45,6 +48,7 @@ const ProductEditorPage = () => {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [durationDays, setDurationDays] = useState(90);
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [autoFeedbacks, setAutoFeedbacks] = useState(false);
   const [feedbackFreq, setFeedbackFreq] = useState(14);
   const [active, setActive] = useState(true);
@@ -61,7 +65,9 @@ const ProductEditorPage = () => {
         setName(data.name ?? "");
         setDescription(data.description ?? "");
         setPrice(String(data.price ?? ""));
-        setDurationDays(data.duration_days ?? 90);
+        const d = data.duration_days ?? 90;
+        setDurationDays(d);
+        setIsCustomDuration(!PRESET_VALUES.includes(d));
         setModality(data.modality ?? "");
         setAutoFeedbacks(data.auto_schedule_feedbacks ?? false);
         setFeedbackFreq(data.feedback_frequency_days ?? 14);
@@ -271,18 +277,35 @@ const ProductEditorPage = () => {
               <label className="text-sm font-medium text-foreground">Período / Duração</label>
               <select
                 className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                value={durationDays}
-                onChange={(e) => setDurationDays(parseInt(e.target.value))}
+                value={isCustomDuration ? 0 : durationDays}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value);
+                  if (v === 0) {
+                    setIsCustomDuration(true);
+                    setDurationDays(366);
+                  } else {
+                    setIsCustomDuration(false);
+                    setDurationDays(v);
+                  }
+                }}
               >
                 {DURATION_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-                <option value={durationDays} hidden>{durationDays} dias (personalizado)</option>
               </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Duração personalizada (dias)</label>
-              <Input className="mt-1 w-32" type="number" min={1} value={durationDays} onChange={(e) => setDurationDays(parseInt(e.target.value) || 90)} />
+              {isCustomDuration && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    value={durationDays}
+                    onChange={(e) => setDurationDays(parseInt(e.target.value) || 1)}
+                    className="w-32"
+                    placeholder="Ex: 400"
+                  />
+                  <span className="text-sm text-muted-foreground">dias</span>
+                </div>
+              )}
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" className="accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} />
