@@ -147,7 +147,7 @@ const QuestionBlock = ({
     )}
     {question.type === "textarea" && (
       <textarea
-        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none bg-gray-50"
+        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none bg-gray-50"
         rows={3}
         placeholder="Descreva aqui..."
         value={value}
@@ -160,7 +160,7 @@ const QuestionBlock = ({
         placeholder="Digite aqui..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-gray-50 border-gray-200 focus:ring-violet-400"
+        className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:ring-violet-400"
       />
     )}
 
