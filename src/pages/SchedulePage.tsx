@@ -50,6 +50,15 @@ const TYPE_LABEL: Record<string, string> = {
   other: "Outro",
 };
 
+// ─── Tipos auxiliares ─────────────────────────────────────────────────────────
+
+interface CustomerOption {
+  id: string;
+  name: string;
+  consultoria_id: string | null;
+  consultoria_status: string | null;
+}
+
 // ─── Modal de novo agendamento ────────────────────────────────────────────────
 
 const NewAppointmentModal = ({
@@ -72,21 +81,75 @@ const NewAppointmentModal = ({
     notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from("consultorias")
+        .select("id, status, customers(id, name)")
+        .eq("coach_id", coachId)
+        .order("created_at", { ascending: false });
+
+      if (!data) return;
+
+      const seen = new Set<string>();
+      const options: CustomerOption[] = [];
+      for (const c of data) {
+        const customer = c.customers as any;
+        if (!customer || seen.has(customer.id)) continue;
+        seen.add(customer.id);
+        options.push({
+          id: customer.id,
+          name: customer.name,
+          consultoria_id: c.id,
+          consultoria_status: c.status,
+        });
+      }
+      setCustomers(options);
+    };
+    if (form.type === "feedback") load();
+  }, [form.type, coachId]);
+
+  const visibleCustomers = customers.filter((c) =>
+    showInactive ? true : c.consultoria_status === "active"
+  );
+
   const handleSave = async () => {
     if (!form.title.trim()) { toast({ title: "Título é obrigatório", variant: "destructive" }); return; }
+    if (form.type === "feedback" && !selectedCustomerId) {
+      toast({ title: "Selecione um cliente para o feedback", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const scheduled_at = `${form.date}T${form.time || "00:00"}`;
+
     const { error } = await supabase.from("appointments").insert({
       coach_id: coachId,
       title: form.title,
       scheduled_at,
       type: form.type,
       status: "scheduled",
+      customer_id: form.type === "feedback" ? selectedCustomerId : null,
       notes: form.notes || null,
     });
+
+    if (!error && form.type === "feedback") {
+      const customer = customers.find((c) => c.id === selectedCustomerId);
+      await supabase.from("feedbacks").insert({
+        coach_id: coachId,
+        customer_id: selectedCustomerId,
+        consultoria_id: customer?.consultoria_id ?? null,
+        scheduled_for: `${form.date}T${form.time || "00:00"}`,
+        status: "pending",
+        has_photos: false,
+      });
+    }
+
     setSaving(false);
     if (error) { toast({ title: "Erro ao criar agendamento", variant: "destructive" }); return; }
     toast({ title: "Agendamento criado!" });
@@ -134,7 +197,7 @@ const NewAppointmentModal = ({
             <select
               className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
               value={form.type}
-              onChange={(e) => set("type", e.target.value)}
+              onChange={(e) => { set("type", e.target.value); setSelectedCustomerId(""); }}
             >
               <option value="consultation">Consulta</option>
               <option value="feedback">Feedback</option>
@@ -142,6 +205,39 @@ const NewAppointmentModal = ({
               <option value="other">Outro</option>
             </select>
           </div>
+
+          {form.type === "feedback" && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium text-foreground">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={() => setShowInactive((v) => !v)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showInactive ? "Mostrar apenas ativos" : "Incluir inativos"}
+                </button>
+              </div>
+              <select
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+              >
+                <option value="">Selecione um cliente...</option>
+                {visibleCustomers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}{c.consultoria_status !== "active" ? " (inativo)" : ""}
+                  </option>
+                ))}
+              </select>
+              {visibleCustomers.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {showInactive ? "Nenhum cliente encontrado." : "Nenhum cliente ativo. Clique em \"Incluir inativos\" para ver todos."}
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="text-sm font-medium text-foreground">Observações</label>
             <textarea

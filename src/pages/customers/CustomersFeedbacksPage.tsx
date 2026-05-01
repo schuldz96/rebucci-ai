@@ -18,7 +18,7 @@ import { ptBR } from "date-fns/locale";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending:  { label: "Pendente",   color: "text-blue-400 bg-blue-400/10",    icon: Clock },
+  pending:  { label: "Aguardando resposta", color: "text-blue-400 bg-blue-400/10", icon: Clock },
   partial:  { label: "Parcial",    color: "text-yellow-400 bg-yellow-400/10", icon: Clock },
   answered: { label: "Respondido", color: "text-green-400 bg-green-400/10",  icon: CheckCircle2 },
   seen:     { label: "Visto",      color: "text-muted-foreground bg-muted",   icon: Eye },
@@ -242,7 +242,7 @@ const CustomersFeedbacksPage = () => {
                       <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos os status</SelectItem>
-                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="pending">Aguardando resposta</SelectItem>
                         <SelectItem value="partial">Parcial</SelectItem>
                         <SelectItem value="answered">Respondido</SelectItem>
                         <SelectItem value="seen">Visto</SelectItem>
