@@ -14,6 +14,7 @@ import { useCustomerStore, Feedback } from "@/store/customerStore";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/lib/supabase";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -130,10 +131,28 @@ const FeedbackCard = ({ fb, onMark }: { fb: Feedback; onMark: (id: string) => vo
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+// Tipo que unifica appointments tipo feedback com a interface Feedback usada pela UI
+interface ApptFeedback {
+  id: string;
+  customer_id: string;
+  status: string;
+  scheduled_for?: string;
+  answered_at?: string;
+  has_photos: boolean;
+  customers?: { id: string; name: string; photo_url?: string };
+  consultorias?: { plans?: { name: string } } | null;
+  created_at: string;
+}
+
 const CustomersFeedbacksPage = () => {
   const { user } = useAuthStore();
-  const { feedbacks, loading, fetchFeedbacks, markFeedbackSeen } = useCustomerStore();
+  const markSeen = async (id: string) => {
+    await supabase.from("appointments").update({ status: "done" }).eq("id", id);
+    setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: "answered", answered_at: new Date().toISOString() } : f));
+  };
 
+  const [feedbacks, setFeedbacks] = useState<ApptFeedback[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [search, setSearch] = useState("");
@@ -142,9 +161,49 @@ const CustomersFeedbacksPage = () => {
   const [filterSort, setFilterSort] = useState("default");
   const [showExpired, setShowExpired] = useState(false);
 
-  useEffect(() => {
-    if (user) fetchFeedbacks(user.id);
-  }, [user]);
+  const load = async () => {
+    if (!user) return;
+    setLoading(true);
+
+    // Busca agendamentos do tipo feedback
+    const { data: apts } = await supabase
+      .from("appointments")
+      .select("id, customer_id, status, scheduled_at, coach_id")
+      .eq("coach_id", user.id)
+      .eq("type", "feedback")
+      .order("scheduled_at", { ascending: false });
+
+    if (!apts?.length) { setFeedbacks([]); setLoading(false); return; }
+
+    // Busca dados dos customers em paralelo
+    const customerIds = [...new Set(apts.map(a => a.customer_id).filter(Boolean))];
+    const { data: customers } = await supabase
+      .from("customers")
+      .select("id, name, photo_url")
+      .in("id", customerIds);
+
+    const customerMap = Object.fromEntries((customers ?? []).map(c => [c.id, c]));
+
+    // Mapeia para o formato esperado pela UI
+    const mapped: ApptFeedback[] = apts.map(a => ({
+      id: a.id,
+      customer_id: a.customer_id,
+      status: a.status === "done" || a.status === "completed" ? "answered"
+            : a.status === "cancelled" ? "expired"
+            : "pending",
+      scheduled_for: a.scheduled_at,
+      answered_at: (a.status === "done" || a.status === "completed") ? a.scheduled_at : undefined,
+      has_photos: false,
+      customers: customerMap[a.customer_id],
+      consultorias: null,
+      created_at: a.scheduled_at ?? new Date().toISOString(),
+    }));
+
+    setFeedbacks(mapped);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [user]);
 
   const filtered = feedbacks
     .filter((fb) => {
@@ -300,13 +359,13 @@ const CustomersFeedbacksPage = () => {
         ) : viewMode === "list" ? (
           <div>
             {filtered.map((fb) => (
-              <FeedbackRow key={fb.id} fb={fb} onMark={markFeedbackSeen} />
+              <FeedbackRow key={fb.id} fb={fb as any} onMark={markSeen} />
             ))}
           </div>
         ) : (
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((fb) => (
-              <FeedbackCard key={fb.id} fb={fb} onMark={markFeedbackSeen} />
+              <FeedbackCard key={fb.id} fb={fb as any} onMark={markSeen} />
             ))}
           </div>
         )}
