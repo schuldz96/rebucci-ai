@@ -100,12 +100,7 @@ const coachingNav: NavGroup[] = [
       { label: "Grupos", path: "/tools/groups" },
     ],
   },
-  {
-    label: "Financeiro",
-    icon: DollarSign,
-    path: "/finance",
-  },
-  {
+{
     label: "Apps",
     icon: Grid2X2,
     path: "/apps",
