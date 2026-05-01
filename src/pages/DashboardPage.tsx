@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Users, UserCheck, CalendarClock, AlertTriangle, MessageCircleWarning,
-  Loader2, TrendingUp, DollarSign, Clock, CheckCircle2, ArrowRight,
+  Loader2, TrendingUp, DollarSign, Clock, CheckCircle2, ArrowRight, Search, X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
@@ -69,6 +69,10 @@ const DashboardPage = () => {
   const [recentFeedbacks, setRecentFeedbacks] = useState<RecentFeedback[]>([]);
   const [expiring, setExpiring] = useState<ExpiringConsultoria[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<{ id: string; name: string; email: string | null }[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -181,6 +185,27 @@ const DashboardPage = () => {
     setLoading(false);
   };
 
+  useEffect(() => {
+    if (!search.trim() || !user) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      const { data } = await supabase
+        .from("customers")
+        .select("id, name, email")
+        .eq("coach_id", user.id)
+        .ilike("name", `%${search.trim()}%`)
+        .limit(6);
+      setSearchResults(data ?? []);
+      setShowResults(true);
+      setSearchLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, user]);
+
   const fmtBRL = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -248,9 +273,63 @@ const DashboardPage = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-auto p-6 lg:p-8 space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visão geral do seu coaching</p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground mt-1">Visão geral do seu coaching</p>
+          </div>
+
+          {/* ── Busca de alunos ── */}
+          <div className="relative sm:ml-auto w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar aluno..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => searchResults.length > 0 && setShowResults(true)}
+              onBlur={() => setTimeout(() => setShowResults(false), 150)}
+              className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-8 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-colors"
+            />
+            {search && (
+              <button
+                onMouseDown={(e) => { e.preventDefault(); setSearch(""); setShowResults(false); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {showResults && (
+              <div className="absolute top-full mt-1.5 left-0 right-0 z-50 surface-elevated rounded-xl border border-border shadow-xl overflow-hidden">
+                {searchLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-5">Nenhum aluno encontrado.</p>
+                ) : (
+                  <div className="py-1">
+                    {searchResults.map((c) => (
+                      <button
+                        key={c.id}
+                        onMouseDown={() => { navigate(`/customers/${c.id}`); setSearch(""); setShowResults(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/60 transition-colors text-left"
+                      >
+                        <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+                          {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
