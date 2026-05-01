@@ -740,37 +740,99 @@ const SchedulingTab = ({ customerId, coachId }: { customerId: string; coachId: s
 
 // ─── Tab: Anamnese ────────────────────────────────────────────────────────────
 
+const ANAMNESIS_CAT_QUESTIONS: Record<string, { label: string; type: string }[]> = {
+  habVida: [
+    { label: "Possui alguma restrição alimentar?", type: "textarea" },
+    { label: "Qual o horário habitual das suas refeições?", type: "text" },
+    { label: "Descreva um dia típico de suas refeições", type: "textarea" },
+    { label: "Ingere bebida alcoólica?", type: "text" },
+    { label: "É fumante?", type: "text" },
+    { label: "Come fora de casa com frequência?", type: "text" },
+  ],
+  habSono: [
+    { label: "Quantas horas dorme por noite?", type: "text" },
+    { label: "Qualidade do sono (1-10)", type: "text" },
+    { label: "Tem dificuldade para dormir?", type: "text" },
+    { label: "Usa algum recurso para dormir melhor?", type: "text" },
+  ],
+  saude: [
+    { label: "Possui alguma doença diagnosticada?", type: "textarea" },
+    { label: "Usa algum medicamento?", type: "text" },
+    { label: "Já fez cirurgias?", type: "textarea" },
+    { label: "Tem lesões ou limitações físicas?", type: "textarea" },
+    { label: "Histórico familiar de doenças?", type: "textarea" },
+  ],
+  atividadeFisica: [
+    { label: "Pratica atividade física atualmente?", type: "text" },
+    { label: "Qual modalidade?", type: "text" },
+    { label: "Quantas vezes por semana treina?", type: "text" },
+    { label: "Há quanto tempo treina?", type: "text" },
+    { label: "Nível de experiência", type: "text" },
+  ],
+  objetivos: [
+    { label: "Qual é o seu objetivo principal?", type: "textarea" },
+    { label: "Peso desejado (kg)", type: "text" },
+    { label: "Prazo para atingir o objetivo", type: "text" },
+    { label: "Já tentou outros métodos antes?", type: "textarea" },
+  ],
+};
+
+interface AnamnesisRecord { id: string; answers: Record<string, string>; submitted_at: string; }
+
+const AnamnesisDetailModal = ({
+  record,
+  questions,
+  onClose,
+}: { record: AnamnesisRecord; questions: { id: string; label: string }[]; onClose: () => void }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="w-full max-w-lg bg-background rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+        <div>
+          <h3 className="font-semibold text-foreground flex items-center gap-2"><ClipboardList className="w-4 h-4 text-primary" /> Anamnese</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Preenchida em {format(parseISO(record.submitted_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+        </div>
+        <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"><X className="w-4 h-4" /></button>
+      </div>
+      <div className="overflow-y-auto p-5 space-y-3">
+        {questions.map((q) => record.answers[q.id] ? (
+          <div key={q.id} className="rounded-xl border border-border bg-card px-4 py-3">
+            <p className="text-xs text-muted-foreground mb-1">{q.label}</p>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{record.answers[q.id]}</p>
+          </div>
+        ) : null)}
+        {questions.filter((q) => record.answers[q.id]).length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">Sem respostas registradas.</p>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
 const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: string }) => {
   const { toast } = useToast();
-  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [questions, setQuestions] = useState<{ id: string; label: string; type: string }[]>([]);
-  const [anamnesisId, setAnamnesisId] = useState<string | null>(null);
-  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
+  const [history, setHistory] = useState<AnamnesisRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingLink, setSendingLink] = useState(false);
+  const [selected, setSelected] = useState<AnamnesisRecord | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const { data: anam } = await supabase.from("anamnesis").select("*").eq("customer_id", customerId).maybeSingle();
-      if (anam) { setAnswers(anam.answers ?? {}); setAnamnesisId(anam.id); setSubmittedAt(anam.submitted_at); }
+      const [anamRes, settingsRes] = await Promise.all([
+        supabase.from("anamnesis").select("id, answers, submitted_at").eq("customer_id", customerId).order("submitted_at", { ascending: false }),
+        supabase.from("coach_settings").select("anamnesis_mode, anamnesis_categories").eq("coach_id", coachId).maybeSingle(),
+      ]);
 
-      const { data: settings } = await supabase.from("coach_settings").select("anamnesis_mode, anamnesis_categories").eq("coach_id", coachId).maybeSingle();
-      const mode = settings?.anamnesis_mode ?? "default";
+      setHistory(anamRes.data ?? []);
 
+      const mode = settingsRes.data?.anamnesis_mode ?? "default";
       if (mode === "custom") {
         const { data: qs } = await supabase.from("anamnesis_questions").select("id, label, type").eq("coach_id", coachId).eq("active", true).order("sort_order");
         setQuestions(qs ?? []);
       } else {
-        const CATEGORY_QUESTIONS: Record<string, { label: string; type: string }[]> = {
-          habVida: [{ label: "Possui alguma restrição alimentar?", type: "textarea" }, { label: "Qual o horário habitual das suas refeições?", type: "text" }, { label: "Descreva um dia típico de suas refeições", type: "textarea" }, { label: "Ingere bebida alcoólica?", type: "text" }, { label: "É fumante?", type: "text" }],
-          habSono: [{ label: "Quantas horas dorme por noite?", type: "text" }, { label: "Qualidade do sono (1-10)", type: "text" }, { label: "Tem dificuldade para dormir?", type: "text" }],
-          saude: [{ label: "Possui alguma doença diagnosticada?", type: "textarea" }, { label: "Usa algum medicamento?", type: "text" }, { label: "Tem lesões ou limitações físicas?", type: "textarea" }],
-          atividadeFisica: [{ label: "Pratica atividade física atualmente?", type: "text" }, { label: "Qual modalidade?", type: "text" }, { label: "Quantas vezes por semana treina?", type: "text" }],
-          objetivos: [{ label: "Qual é o seu objetivo principal?", type: "textarea" }, { label: "Peso desejado (kg)", type: "text" }],
-        };
-        const cats: string[] = settings?.anamnesis_categories ?? ["habVida", "habSono", "saude", "atividadeFisica"];
+        const cats: string[] = settingsRes.data?.anamnesis_categories ?? ["habVida", "habSono", "saude", "atividadeFisica"];
         const qs: { id: string; label: string; type: string }[] = [];
-        cats.forEach((cat, ci) => (CATEGORY_QUESTIONS[cat] ?? []).forEach((q, qi) => qs.push({ id: `${cat}_${qi}`, ...q })));
+        cats.forEach((cat, ci) => (ANAMNESIS_CAT_QUESTIONS[cat] ?? []).forEach((q, qi) => qs.push({ id: `${cat}_${qi}`, ...q })));
         setQuestions(qs);
       }
       setLoading(false);
@@ -788,69 +850,101 @@ const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: st
     toast({ title: "Link copiado!", description: "Envie para o aluno via WhatsApp ou e-mail." });
   };
 
-  const hasConfig = questions.length > 0;
-
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
-  // Sem configuração → bloqueia e orienta
-  if (!hasConfig) {
+  if (questions.length === 0) {
     return (
       <div className="max-w-md">
-        <h3 className="font-semibold text-foreground mb-1">Anamnese</h3>
         <div className="mt-4 rounded-xl border border-dashed border-orange-400/40 bg-orange-400/5 p-6 flex flex-col items-center gap-3 text-center">
           <ClipboardList className="w-10 h-10 text-orange-400/60" />
           <div>
             <p className="font-medium text-foreground">Nenhum formulário configurado</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Antes de enviar a anamnese ao aluno, você precisa configurar quais perguntas serão incluídas.
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">Configure as perguntas antes de enviar ao aluno.</p>
           </div>
-          <Button
-            size="sm"
-            className="gap-2 mt-1"
-            onClick={() => window.location.href = "/settings/anamnese"}
-          >
-            <ClipboardList className="w-4 h-4" />
-            Configurar anamnese
+          <Button size="sm" className="gap-2 mt-1" onClick={() => window.location.href = "/settings/anamnese"}>
+            <ClipboardList className="w-4 h-4" /> Configurar anamnese
           </Button>
         </div>
       </div>
     );
   }
 
+  const latest = history[0] ?? null;
+  const answered = latest ? questions.filter((q) => latest.answers[q.id]).length : 0;
+
   return (
-    <div className="space-y-5 max-w-lg">
-      {/* Header com status */}
+    <div className="space-y-5 max-w-2xl">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-foreground">Anamnese</h3>
-          {submittedAt ? (
-            <p className="text-xs text-green-400 mt-0.5">Preenchida em {new Date(submittedAt).toLocaleDateString("pt-BR")}</p>
+          {latest ? (
+            <p className="text-xs text-green-400 mt-0.5">
+              Última resposta: {format(parseISO(latest.submitted_at), "dd/MM/yyyy", { locale: ptBR })} · {answered}/{questions.length} respostas
+            </p>
           ) : (
-            <p className="text-xs text-muted-foreground mt-0.5">Ainda não preenchida pelo aluno</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Ainda não preenchida</p>
           )}
         </div>
         <Button size="sm" variant="outline" className="gap-2" onClick={sendLink} disabled={sendingLink}>
           {sendingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link className="w-3.5 h-3.5" />}
-          Copiar link
+          {history.length > 0 ? "Novo link" : "Copiar link"}
         </Button>
       </div>
 
-      {/* Respostas preenchidas */}
-      {anamnesisId && questions.length > 0 ? (
-        <div className="space-y-3">
-          {questions.map((q) => answers[q.id] ? (
-            <div key={q.id} className="bg-card border border-border rounded-xl px-4 py-3">
-              <p className="text-xs text-muted-foreground mb-1">{q.label}</p>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{answers[q.id]}</p>
+      {latest ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Respostas da última anamnese */}
+          <div className="lg:col-span-2 space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Respostas mais recentes
+            </p>
+            <div className="space-y-2">
+              {questions.map((q) => (
+                <div key={q.id} className={cn("rounded-xl border px-4 py-3", latest.answers[q.id] ? "border-border bg-card" : "border-border/40 bg-muted/10 opacity-50")}>
+                  <p className="text-xs text-muted-foreground mb-1">{q.label}</p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">
+                    {latest.answers[q.id] ?? <span className="italic text-muted-foreground">Não respondido</span>}
+                  </p>
+                </div>
+              ))}
             </div>
-          ) : null)}
+          </div>
+
+          {/* Histórico */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Histórico ({history.length})
+            </p>
+            <div className="space-y-2">
+              {history.map((rec, i) => {
+                const cnt = questions.filter((q) => rec.answers[q.id]).length;
+                return (
+                  <button
+                    key={rec.id}
+                    onClick={() => setSelected(rec)}
+                    className="w-full text-left rounded-xl border border-border bg-card px-4 py-3 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        {format(parseISO(rec.submitted_at), "dd 'de' MMM yyyy", { locale: ptBR })}
+                      </p>
+                      {i === 0 && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Atual</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{cnt}/{questions.length} respostas</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       ) : (
-        /* Preview das perguntas que o aluno vai receber */
+        /* Nenhuma anamnese ainda — mostra preview das perguntas */
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Preview — {questions.length} perguntas serão enviadas ao aluno
+            Preview — {questions.length} perguntas serão enviadas
           </p>
           <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
             {questions.map((q, i) => (
@@ -860,10 +954,12 @@ const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: st
               </div>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Clique em "Copiar link" para enviar este formulário ao aluno via WhatsApp ou e-mail.
-          </p>
+          <p className="text-xs text-muted-foreground">Clique em "Copiar link" para enviar ao aluno.</p>
         </div>
+      )}
+
+      {selected && (
+        <AnamnesisDetailModal record={selected} questions={questions} onClose={() => setSelected(null)} />
       )}
     </div>
   );
