@@ -147,6 +147,8 @@ interface ApptFeedback {
 const CustomersFeedbacksPage = () => {
   const { user } = useAuthStore();
   const markSeen = async (id: string) => {
+    const fb = feedbacks.find(f => f.id === id);
+    if (!fb || fb.status === "expired") return;
     await supabase.from("appointments").update({ status: "done" }).eq("id", id);
     setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: "answered", answered_at: new Date().toISOString() } : f));
   };
@@ -161,9 +163,22 @@ const CustomersFeedbacksPage = () => {
   const [filterSort, setFilterSort] = useState("default");
   const [showExpired, setShowExpired] = useState(false);
 
+  const EXPIRY_DAYS = 5;
+
   const load = async () => {
     if (!user) return;
     setLoading(true);
+
+    // Expira automaticamente feedbacks não respondidos com mais de 5 dias
+    const expiryThreshold = new Date();
+    expiryThreshold.setDate(expiryThreshold.getDate() - EXPIRY_DAYS);
+    await supabase
+      .from("appointments")
+      .update({ status: "expired" })
+      .eq("coach_id", user.id)
+      .eq("type", "feedback")
+      .eq("status", "scheduled")
+      .lt("scheduled_at", expiryThreshold.toISOString());
 
     // Busca agendamentos do tipo feedback
     const { data: apts } = await supabase
@@ -190,6 +205,7 @@ const CustomersFeedbacksPage = () => {
       id: a.id,
       customer_id: a.customer_id,
       status: a.status === "done" || a.status === "completed" ? "answered"
+            : a.status === "expired" ? "expired"
             : a.status === "cancelled" ? "expired"
             : "pending",
       scheduled_for: a.scheduled_at,
