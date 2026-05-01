@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, TrendingUp, Calendar, ClipboardList, Star, Salad, Dumbbell,
@@ -6,6 +6,10 @@ import {
   Check, Eye, Mail, CalendarDays, MessageSquare, Pin, Loader2,
   Plus, Trash2, Weight, Droplets, Percent, Edit2, X, Link, Upload, ExternalLink,
 } from "lucide-react";
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid,
+} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
@@ -52,35 +56,251 @@ const APPT_TYPE: Record<string, string> = {
 
 // ─── Tab: Progresso ───────────────────────────────────────────────────────────
 
-const ProgressTab = ({ customerId, coachId }: { customerId: string; coachId: string }) => {
-  const { fetchWeightLogs, addWeightLog } = useCustomerStore();
+type WeightRange = "90d" | "180d" | "all";
+type FatRange = "90d" | "180d" | "all";
+
+const filterByRange = <T extends { recorded_at?: string; logged_at?: string }>(
+  items: T[],
+  range: "90d" | "180d" | "all",
+  key: "recorded_at" | "logged_at" = "recorded_at"
+): T[] => {
+  if (range === "all") return items;
+  const days = range === "90d" ? 90 : 180;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return items.filter((i) => new Date((i as any)[key]) >= cutoff);
+};
+
+const RangeFilter = ({ value, onChange }: { value: string; onChange: (v: any) => void }) => (
+  <div className="flex gap-1">
+    {(["90d", "180d", "all"] as const).map((r) => (
+      <button
+        key={r}
+        onClick={() => onChange(r)}
+        className={cn(
+          "px-2.5 py-1 text-xs rounded-md transition-colors",
+          value === r ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+        )}
+      >
+        {r === "all" ? "Todos" : r === "90d" ? "90 dias" : "180 dias"}
+      </button>
+    ))}
+  </div>
+);
+
+const StatCard = ({
+  icon: Icon, label, value, sub, color,
+}: { icon: React.ElementType; label: string; value: string | number; sub?: string; color: string }) => (
+  <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
+    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-1", color)}>
+      <Icon className="w-4 h-4" />
+    </div>
+    <p className="text-xs text-muted-foreground">{label}</p>
+    <p className="text-xl font-bold text-foreground leading-tight">{value}</p>
+    {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+  </div>
+);
+
+const ManageWeightsModal = ({
+  logs,
+  coachId,
+  customerId,
+  onClose,
+  onRefresh,
+}: {
+  logs: WeightLog[];
+  coachId: string;
+  customerId: string;
+  onClose: () => void;
+  onRefresh: () => void;
+}) => {
+  const { addWeightLog } = useCustomerStore();
   const { toast } = useToast();
-  const [logs, setLogs] = useState<WeightLog[]>([]);
   const [newWeight, setNewWeight] = useState("");
+  const [newDate, setNewDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
-  const [bodyFatLogs, setBodyFatLogs] = useState<{ id: string; body_fat_pct: number; recorded_at: string }[]>([]);
-  const [newFat, setNewFat] = useState("");
-  const [savingFat, setSavingFat] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchWeightLogs(customerId).then(setLogs);
-    supabase.from("body_fat_logs").select("*").eq("customer_id", customerId).order("recorded_at").then(({ data }) => setBodyFatLogs(data ?? []));
-  }, [customerId]);
-
-  const handleAddWeight = async () => {
+  const handleAdd = async () => {
     const w = parseFloat(newWeight);
     if (!w) return;
     setSaving(true);
-    const ok = await addWeightLog(coachId, customerId, w, format(new Date(), "yyyy-MM-dd"));
-    if (ok) {
-      const updated = await fetchWeightLogs(customerId);
-      setLogs(updated);
-      setNewWeight("");
-      toast({ title: "Peso registrado!" });
-    }
+    const ok = await addWeightLog(coachId, customerId, w, newDate);
+    if (ok) { toast({ title: "Peso registrado!" }); onRefresh(); setNewWeight(""); }
     setSaving(false);
   };
 
+  const handleDelete = async (id: string) => {
+    setDeleting(id);
+    await supabase.from("weight_logs").delete().eq("id", id);
+    toast({ title: "Registro removido" });
+    onRefresh();
+    setDeleting(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-md bg-background rounded-2xl border border-border shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="font-semibold text-foreground flex items-center gap-2"><Weight className="w-4 h-4 text-primary" /> Gerenciar Pesos</h3>
+          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex gap-2">
+            <Input type="number" step="0.1" placeholder="75.5" className="flex-1" value={newWeight} onChange={(e) => setNewWeight(e.target.value)} />
+            <span className="text-sm text-muted-foreground self-center">kg</span>
+            <Input type="date" className="w-36" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
+            <Button size="sm" onClick={handleAdd} disabled={saving || !newWeight}>
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+            </Button>
+          </div>
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {[...logs].reverse().map((l) => (
+              <div key={l.id} className="flex items-center justify-between py-2 px-1 border-b border-border/40 text-sm">
+                <span className="text-muted-foreground">{format(parseISO(l.recorded_at), "dd/MM/yyyy")}</span>
+                <span className="font-medium text-foreground">{l.weight_kg} kg</span>
+                <button onClick={() => handleDelete(l.id)} disabled={deleting === l.id} className="text-muted-foreground hover:text-destructive transition-colors ml-2">
+                  {deleting === l.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                </button>
+              </div>
+            ))}
+            {logs.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProgressTab = ({ customerId, coachId }: { customerId: string; coachId: string }) => {
+  const { fetchWeightLogs } = useCustomerStore();
+  const { toast } = useToast();
+
+  // ── data states
+  const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
+  const [bodyFatLogs, setBodyFatLogs] = useState<{ id: string; body_fat_pct: number; recorded_at: string }[]>([]);
+  const [hydrationLogs, setHydrationLogs] = useState<{ id: string; water_ml: number; logged_at: string }[]>([]);
+  const [exerciseLogs, setExerciseLogs] = useState<{ id: string; exercise_name: string; muscle_group?: string; sets?: number; reps?: number; weight_kg?: number; logged_at: string }[]>([]);
+  const [feedbacks, setFeedbacks] = useState<{ id: string; answers: Record<string, any>; created_at: string }[]>([]);
+  const [workoutCount, setWorkoutCount] = useState(0);
+
+  // ── ui states
+  const [weightRange, setWeightRange] = useState<WeightRange>("90d");
+  const [fatRange, setFatRange] = useState<FatRange>("90d");
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [newFat, setNewFat] = useState("");
+  const [savingFat, setSavingFat] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const loadAll = async () => {
+    const [wl, bfl, hl, el, fb, apts] = await Promise.all([
+      fetchWeightLogs(customerId),
+      supabase.from("body_fat_logs").select("*").eq("customer_id", customerId).order("recorded_at"),
+      supabase.from("hydration_logs").select("*").eq("customer_id", customerId).order("logged_at"),
+      supabase.from("exercise_logs").select("*").eq("customer_id", customerId).order("logged_at"),
+      supabase.from("feedbacks").select("id, answers, created_at").eq("customer_id", customerId).order("created_at"),
+      supabase.from("appointments").select("id", { count: "exact", head: true }).eq("customer_id", customerId).eq("status", "completed"),
+    ]);
+    setWeightLogs(wl);
+    setBodyFatLogs(bfl.data ?? []);
+    setHydrationLogs(hl.data ?? []);
+    setExerciseLogs(el.data ?? []);
+    setFeedbacks(fb.data ?? []);
+    setWorkoutCount(apts.count ?? 0);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadAll(); }, [customerId]);
+
+  // ── derived: weight
+  const filteredWeight = useMemo(() => filterByRange(weightLogs, weightRange), [weightLogs, weightRange]);
+  const weightChartData = filteredWeight.map((l) => ({
+    date: format(parseISO(l.recorded_at), "dd/MM"),
+    peso: l.weight_kg,
+  }));
+  const firstWeight = weightLogs[0]?.weight_kg ?? null;
+  const lastWeight = weightLogs[weightLogs.length - 1]?.weight_kg ?? null;
+  const weightDiff = lastWeight && firstWeight ? +(lastWeight - firstWeight).toFixed(1) : null;
+
+  // ── derived: body fat
+  const filteredFat = useMemo(() => filterByRange(bodyFatLogs, fatRange), [bodyFatLogs, fatRange]);
+  const fatChartData = filteredFat.map((l) => ({
+    date: format(parseISO(l.recorded_at), "dd/MM"),
+    gordura: l.body_fat_pct,
+  }));
+  const lastFat = bodyFatLogs[bodyFatLogs.length - 1]?.body_fat_pct ?? null;
+
+  // ── derived: hydration weekly
+  const hydrationChartData = useMemo(() => {
+    const byWeek: Record<string, number[]> = {};
+    hydrationLogs.forEach((l) => {
+      const d = parseISO(l.logged_at);
+      const week = format(d, "dd/MM");
+      if (!byWeek[week]) byWeek[week] = [];
+      byWeek[week].push(l.water_ml);
+    });
+    return Object.entries(byWeek).slice(-8).map(([week, vals]) => ({
+      semana: week,
+      media: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
+    }));
+  }, [hydrationLogs]);
+  const avgHydration = hydrationLogs.length > 0
+    ? Math.round(hydrationLogs.reduce((a, l) => a + l.water_ml, 0) / hydrationLogs.length)
+    : null;
+
+  // ── derived: exercises progression
+  const exerciseProgression = useMemo(() => {
+    const grouped: Record<string, typeof exerciseLogs> = {};
+    exerciseLogs.forEach((l) => {
+      if (!grouped[l.exercise_name]) grouped[l.exercise_name] = [];
+      grouped[l.exercise_name].push(l);
+    });
+    return Object.entries(grouped)
+      .map(([name, logs]) => {
+        const sorted = [...logs].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const wFirst = first?.weight_kg ?? 0;
+        const wLast = last?.weight_kg ?? 0;
+        const pct = wFirst > 0 ? (((wLast - wFirst) / wFirst) * 100).toFixed(0) : null;
+        const volFirst = (first?.sets ?? 0) * (first?.reps ?? 0) * (first?.weight_kg ?? 0);
+        const volLast = (last?.sets ?? 0) * (last?.reps ?? 0) * (last?.weight_kg ?? 0);
+        return { name, wFirst, wLast, pct, volFirst: Math.round(volFirst), volLast: Math.round(volLast), count: logs.length };
+      })
+      .filter((e) => e.count >= 2 && e.wFirst > 0)
+      .sort((a, b) => parseFloat(b.pct ?? "0") - parseFloat(a.pct ?? "0"))
+      .slice(0, 6);
+  }, [exerciseLogs]);
+
+  // ── derived: muscle groups
+  const muscleGroups = useMemo(() => {
+    const m: Record<string, number> = {};
+    exerciseLogs.forEach((l) => {
+      const g = l.muscle_group ?? "Outros";
+      m[g] = (m[g] ?? 0) + 1;
+    });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  }, [exerciseLogs]);
+
+  // ── derived: feedback ratings
+  const ratings = useMemo(() => {
+    if (feedbacks.length === 0) return null;
+    const moods: number[] = [];
+    let dietOk = 0, workoutOk = 0, dietTotal = 0, workoutTotal = 0;
+    feedbacks.forEach((f) => {
+      const a = f.answers ?? {};
+      if (a.q1 !== undefined) moods.push(Number(a.q1));
+      if (a.q2 !== undefined) { dietTotal++; if (String(a.q2).toLowerCase() === "sim") dietOk++; }
+      if (a.q3 !== undefined) { workoutTotal++; if (String(a.q3).toLowerCase() === "sim") workoutOk++; }
+    });
+    return {
+      mood: moods.length > 0 ? (moods.reduce((a, b) => a + b, 0) / moods.length).toFixed(1) : null,
+      diet: dietTotal > 0 ? Math.round((dietOk / dietTotal) * 100) : null,
+      workout: workoutTotal > 0 ? Math.round((workoutOk / workoutTotal) * 100) : null,
+    };
+  }, [feedbacks]);
+
+  // ── add body fat
   const handleAddFat = async () => {
     const f = parseFloat(newFat);
     if (!f) return;
@@ -89,88 +309,257 @@ const ProgressTab = ({ customerId, coachId }: { customerId: string; coachId: str
       coach_id: coachId, customer_id: customerId,
       body_fat_pct: f, recorded_at: format(new Date(), "yyyy-MM-dd"),
     }).select().single();
-    if (data) {
-      setBodyFatLogs((prev) => [...prev, data]);
-      setNewFat("");
-      toast({ title: "% gordura registrada!" });
-    }
+    if (data) { setBodyFatLogs((prev) => [...prev, data]); setNewFat(""); toast({ title: "% gordura registrada!" }); }
     setSavingFat(false);
   };
 
-  const lastWeight = logs.length > 0 ? logs[logs.length - 1].weight_kg : null;
-  const firstWeight = logs.length > 0 ? logs[0].weight_kg : null;
-  const diff = lastWeight && firstWeight ? (lastWeight - firstWeight).toFixed(1) : null;
-  const lastFat = bodyFatLogs.length > 0 ? bodyFatLogs[bodyFatLogs.length - 1].body_fat_pct : null;
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-6">
-      {/* Peso */}
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard icon={Dumbbell} label="Treinos concluídos" value={workoutCount} color="bg-primary/10 text-primary" />
+        <StatCard icon={MessageCircle} label="Feedbacks" value={feedbacks.length} color="bg-blue-500/10 text-blue-400" />
+        <StatCard
+          icon={Droplets}
+          label="Hidratação média"
+          value={avgHydration ? `${(avgHydration / 1000).toFixed(1)}L` : "—"}
+          sub={hydrationLogs.length > 0 ? `${hydrationLogs.length} registros` : undefined}
+          color="bg-cyan-500/10 text-cyan-400"
+        />
+        <StatCard
+          icon={Weight}
+          label="Peso atual"
+          value={lastWeight ? `${lastWeight} kg` : "—"}
+          sub={weightDiff !== null ? `${weightDiff > 0 ? "+" : ""}${weightDiff} kg total` : undefined}
+          color="bg-orange-500/10 text-orange-400"
+        />
+        <StatCard
+          icon={Percent}
+          label="Gordura atual"
+          value={lastFat ? `${lastFat}%` : "—"}
+          sub={bodyFatLogs.length > 0 ? `${bodyFatLogs.length} registros` : undefined}
+          color="bg-rose-500/10 text-rose-400"
+        />
+      </div>
+
+      {/* Peso evolution */}
       <div className="rounded-xl border border-border p-5">
-        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Weight className="w-4 h-4 text-primary" /> Evolução de Peso
-        </h3>
-        {logs.length > 0 ? (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Weight className="w-4 h-4 text-primary" /> Evolução de Peso
+          </h3>
+          <div className="flex items-center gap-2">
+            <RangeFilter value={weightRange} onChange={setWeightRange} />
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setShowWeightModal(true)}>
+              <Edit2 className="w-3 h-3" /> Gerenciar
+            </Button>
+          </div>
+        </div>
+        {weightChartData.length > 1 ? (
           <>
-            <div className="flex items-center gap-6 mb-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Peso atual</p>
-                <p className="text-2xl font-bold text-foreground">{lastWeight} <span className="text-sm font-normal text-muted-foreground">kg</span></p>
-              </div>
-              {diff && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Variação total</p>
-                  <p className={cn("text-lg font-semibold", parseFloat(diff) <= 0 ? "text-green-400" : "text-orange-400")}>
-                    {parseFloat(diff) > 0 ? "+" : ""}{diff} kg
-                  </p>
-                </div>
+            <div className="flex gap-6 mb-4">
+              {firstWeight && <div><p className="text-xs text-muted-foreground">Peso inicial</p><p className="text-lg font-bold text-foreground">{firstWeight} <span className="text-xs font-normal text-muted-foreground">kg</span></p></div>}
+              {lastWeight && <div><p className="text-xs text-muted-foreground">Peso atual</p><p className="text-lg font-bold text-foreground">{lastWeight} <span className="text-xs font-normal text-muted-foreground">kg</span></p></div>}
+              {weightDiff !== null && (
+                <div><p className="text-xs text-muted-foreground">Variação</p>
+                <p className={cn("text-lg font-semibold", weightDiff <= 0 ? "text-green-400" : "text-orange-400")}>
+                  {weightDiff > 0 ? "+" : ""}{weightDiff} kg
+                </p></div>
               )}
             </div>
-            <div className="space-y-1 max-h-40 overflow-y-auto">
-              {[...logs].reverse().map((l) => (
-                <div key={l.id} className="flex items-center justify-between text-sm py-1 border-b border-border/50">
-                  <span className="text-muted-foreground">{format(parseISO(l.recorded_at), "dd/MM/yyyy")}</span>
-                  <span className="font-medium text-foreground">{l.weight_kg} kg</span>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={weightChartData} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                  formatter={(v: number) => [`${v} kg`, "Peso"]}
+                />
+                <Line type="monotone" dataKey="peso" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground mb-3">Nenhum peso registrado ainda.</p>
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <Weight className="w-8 h-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Nenhum dado suficiente para exibir o gráfico.</p>
+            <Button size="sm" variant="outline" onClick={() => setShowWeightModal(true)} className="mt-1 gap-1">
+              <Plus className="w-3 h-3" /> Registrar peso
+            </Button>
+          </div>
         )}
-        <div className="flex items-center gap-2 mt-4">
-          <Input type="number" step="0.1" placeholder="Ex: 75.5" className="max-w-[140px]" value={newWeight} onChange={(e) => setNewWeight(e.target.value)} />
-          <span className="text-sm text-muted-foreground">kg</span>
-          <Button size="sm" onClick={handleAddWeight} disabled={saving || !newWeight}>
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />} Registrar
-          </Button>
+      </div>
+
+      {/* Hidratação */}
+      <div className="rounded-xl border border-border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Droplets className="w-4 h-4 text-cyan-400" /> Hidratação Semanal
+          </h3>
+          {avgHydration && (
+            <p className="text-xs text-muted-foreground">
+              Média: <span className="font-semibold text-foreground">{(avgHydration / 1000).toFixed(1)}L</span>
+            </p>
+          )}
         </div>
+        {hydrationChartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={hydrationChartData} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="semana" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(1)}L`} />
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                formatter={(v: number) => [`${(v / 1000).toFixed(2)}L`, "Média diária"]}
+              />
+              <Bar dataKey="media" fill="hsl(188 80% 50%)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex flex-col items-center py-6 gap-1">
+            <Droplets className="w-7 h-7 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">Sem registros de hidratação.</p>
+          </div>
+        )}
       </div>
 
       {/* % Gordura */}
       <div className="rounded-xl border border-border p-5">
-        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Percent className="w-4 h-4 text-primary" /> Percentual de Gordura
-        </h3>
-        {bodyFatLogs.length > 0 ? (
-          <div className="space-y-1 max-h-32 overflow-y-auto mb-4">
-            {[...bodyFatLogs].reverse().map((l) => (
-              <div key={l.id} className="flex items-center justify-between text-sm py-1 border-b border-border/50">
-                <span className="text-muted-foreground">{format(parseISO(l.recorded_at), "dd/MM/yyyy")}</span>
-                <span className="font-medium text-foreground">{l.body_fat_pct}%</span>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Percent className="w-4 h-4 text-rose-400" /> Percentual de Gordura
+          </h3>
+          <RangeFilter value={fatRange} onChange={setFatRange} />
+        </div>
+        {fatChartData.length > 1 ? (
+          <>
+            <div className="flex gap-6 mb-4">
+              {bodyFatLogs[0] && <div><p className="text-xs text-muted-foreground">Inicial</p><p className="text-lg font-bold text-foreground">{bodyFatLogs[0].body_fat_pct}<span className="text-xs font-normal text-muted-foreground">%</span></p></div>}
+              {lastFat && <div><p className="text-xs text-muted-foreground">Atual</p><p className="text-lg font-bold text-foreground">{lastFat}<span className="text-xs font-normal text-muted-foreground">%</span></p></div>}
+            </div>
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={fatChartData} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: number) => [`${v}%`, "Gordura"]}
+                />
+                <Line type="monotone" dataKey="gordura" stroke="hsl(350 80% 60%)" strokeWidth={2} dot={{ r: 3, fill: "hsl(350 80% 60%)" }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </>
+        ) : (
+          <div className="space-y-2">
+            {bodyFatLogs.length === 1 && (
+              <p className="text-sm text-muted-foreground">Apenas 1 registro — adicione mais para ver o gráfico.</p>
+            )}
+            {bodyFatLogs.length === 0 && (
+              <p className="text-sm text-muted-foreground mb-3">Nenhum registro ainda.</p>
+            )}
+            <div className="flex items-center gap-2">
+              <Input type="number" step="0.1" placeholder="Ex: 18.5" className="max-w-[130px]" value={newFat} onChange={(e) => setNewFat(e.target.value)} />
+              <span className="text-sm text-muted-foreground">%</span>
+              <Button size="sm" onClick={handleAddFat} disabled={savingFat || !newFat}>
+                {savingFat ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />} Registrar
+              </Button>
+            </div>
+          </div>
+        )}
+        {fatChartData.length > 1 && (
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+            <Input type="number" step="0.1" placeholder="Ex: 18.5" className="max-w-[130px]" value={newFat} onChange={(e) => setNewFat(e.target.value)} />
+            <span className="text-sm text-muted-foreground">%</span>
+            <Button size="sm" onClick={handleAddFat} disabled={savingFat || !newFat}>
+              {savingFat ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />} Registrar
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Exercícios — progressão */}
+      {exerciseProgression.length > 0 && (
+        <div className="rounded-xl border border-border p-5">
+          <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" /> Progressão dos Exercícios
+          </h3>
+          <div className="space-y-2">
+            {exerciseProgression.map((ex) => {
+              const pctNum = parseFloat(ex.pct ?? "0");
+              const positive = pctNum >= 0;
+              return (
+                <div key={ex.name} className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{ex.name}</p>
+                    <p className="text-xs text-muted-foreground">{ex.wFirst} kg → {ex.wLast} kg · Vol: {ex.volFirst} → {ex.volLast}</p>
+                  </div>
+                  {ex.pct !== null && (
+                    <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", positive ? "bg-green-500/10 text-green-400" : "bg-rose-500/10 text-rose-400")}>
+                      {positive ? "+" : ""}{ex.pct}%
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Grupos musculares */}
+      {muscleGroups.length > 0 && (
+        <div className="rounded-xl border border-border p-5">
+          <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Dumbbell className="w-4 h-4 text-primary" /> Exercícios por Grupo Muscular
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {muscleGroups.map(([group, count]) => (
+              <div key={group} className="rounded-lg bg-muted/50 px-3 py-2.5 flex items-center justify-between">
+                <span className="text-sm text-foreground font-medium truncate">{group}</span>
+                <span className="text-xs text-muted-foreground ml-2">{count}x</span>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground mb-3">Nenhum registro ainda.</p>
-        )}
-        <div className="flex items-center gap-2">
-          <Input type="number" step="0.1" placeholder="Ex: 18.5" className="max-w-[140px]" value={newFat} onChange={(e) => setNewFat(e.target.value)} />
-          <span className="text-sm text-muted-foreground">%</span>
-          <Button size="sm" onClick={handleAddFat} disabled={savingFat || !newFat}>
-            {savingFat ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />} Registrar
-          </Button>
         </div>
-      </div>
+      )}
+
+      {/* Ratings dos feedbacks */}
+      {ratings && (
+        <div className="rounded-xl border border-border p-5">
+          <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Star className="w-4 h-4 text-yellow-400" /> Avaliações nos Feedbacks
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "Humor Geral", value: ratings.mood ? `${ratings.mood}/10` : "—", icon: MessageCircle, color: "text-blue-400" },
+              { label: "Aderência à Dieta", value: ratings.diet !== null ? `${ratings.diet}%` : "—", icon: Salad, color: "text-green-400" },
+              { label: "Aderência ao Treino", value: ratings.workout !== null ? `${ratings.workout}%` : "—", icon: Dumbbell, color: "text-primary" },
+            ].map((r) => (
+              <div key={r.label} className="rounded-lg border border-border p-3 text-center">
+                <r.icon className={cn("w-5 h-5 mx-auto mb-1", r.color)} />
+                <p className="text-xs text-muted-foreground">{r.label}</p>
+                <p className="text-xl font-bold text-foreground mt-0.5">{r.value}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">Baseado em {feedbacks.length} feedback{feedbacks.length !== 1 ? "s" : ""}</p>
+        </div>
+      )}
+
+      {/* Manage weights modal */}
+      {showWeightModal && (
+        <ManageWeightsModal
+          logs={weightLogs}
+          coachId={coachId}
+          customerId={customerId}
+          onClose={() => setShowWeightModal(false)}
+          onRefresh={async () => { const wl = await fetchWeightLogs(customerId); setWeightLogs(wl); }}
+        />
+      )}
     </div>
   );
 };
