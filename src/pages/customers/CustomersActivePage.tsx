@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Filter, Grid, List, Download, Plus, ChevronDown, ChevronUp,
-  Users, MessageCircle, Calendar, AlertCircle, CheckCircle2, Clock,
+  Users, MessageCircle, Calendar, CheckCircle2, Clock, ChevronRight,
+  StickyNote, Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,35 +15,163 @@ import { useCustomerStore, Consultoria } from "@/store/customerStore";
 import NewCustomerModal from "@/components/customers/NewCustomerModal";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/lib/supabase";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const getStatusLabel = (endDate: string) => {
+const getStatusInfo = (endDate: string) => {
   const days = differenceInDays(parseISO(endDate), new Date());
-  if (days < 0) return { label: "Vencido", color: "text-destructive bg-destructive/10" };
-  if (days <= 7) return { label: `Vence em ${days}d`, color: "text-orange-400 bg-orange-400/10" };
-  return { label: "Ativo", color: "text-green-400 bg-green-400/10" };
+  if (days < 0) return { label: "Vencido", color: "text-destructive bg-destructive/10", days };
+  if (days <= 7) return { label: "Vencendo", color: "text-orange-400 bg-orange-400/10", days };
+  return { label: "Ativo", color: "text-green-400 bg-green-400/10", days };
 };
+
+const avatarColors = [
+  "bg-violet-500/30 text-violet-300",
+  "bg-blue-500/30 text-blue-300",
+  "bg-emerald-500/30 text-emerald-300",
+  "bg-orange-500/30 text-orange-300",
+  "bg-pink-500/30 text-pink-300",
+  "bg-cyan-500/30 text-cyan-300",
+];
+
+const getAvatarColor = (name: string) =>
+  avatarColors[name.charCodeAt(0) % avatarColors.length];
 
 const avatarInitials = (name: string) =>
   name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
 
+// ─── Tag chip ─────────────────────────────────────────────────────────────────
+
+const Tag = ({ label, active, color }: { label: string; active: boolean; color: string }) => (
+  <span className={cn(
+    "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors",
+    active
+      ? `${color} border-transparent`
+      : "text-muted-foreground/50 border-border/40 bg-transparent line-through decoration-muted-foreground/30"
+  )}>
+    {active && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />}
+    {label}
+  </span>
+);
+
+// ─── Rich Row ─────────────────────────────────────────────────────────────────
+
+interface RichRowProps {
+  c: Consultoria;
+  notesCount: number;
+  onClick: () => void;
+}
+
+const CustomerRichRow = ({ c, notesCount, onClick }: RichRowProps) => {
+  const customer = c.customers!;
+  const status = getStatusInfo(c.end_date);
+  const avatarColor = getAvatarColor(customer.name);
+
+  const modality = c.plans?.modality ?? "";
+  const modalityLabel =
+    modality === "online" ? "Online" :
+    modality === "personal" ? "Personal" :
+    modality === "consulta" ? "Consulta" : null;
+
+  const hasEmail = !!customer.email;
+  const hasWhatsApp = !!customer.whatsapp;
+  const hasPhone = !!customer.phone;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center gap-4 px-5 py-4 border-b border-border hover:bg-muted/20 cursor-pointer transition-colors group"
+      onClick={onClick}
+    >
+      {/* Avatar */}
+      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0", avatarColor)}>
+        {avatarInitials(customer.name)}
+      </div>
+
+      {/* Nome + contatos */}
+      <div className="w-56 shrink-0">
+        <p className="text-sm font-semibold text-foreground truncate">{customer.name}</p>
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          {customer.email && (
+            <p className="text-[11px] text-muted-foreground truncate">{customer.email}</p>
+          )}
+          {(customer.whatsapp || customer.phone) && (
+            <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+              <Phone className="w-2.5 h-2.5" />
+              {customer.whatsapp ?? customer.phone}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Plano */}
+      <div className="w-44 shrink-0">
+        <p className="text-xs text-foreground/80 font-medium truncate">{c.plans?.name ?? "Sem plano"}</p>
+        {modalityLabel && (
+          <p className="text-[11px] text-muted-foreground">{modalityLabel}</p>
+        )}
+      </div>
+
+      {/* Tags de contexto */}
+      <div className="flex-1 flex flex-wrap gap-1.5 min-w-0">
+        <Tag label="E-mail" active={hasEmail} color="text-blue-400 bg-blue-400/10" />
+        <Tag label="WhatsApp" active={hasWhatsApp} color="text-green-400 bg-green-400/10" />
+        <Tag label="Telefone" active={hasPhone} color="text-cyan-400 bg-cyan-400/10" />
+        {notesCount > 0 && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full text-amber-400 bg-amber-400/10">
+            <StickyNote className="w-2.5 h-2.5" />
+            {notesCount} nota{notesCount !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
+      {/* Dias restantes */}
+      <div className="shrink-0 text-right w-32">
+        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", status.color)}>
+          {status.label}
+        </span>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          {status.days >= 0
+            ? `${status.days} dia${status.days !== 1 ? "s" : ""} restante${status.days !== 1 ? "s" : ""}`
+            : `Venceu há ${Math.abs(status.days)}d`}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        {hasWhatsApp && (
+          <button
+            onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${customer.whatsapp!.replace(/\D/g, "")}`); }}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-green-400 hover:bg-green-400/10 transition-colors"
+            title="Abrir WhatsApp"
+          >
+            <MessageCircle className="w-4 h-4" />
+          </button>
+        )}
+        <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+      </div>
+    </motion.div>
+  );
+};
+
 // ─── Card Grid ────────────────────────────────────────────────────────────────
 
-const CustomerCard = ({ c, onClick }: { c: Consultoria; onClick: () => void }) => {
+const CustomerCard = ({ c, notesCount, onClick }: RichRowProps) => {
   const customer = c.customers!;
-  const status = getStatusLabel(c.end_date);
-  const daysLeft = differenceInDays(parseISO(c.end_date), new Date());
+  const status = getStatusInfo(c.end_date);
+  const avatarColor = getAvatarColor(customer.name);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl p-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group"
+      className="bg-card border border-border rounded-xl p-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all"
       onClick={onClick}
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-bold shrink-0">
+        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0", avatarColor)}>
           {avatarInitials(customer.name)}
         </div>
         <div className="flex-1 min-w-0">
@@ -59,69 +188,19 @@ const CustomerCard = ({ c, onClick }: { c: Consultoria; onClick: () => void }) =
           <Calendar className="w-3 h-3" />
           {format(parseISO(c.end_date), "dd/MM/yyyy")}
         </span>
-        {customer.whatsapp && (
-          <span className="flex items-center gap-1">
-            <MessageCircle className="w-3 h-3" />
-            WhatsApp
+        {notesCount > 0 && (
+          <span className="flex items-center gap-1 text-amber-400">
+            <StickyNote className="w-3 h-3" />
+            {notesCount} nota{notesCount !== 1 ? "s" : ""}
           </span>
         )}
       </div>
 
-      {daysLeft >= 0 && daysLeft <= 30 && (
-        <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
-          <div
-            className={cn("h-full rounded-full", daysLeft <= 7 ? "bg-orange-400" : "bg-primary")}
-            style={{ width: `${Math.min(100, (daysLeft / 90) * 100)}%` }}
-          />
-        </div>
-      )}
+      <div className="mt-2 flex flex-wrap gap-1">
+        <Tag label="E-mail" active={!!customer.email} color="text-blue-400 bg-blue-400/10" />
+        <Tag label="WhatsApp" active={!!customer.whatsapp} color="text-green-400 bg-green-400/10" />
+      </div>
     </motion.div>
-  );
-};
-
-// ─── Row List ─────────────────────────────────────────────────────────────────
-
-const CustomerRow = ({ c, onClick }: { c: Consultoria; onClick: () => void }) => {
-  const customer = c.customers!;
-  const status = getStatusLabel(c.end_date);
-
-  return (
-    <tr
-      className="border-b border-border hover:bg-muted/30 cursor-pointer transition-colors"
-      onClick={onClick}
-    >
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0">
-            {avatarInitials(customer.name)}
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">{customer.name}</p>
-            <p className="text-xs text-muted-foreground">{customer.email ?? "—"}</p>
-          </div>
-        </div>
-      </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">{customer.whatsapp ?? "—"}</td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">{c.plans?.name ?? "Sem plano"}</td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {format(parseISO(c.end_date), "dd/MM/yyyy")}
-      </td>
-      <td className="px-4 py-3">
-        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", status.color)}>
-          {status.label}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        {customer.whatsapp && (
-          <button
-            onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${customer.whatsapp?.replace(/\D/g, "")}`); }}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-green-400 hover:bg-green-400/10 transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-          </button>
-        )}
-      </td>
-    </tr>
   );
 };
 
@@ -140,6 +219,7 @@ const CustomersActivePage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSort, setFilterSort] = useState("name");
   const [showModal, setShowModal] = useState(false);
+  const [notesMap, setNotesMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (user) {
@@ -147,6 +227,23 @@ const CustomersActivePage = () => {
       fetchPlans(user.id);
     }
   }, [user]);
+
+  // Busca contagem de notas por customer quando a lista carrega
+  useEffect(() => {
+    if (!consultorias.length) return;
+    const customerIds = consultorias.map(c => c.customer_id).filter(Boolean);
+    if (!customerIds.length) return;
+
+    supabase
+      .from("customer_notes")
+      .select("customer_id")
+      .in("customer_id", customerIds)
+      .then(({ data }) => {
+        const map: Record<string, number> = {};
+        (data ?? []).forEach(n => { map[n.customer_id] = (map[n.customer_id] ?? 0) + 1; });
+        setNotesMap(map);
+      });
+  }, [consultorias]);
 
   // Filtragem
   const filtered = consultorias
@@ -326,33 +423,30 @@ const CustomersActivePage = () => {
               <CustomerCard
                 key={c.id}
                 c={c}
+                notesCount={notesMap[c.customer_id] ?? 0}
                 onClick={() => navigate(`/customers/actives/${c.id}`)}
               />
             ))}
           </div>
         ) : (
           <div className="rounded-xl border border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 border-b border-border">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aluno</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plano</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vencimento</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c) => (
-                  <CustomerRow
-                    key={c.id}
-                    c={c}
-                    onClick={() => navigate(`/customers/actives/${c.id}`)}
-                  />
-                ))}
-              </tbody>
-            </table>
+            {/* Header colunas */}
+            <div className="flex items-center gap-4 px-5 py-2.5 bg-muted/40 border-b border-border">
+              <div className="w-10 shrink-0" />
+              <div className="w-56 shrink-0 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Aluno</div>
+              <div className="w-44 shrink-0 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Plano</div>
+              <div className="flex-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Informações</div>
+              <div className="w-32 shrink-0 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Status</div>
+              <div className="w-16 shrink-0" />
+            </div>
+            {filtered.map((c) => (
+              <CustomerRichRow
+                key={c.id}
+                c={c}
+                notesCount={notesMap[c.customer_id] ?? 0}
+                onClick={() => navigate(`/customers/actives/${c.id}`)}
+              />
+            ))}
           </div>
         )}
       </div>
