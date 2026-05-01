@@ -132,7 +132,7 @@ const CustomersActivePage = () => {
   const { user } = useAuthStore();
   const { consultorias, plans, loading, fetchActives, fetchPlans } = useCustomerStore();
 
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [search, setSearch] = useState("");
   const [filterPlan, setFilterPlan] = useState("all");
