@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  ChevronLeft, Eye, EyeOff, TrendingUp, TrendingDown, Minus,
-  Scale, Utensils, Droplets, Dumbbell, Activity, MessageSquare,
-  Star, ArrowLeftRight, Image as ImageIcon, ExternalLink,
-  Brain, Moon, Zap, HeartPulse,
+  ChevronLeft, Eye, EyeOff, TrendingUp,
+  Scale, MessageSquare, ArrowLeftRight, Image as ImageIcon, ExternalLink, Star,
 } from "lucide-react";
+import { FeedbackQuestion, loadCoachQuestions } from "@/lib/feedbackQuestions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -133,18 +132,6 @@ const DeltaWeight = ({ current, previous }: { current?: number; previous?: numbe
   );
 };
 
-// Linhas da tabela de métricas
-const METRIC_ROWS = [
-  { id: "plano_alimentar",    label: "Plano alimentar",       icon: Utensils,   motivoId: "plano_alimentar_motivo" },
-  { id: "hidratacao",         label: "Hidratação",             icon: Droplets,   motivoId: "hidratacao_motivo" },
-  { id: "plano_treino",       label: "Plano de treino",        icon: Dumbbell,   motivoId: "plano_treino_motivo" },
-  { id: "exercicio_aerobico", label: "Exercício aeróbico",     icon: Activity,   motivoId: "exercicio_aerobico_motivo" },
-  { id: "desempenho_treino",  label: "Desempenho no treino",   icon: Zap,        motivoId: null },
-  { id: "recuperacao_treino", label: "Recuperação do treino",  icon: HeartPulse, motivoId: null },
-  { id: "disposicao_dia",     label: "Disposição no dia a dia",icon: Brain,      motivoId: null },
-  { id: "qualidade_sono",     label: "Qualidade do sono",      icon: Moon,       motivoId: null },
-] as const;
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const FeedbackDetailPage = () => {
@@ -160,6 +147,7 @@ const FeedbackDetailPage = () => {
   const [previousFeedbacks, setPreviousFeedbacks] = useState<{ id: string; scheduled_at: string; fbRecord?: FeedbackRecord }[]>([]);
   const [selectedPrev, setSelectedPrev] = useState<string>("");
   const [prevFb, setPrevFb] = useState<FeedbackRecord | null>(null);
+  const [coachQuestions, setCoachQuestions] = useState<FeedbackQuestion[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Photo comparison
@@ -249,6 +237,11 @@ const FeedbackDetailPage = () => {
     }));
 
     setPreviousFeedbacks(prevList);
+
+    // Carrega perguntas configuradas pelo coach
+    const qs = await loadCoachQuestions(user!.id);
+    setCoachQuestions(qs);
+
     setLoading(false);
   };
 
@@ -469,70 +462,62 @@ const FeedbackDetailPage = () => {
                   </td>
                 </tr>
 
-                {/* Métricas com rating */}
-                {METRIC_ROWS.map(({ id: mId, label, icon: Icon, motivoId }) => {
-                  const cur = currentAnswers?.[mId as keyof FeedbackAnswers] as RatingAnswer | undefined;
-                  const prv = prevAnswers?.[mId as keyof FeedbackAnswers] as RatingAnswer | undefined;
-                  const curMotivo = motivoId ? (currentAnswers?.[motivoId as keyof FeedbackAnswers] as string | undefined) : undefined;
-                  const prvMotivo = motivoId ? (prevAnswers?.[motivoId as keyof FeedbackAnswers] as string | undefined) : undefined;
+                {/* Perguntas dinâmicas configuradas pelo coach */}
+                {coachQuestions.filter(q => q.active && q.type !== "number").map((q) => {
+                  const qId = q.id as string;
+                  const isRating = q.type === "rating";
+                  const isText   = q.type === "text";
+                  const motivoId = q.has_motivo ? `${qId}_motivo` : null;
+
+                  const cur = currentAnswers?.[qId] as RatingAnswer | string | undefined;
+                  const prv = prevAnswers?.[qId]   as RatingAnswer | string | undefined;
+                  const curRating = isRating ? (cur as RatingAnswer | undefined) : undefined;
+                  const prvRating = isRating ? (prv as RatingAnswer | undefined) : undefined;
+                  const curText   = isText   ? (cur as string | undefined) : undefined;
+                  const prvText   = isText   ? (prv as string | undefined) : undefined;
+                  const curMotivo = motivoId ? (currentAnswers?.[motivoId] as string | undefined) : undefined;
+                  const prvMotivo = motivoId ? (prevAnswers?.[motivoId]   as string | undefined) : undefined;
 
                   return (
                     <>
-                      <tr key={mId} className="hover:bg-muted/20">
+                      <tr key={qId} className="hover:bg-muted/20">
                         <td className="px-5 py-4 align-top">
                           <div className="flex items-center gap-2 text-muted-foreground">
-                            <Icon className="w-4 h-4 shrink-0" />
-                            <span className="text-sm font-medium leading-tight">{label}</span>
+                            <MessageSquare className="w-4 h-4 shrink-0" />
+                            <span className="text-sm font-medium leading-tight">{q.label}</span>
                           </div>
                         </td>
                         {hasPrev && (
                           <td className="px-5 py-4 text-right align-top">
-                            <RatingCell rating={prv} />
+                            {isRating
+                              ? <RatingCell rating={prvRating} />
+                              : <span className="text-xs text-muted-foreground">{prvText ?? "—"}</span>
+                            }
                           </td>
                         )}
                         <td className="px-5 py-4 text-right align-top">
-                          <div className="flex items-center justify-end gap-1">
-                            {hasPrev && <DeltaPercent current={cur} previous={prv} />}
-                            <RatingCell rating={cur} />
-                          </div>
+                          {isRating ? (
+                            <div className="flex items-center justify-end gap-1">
+                              {hasPrev && <DeltaPercent current={curRating} previous={prvRating} />}
+                              <RatingCell rating={curRating} />
+                            </div>
+                          ) : (
+                            <span className="text-xs text-foreground">{curText ?? "—"}</span>
+                          )}
                         </td>
                       </tr>
                       {motivoId && (curMotivo || prvMotivo) && (
-                        <tr key={`${mId}_motivo`} className="hover:bg-muted/10 bg-muted/5">
+                        <tr key={`${qId}_motivo`} className="hover:bg-muted/10 bg-muted/5">
                           <td className="px-5 py-3 pl-10 text-xs text-muted-foreground font-medium">Motivo</td>
                           {hasPrev && (
-                            <td className="px-5 py-3 text-right text-xs text-muted-foreground leading-relaxed">
-                              {prvMotivo ?? "—"}
-                            </td>
+                            <td className="px-5 py-3 text-right text-xs text-muted-foreground leading-relaxed">{prvMotivo ?? "—"}</td>
                           )}
-                          <td className="px-5 py-3 text-right text-xs text-foreground leading-relaxed">
-                            {curMotivo ?? "—"}
-                          </td>
+                          <td className="px-5 py-3 text-right text-xs text-foreground leading-relaxed">{curMotivo ?? "—"}</td>
                         </tr>
                       )}
                     </>
                   );
                 })}
-
-                {/* Observação geral */}
-                {(currentAnswers?.obs_geral || apt.notes) && (
-                  <tr className="hover:bg-muted/20">
-                    <td className="px-5 py-4 align-top">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MessageSquare className="w-4 h-4" />
-                        <span className="text-sm font-medium">Observação</span>
-                      </div>
-                    </td>
-                    {hasPrev && (
-                      <td className="px-5 py-4 text-right text-xs text-muted-foreground leading-relaxed align-top">
-                        {(prevAnswers?.obs_geral) ?? "—"}
-                      </td>
-                    )}
-                    <td className="px-5 py-4 text-right text-xs text-foreground leading-relaxed align-top">
-                      {currentAnswers?.obs_geral ?? apt.notes ?? "—"}
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
 

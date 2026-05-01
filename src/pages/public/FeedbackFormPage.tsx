@@ -3,43 +3,29 @@ import { useParams } from "react-router-dom";
 import { Bot, CheckCircle2, Loader2, AlertCircle, ChevronRight, ChevronLeft, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { FeedbackQuestion, loadCoachQuestions } from "@/lib/feedbackQuestions";
 
-// ─── Perguntas padrão ─────────────────────────────────────────────────────────
-// rating: valor 1-5 → porcentagem 20%/40%/60%/80%/100%
-// number: peso em Kg
-// text: resposta livre
+// ─── Steps a partir das perguntas ─────────────────────────────────────────────
 
-export const FEEDBACK_QUESTIONS = [
-  { id: "weight_kg",                 label: "Qual foi o seu peso esta semana?",         type: "number",  unit: "Kg",    motivo: false },
-  { id: "plano_alimentar",           label: "Plano alimentar",                           type: "rating",  motivo: true  },
-  { id: "hidratacao",                label: "Hidratação",                                type: "rating",  motivo: true  },
-  { id: "plano_treino",              label: "Plano de treino",                           type: "rating",  motivo: true  },
-  { id: "exercicio_aerobico",        label: "Exercício aeróbico",                        type: "rating",  motivo: true  },
-  { id: "desempenho_treino",         label: "Desempenho no treino",                      type: "rating",  motivo: false },
-  { id: "recuperacao_treino",        label: "Recuperação do treino",                     type: "rating",  motivo: false },
-  { id: "disposicao_dia",            label: "Disposição no dia a dia",                   type: "rating",  motivo: false },
-  { id: "qualidade_sono",            label: "Qualidade do sono",                         type: "rating",  motivo: false },
-  { id: "obs_geral",                 label: "Alguma observação ou mensagem para o coach?", type: "text", motivo: false },
-];
+type Step = {
+  questionId: string;
+  subtype: "rating" | "number" | "text";
+  label: string;
+  unit?: string;
+  required: boolean;
+};
 
-// Cada pergunta com motivo gera dois steps: rating + texto
-type Step = { questionId: string; subtype: "rating" | "number" | "text"; label: string; unit?: string };
-
-const buildSteps = (): Step[] => {
+const buildSteps = (questions: FeedbackQuestion[]): Step[] => {
   const steps: Step[] = [];
-  for (const q of FEEDBACK_QUESTIONS) {
-    steps.push({ questionId: q.id, subtype: q.type as any, label: q.label, unit: (q as any).unit });
-    if (q.motivo) {
-      steps.push({ questionId: `${q.id}_motivo`, subtype: "text", label: `Motivo — ${q.label}` });
+  for (const q of questions) {
+    if (!q.active) continue;
+    steps.push({ questionId: q.id, subtype: q.type, label: q.label, unit: q.unit, required: q.required });
+    if (q.has_motivo && q.type === "rating") {
+      steps.push({ questionId: `${q.id}_motivo`, subtype: "text", label: `Motivo — ${q.label}`, required: false });
     }
   }
   return steps;
 };
-
-const STEPS = buildSteps();
-
-const ratingToPercent = (v: number) => `${v * 20}%`;
-const percentToStars = (pct: string) => Math.round(parseInt(pct) / 20);
 
 // ─── Componentes de resposta ──────────────────────────────────────────────────
 
@@ -50,19 +36,8 @@ const RatingInput = ({ value, onChange }: { value: string; onChange: (v: string)
     <div className="space-y-4">
       <div className="flex justify-center gap-3">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(String(n))}
-            className="flex flex-col items-center gap-1 transition-all"
-          >
-            <svg
-              className={`w-9 h-9 transition-all ${n <= selected ? "text-yellow-400 scale-110" : "text-gray-300 hover:text-yellow-200"}`}
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 22 20"
-            >
+          <button key={n} type="button" onClick={() => onChange(String(n))} className="flex flex-col items-center gap-1 transition-all">
+            <svg className={`w-9 h-9 transition-all ${n <= selected ? "text-yellow-400 scale-110" : "text-gray-300 hover:text-yellow-200"}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 20">
               <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z" />
             </svg>
           </button>
@@ -70,7 +45,7 @@ const RatingInput = ({ value, onChange }: { value: string; onChange: (v: string)
       </div>
       {selected > 0 && (
         <p className="text-center text-sm font-medium text-violet-700 bg-violet-50 rounded-lg py-2">
-          {ratingToPercent(selected)} — {LABELS[selected]}
+          {selected * 20}% — {LABELS[selected]}
         </p>
       )}
     </div>
@@ -80,13 +55,8 @@ const RatingInput = ({ value, onChange }: { value: string; onChange: (v: string)
 const NumberInput = ({ value, onChange, unit }: { value: string; onChange: (v: string) => void; unit?: string }) => (
   <div className="flex items-center gap-3 justify-center">
     <input
-      type="number"
-      step="0.1"
-      min="0"
-      max="500"
-      placeholder="0.0"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
+      type="number" step="0.1" min="0" max="500" placeholder="0.0"
+      value={value} onChange={(e) => onChange(e.target.value)}
       className="w-32 text-center text-2xl font-bold rounded-xl border-2 border-gray-200 focus:border-violet-400 focus:outline-none py-3 px-4 bg-gray-50"
     />
     {unit && <span className="text-lg text-gray-500 font-medium">{unit}</span>}
@@ -96,10 +66,8 @@ const NumberInput = ({ value, onChange, unit }: { value: string; onChange: (v: s
 const TextInput = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
   <textarea
     className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 bg-gray-50"
-    rows={4}
-    placeholder="Digite sua resposta... (opcional)"
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
+    rows={4} placeholder="Digite sua resposta... (opcional)"
+    value={value} onChange={(e) => onChange(e.target.value)}
   />
 );
 
@@ -107,6 +75,7 @@ const TextInput = ({ value, onChange }: { value: string; onChange: (v: string) =
 
 type TokenData = {
   feedback_id: string;
+  coach_id: string;
   customer_name: string;
   coach_name: string;
   expires_at: string;
@@ -117,6 +86,8 @@ const FeedbackFormPage = () => {
 
   const [phase, setPhase] = useState<"loading" | "invalid" | "expired" | "form" | "submitting" | "done">("loading");
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
+  const [steps, setSteps] = useState<Step[]>([]);
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
 
@@ -139,42 +110,46 @@ const FeedbackFormPage = () => {
         .eq("token_id", data.id)
         .maybeSingle();
 
-      setTokenData({
+      const td: TokenData = {
         feedback_id: fb?.id ?? "",
+        coach_id: data.coach_id,
         customer_name: (data.customers as any)?.name ?? "Aluno",
         coach_name: (data.profiles as any)?.name ?? "Coach",
         expires_at: data.expires_at,
-      });
+      };
+      setTokenData(td);
+
+      // Carrega perguntas configuradas pelo coach
+      const qs = await loadCoachQuestions(data.coach_id);
+      setQuestions(qs);
+      setSteps(buildSteps(qs));
       setPhase("form");
     })();
   }, [token]);
 
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
-  // Campos de motivo e obs são opcionais
-  const isOptional = current?.subtype === "text";
-  const canNext = isOptional || !!answers[current?.questionId];
+  const current = steps[step];
+  const isLast = step === steps.length - 1;
+  const isOptional = current && !current.required;
+  const canNext = isOptional || !!(current && answers[current.questionId]);
 
   const handleSubmit = async () => {
     if (!tokenData) return;
     setPhase("submitting");
 
-    // Extrai peso para salvar também em weight_logs
     const weightKg = answers["weight_kg"] ? parseFloat(answers["weight_kg"]) : undefined;
 
-    // Converte ratings de 1-5 para percentagem no objeto de respostas
     const processedAnswers: Record<string, unknown> = {};
-    for (const q of FEEDBACK_QUESTIONS) {
+    for (const q of questions) {
+      if (!q.active) continue;
       if (answers[q.id] !== undefined) {
         processedAnswers[q.id] = q.type === "rating"
           ? { stars: parseInt(answers[q.id]), percent: parseInt(answers[q.id]) * 20 }
           : answers[q.id];
       }
-      if (q.motivo && answers[`${q.id}_motivo`]) {
+      if (q.has_motivo && answers[`${q.id}_motivo`]) {
         processedAnswers[`${q.id}_motivo`] = answers[`${q.id}_motivo`];
       }
     }
-    processedAnswers["obs_geral"] = answers["obs_geral"] ?? "";
 
     await supabase.from("feedbacks").update({
       answers: processedAnswers,
@@ -184,9 +159,10 @@ const FeedbackFormPage = () => {
     }).eq("id", tokenData.feedback_id);
 
     await supabase.from("feedback_tokens").update({ used_at: new Date().toISOString() }).eq("token", token!);
-
     setPhase("done");
   };
+
+  // ── Estados ──
 
   if (phase === "loading") return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -226,7 +202,9 @@ const FeedbackFormPage = () => {
     </div>
   );
 
-  const progress = ((step + 1) / STEPS.length) * 100;
+  if (!current) return null;
+
+  const progress = ((step + 1) / steps.length) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -245,7 +223,7 @@ const FeedbackFormPage = () => {
           <div className="mt-4 h-1.5 rounded-full bg-white/20 overflow-hidden">
             <div className="h-full rounded-full bg-white transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
-          <p className="text-xs text-violet-200 mt-1">{step + 1} de {STEPS.length}</p>
+          <p className="text-xs text-violet-200 mt-1">{step + 1} de {steps.length}</p>
         </div>
 
         {/* Pergunta */}
@@ -254,29 +232,16 @@ const FeedbackFormPage = () => {
             {current.subtype === "number" && <Scale className="w-5 h-5 text-violet-500 shrink-0 mt-0.5" />}
             <p className="text-base font-semibold text-gray-900">{current.label}</p>
           </div>
-
-          {isOptional && (
-            <p className="text-xs text-gray-400 -mt-3">Campo opcional — pode pular se preferir</p>
-          )}
+          {isOptional && <p className="text-xs text-gray-400 -mt-3">Campo opcional — pode pular se preferir</p>}
 
           {current.subtype === "rating" && (
-            <RatingInput
-              value={answers[current.questionId] ?? ""}
-              onChange={(v) => setAnswers(prev => ({ ...prev, [current.questionId]: v }))}
-            />
+            <RatingInput value={answers[current.questionId] ?? ""} onChange={(v) => setAnswers(p => ({ ...p, [current.questionId]: v }))} />
           )}
           {current.subtype === "number" && (
-            <NumberInput
-              value={answers[current.questionId] ?? ""}
-              onChange={(v) => setAnswers(prev => ({ ...prev, [current.questionId]: v }))}
-              unit={current.unit}
-            />
+            <NumberInput value={answers[current.questionId] ?? ""} onChange={(v) => setAnswers(p => ({ ...p, [current.questionId]: v }))} unit={current.unit} />
           )}
           {current.subtype === "text" && (
-            <TextInput
-              value={answers[current.questionId] ?? ""}
-              onChange={(v) => setAnswers(prev => ({ ...prev, [current.questionId]: v }))}
-            />
+            <TextInput value={answers[current.questionId] ?? ""} onChange={(v) => setAnswers(p => ({ ...p, [current.questionId]: v }))} />
           )}
         </div>
 
@@ -285,7 +250,6 @@ const FeedbackFormPage = () => {
           <Button variant="outline" size="sm" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
           </Button>
-
           {isLast ? (
             <Button size="sm" onClick={handleSubmit} disabled={phase === "submitting"} className="bg-violet-600 hover:bg-violet-700">
               {phase === "submitting" ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}

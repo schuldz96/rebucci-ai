@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { User, Dumbbell, Zap, DollarSign, Plug, Loader2, Save, ClipboardList, Plus, Trash2, GripVertical, Edit2, X, Check } from "lucide-react";
+import { User, Dumbbell, Zap, DollarSign, Plug, Loader2, Save, ClipboardList, Plus, Trash2, GripVertical, Edit2, X, Check, MessageSquare } from "lucide-react";
+import FeedbackSection from "@/components/settings/FeedbackSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ const SECTIONS = [
   { id: "financial", label: "Financeiro", icon: DollarSign },
   { id: "integrations", label: "Integrações", icon: Plug },
   { id: "anamnesis", label: "Anamnese", icon: ClipboardList },
+  { id: "feedback", label: "Feedbacks", icon: MessageSquare },
 ];
 
 const FEEDBACK_FREQ_OPTIONS = [7, 14, 15, 21, 30];
@@ -691,6 +693,7 @@ const AccountSettingsPage = () => {
               {section === "financial" && <FinancialSection coachId={user.id} />}
               {section === "integrations" && <IntegrationsSection coachId={user.id} />}
               {section === "anamnesis" && <AnamnesisSection coachId={user.id} />}
+              {section === "feedback" && <FeedbackSection coachId={user.id} />}
             </>
           )}
         </div>
