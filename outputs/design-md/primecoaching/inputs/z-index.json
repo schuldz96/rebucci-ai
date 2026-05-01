@@ -1,0 +1,97 @@
+{
+  "all": [
+    {
+      "value": 0,
+      "count": 2
+    },
+    {
+      "value": 1,
+      "count": 14
+    },
+    {
+      "value": 2,
+      "count": 10
+    },
+    {
+      "value": 3,
+      "count": 4
+    },
+    {
+      "value": 4,
+      "count": 5
+    },
+    {
+      "value": 5,
+      "count": 2
+    },
+    {
+      "value": 6,
+      "count": 1
+    },
+    {
+      "value": 7,
+      "count": 1
+    },
+    {
+      "value": 10,
+      "count": 5
+    },
+    {
+      "value": 20,
+      "count": 2
+    },
+    {
+      "value": 30,
+      "count": 1
+    },
+    {
+      "value": 40,
+      "count": 1
+    },
+    {
+      "value": 50,
+      "count": 2
+    },
+    {
+      "value": 60,
+      "count": 1
+    },
+    {
+      "value": 99,
+      "count": 1
+    },
+    {
+      "value": 999,
+      "count": 5
+    },
+    {
+      "value": 1000,
+      "count": 3
+    },
+    {
+      "value": 1001,
+      "count": 1
+    },
+    {
+      "value": 1051,
+      "count": 1
+    },
+    {
+      "value": 1060,
+      "count": 2
+    },
+    {
+      "value": 9998,
+      "count": 1
+    },
+    {
+      "value": 9999,
+      "count": 9
+    }
+  ],
+  "base": 0,
+  "dropdown": 10,
+  "modal": 999,
+  "toast": 1051,
+  "tooltip": 9999
+}

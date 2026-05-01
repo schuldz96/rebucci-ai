@@ -158,7 +158,7 @@ const ImportCustomersPage = () => {
         end_date: endDate,
         value: row.value ?? 0,
         payment_method: row.payment_method ?? "pix",
-        payment_status: "pending",
+        payment_status: "paid",
       });
 
       if (consErr) { errs.push(`${row.name}: consultoria — ${consErr.message}`); } else { count++; }

@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "url": "http://localhost:9099/dashboard.html",
+  "provider": "claude-cli",
+  "phases": {
+    "phase_1_fetch": 19,
+    "phase_2_collect": 55,
+    "phase_3_detect": 121,
+    "phase_4_markdown": 34,
+    "phase_5_prompt": 1,
+    "phase_6_llm": 245791,
+    "phase_7_log": 16,
+    "phase_8_preview": 11
+  },
+  "wall_clock_ms": 264790,
+  "reuse": {
+    "enabled": true,
+    "previous_run": null,
+    "hits": 0,
+    "trace": {
+      "fetch": "MISS",
+      "collect": "MISS",
+      "detect": "MISS",
+      "markdown": "MISS",
+      "llm": "MISS"
+    }
+  },
+  "llm": {
+    "model": "claude-opus-4-7",
+    "provider": "claude-cli",
+    "reused": false,
+    "input_tokens": 11,
+    "output_tokens": 15118,
+    "cache_read_tokens": 803601,
+    "cache_creation_tokens": 117141,
+    "turns_used": 20,
+    "retries": 0,
+    "max_turns_hit": false,
+    "cost_estimate": {
+      "usd": 4.5358,
+      "source": "sdk-usage",
+      "model": "claude-opus-4-7",
+      "breakdown": {
+        "input_usd": 0.0002,
+        "output_usd": 1.1339,
+        "cache_read_usd": 1.2054,
+        "cache_write_usd": 2.1964
+      }
+    }
+  }
+}

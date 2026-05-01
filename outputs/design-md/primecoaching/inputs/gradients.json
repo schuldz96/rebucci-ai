@@ -1,0 +1,47 @@
+{
+  "primary": "linear-gradient(135deg, #3D96FF 0%, #2265B5 100%)",
+  "secondary": "linear-gradient(top, #fff 50%, #eee 100%)",
+  "total_unique": 29,
+  "top": [
+    {
+      "value": "linear-gradient(135deg, #3D96FF 0%, #2265B5 100%)",
+      "count": 3
+    },
+    {
+      "value": "linear-gradient(top, #fff 50%, #eee 100%)",
+      "count": 2
+    },
+    {
+      "value": "linear-gradient(top, #eee 50%, #ccc 100%)",
+      "count": 2
+    },
+    {
+      "value": "linear-gradient(top, #fff 0%, #eee 50%)",
+      "count": 2
+    },
+    {
+      "value": "linear-gradient(top, #eee 50%, #fff 100%)",
+      "count": 2
+    },
+    {
+      "value": "linear-gradient(to right, var(--tw-gradient-stops))",
+      "count": 2
+    },
+    {
+      "value": "linear-gradient(to bottom, #fff 50%, #eee 100%)",
+      "count": 1
+    },
+    {
+      "value": "linear-gradient(to bottom, #eee 50%, #ccc 100%)",
+      "count": 1
+    },
+    {
+      "value": "linear-gradient(to bottom, #fff 0%, #eee 50%)",
+      "count": 1
+    },
+    {
+      "value": "linear-gradient(to bottom, #eee 50%, #fff 100%)",
+      "count": 1
+    }
+  ]
+}

@@ -263,7 +263,7 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
         end_date: payload.end_date,
         value: payload.value,
         payment_method: payload.payment_method,
-        payment_status: "pending",
+        payment_status: "paid",
       });
 
     if (consErr) return { success: false, error: consErr.message };

@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Cloudflare",
+    "kind": "cdn",
+    "confidence": "high"
+  },
+  {
+    "name": "Tailwind CSS v3.4",
+    "kind": "css-framework",
+    "confidence": "high"
+  }
+]

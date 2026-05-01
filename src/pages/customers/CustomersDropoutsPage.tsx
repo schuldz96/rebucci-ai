@@ -70,7 +70,7 @@ const CustomersDropoutsPage = () => {
     const newEnd = format(new Date(Date.now() + 90 * 86400000), "yyyy-MM-dd");
     const { error } = await supabase
       .from("consultorias")
-      .update({ status: "active", end_date: newEnd, payment_status: "pending" })
+      .update({ status: "active", end_date: newEnd, payment_status: "paid" })
       .eq("id", item.consultoriaId);
     setReactivating(null);
     if (error) { toast({ title: "Erro ao reativar", variant: "destructive" }); return; }

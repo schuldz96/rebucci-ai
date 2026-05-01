@@ -1,0 +1,66 @@
+[
+  {
+    "value": "var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)",
+    "count": 6
+  },
+  {
+    "value": "var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)",
+    "count": 5
+  },
+  {
+    "value": "var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)",
+    "count": 5
+  },
+  {
+    "value": "var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)",
+    "count": 4
+  },
+  {
+    "value": "none !important",
+    "count": 3
+  },
+  {
+    "value": "0px 0px 1px rgba(0, 0, 0, 0.25)",
+    "count": 2
+  },
+  {
+    "value": "0 0 5px var(--common-color0-10)",
+    "count": 2
+  },
+  {
+    "value": "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important",
+    "count": 1
+  },
+  {
+    "value": "1px 1px 1px rgb(0, 0, 0, 0.1)",
+    "count": 1
+  },
+  {
+    "value": "0 0 5px var(--common-color0-25)",
+    "count": 1
+  },
+  {
+    "value": "var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important",
+    "count": 1
+  },
+  {
+    "value": "1px 1px 1px rgba(0, 0, 0, 0.125)",
+    "count": 1
+  },
+  {
+    "value": "0 0 1px var(--common-color0-90)",
+    "count": 1
+  },
+  {
+    "value": "2px 0 10px rgba(0, 0, 0, 0.1)",
+    "count": 1
+  },
+  {
+    "value": "0 2px 8px rgba(0, 0, 0, 0.15)",
+    "count": 1
+  },
+  {
+    "value": "0 4px 16px rgba(0, 0, 0, 0.25)",
+    "count": 1
+  }
+]

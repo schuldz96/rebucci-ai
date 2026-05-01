@@ -1,0 +1,387 @@
+{
+  "schema_version": "1.1",
+  "source": {
+    "run_dir_basename": ".run-20260501-074021"
+  },
+  "components": {
+    "button": {
+      "font_weight": "500",
+      "shadow": "0 0 0 3px rgba(0,0,0,0)",
+      "transition": "box-shadow .1s",
+      "cursor": "pointer",
+      "radius": ".25em",
+      "font_size": "1em",
+      "bg": "#7066e0",
+      "text": "#fff",
+      "outline": "none",
+      "transform": "none"
+    },
+    "input": {
+      "font_size": "1.125em",
+      "radius": ".1875em",
+      "shadow": "inset 0 1px 1px rgba(0,0,0,.06),0 0 0 3px rgba(0,0,0,0)",
+      "transition": "border-color .1s,box-shadow .1s",
+      "outline": "none",
+      "font_weight": "inherit",
+      "bg": "transparent",
+      "opacity": "1"
+    },
+    "alert": {
+      "font_size": "1em"
+    },
+    "modal": {
+      "shadow": "0 0 1px rgba(0,0,0,.075),0 1px 2px rgba(0,0,0,.075),1px 2px 4px rgba(0,0,0,.075),1px 3px 8px rgba(0,0,0,.075),2px 4px 16px rgba(0,0,0,.075)",
+      "font_size": "1em",
+      "font_weight": "bold",
+      "radius": "50%",
+      "transform": "rotate(-45deg)"
+    },
+    "label": {
+      "font_size": "1.125em"
+    }
+  },
+  "shadow": {
+    "xs": "0 0 1px rgba(0,0,0,.075),0 1px 2px rgba(0,0,0,.075),1px 2px 4px rgba(0,0,0,.075),1px 3px 8px rgba(0,0,0,.075),2px 4px 16px rgba(0,0,0,.075)",
+    "sm": "inset 0 1px 1px rgba(0,0,0,.06),0 0 0 3px rgba(0,0,0,0)",
+    "md": "inset 0 1px 1px rgba(0,0,0,.06),0 0 0 3px rgba(100,150,200,.5)",
+    "lg": "0 0 2px #f27474 !important",
+    "xl": "0 0 10px rgba(0,0,0,.4)"
+  },
+  "motion": {
+    "duration_fast": "75ms",
+    "duration_base": "300ms",
+    "duration_slow": "1000ms",
+    "easing": "cubic-bezier(.4,0,.2,1)",
+    "keyframes_count": 18
+  },
+  "meta": {
+    "style_archetype": "polaris-friendly",
+    "archetype_confidence": 83,
+    "style_archetype_secondary": "marketing-gradient",
+    "density": "compact",
+    "motion_preference": "smooth"
+  },
+  "gradient": {
+    "primary": "linear-gradient(to right,var(--tw-gradient-stops))",
+    "secondary": "linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1))",
+    "total_unique": 7
+  },
+  "opacity": {
+    "disabled": 0.05,
+    "muted": 0.5,
+    "hover": 0.9
+  },
+  "focus_ring": {
+    "outline": "2px solid transparent!important",
+    "outline_offset": "2px!important",
+    "box_shadow": "var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)"
+  },
+  "z_index": {
+    "base": 1,
+    "dropdown": 40,
+    "modal": 1001,
+    "toast": 1060,
+    "tooltip": 9999
+  },
+  "container": {
+    "max_width": "1024px"
+  },
+  "themed": {
+    "supportsDark": false,
+    "preferredSelector": null,
+    "preferred": {
+      "--tw-border-spacing-x": "0",
+      "--tw-border-spacing-y": "0",
+      "--tw-translate-x": "0",
+      "--tw-translate-y": "0",
+      "--tw-rotate": "0",
+      "--tw-skew-x": "0",
+      "--tw-skew-y": "0",
+      "--tw-scale-x": "1",
+      "--tw-scale-y": "1",
+      "--tw-pan-x": "",
+      "--tw-pan-y": "",
+      "--tw-pinch-zoom": "",
+      "--tw-scroll-snap-strictness": "proximity",
+      "--tw-gradient-from-position": "",
+      "--tw-gradient-via-position": "",
+      "--tw-gradient-to-position": "",
+      "--tw-ordinal": "",
+      "--tw-slashed-zero": "",
+      "--tw-numeric-figure": "",
+      "--tw-numeric-spacing": "",
+      "--tw-numeric-fraction": "",
+      "--tw-ring-inset": "",
+      "--tw-ring-offset-width": "0px",
+      "--tw-ring-offset-color": "#fff",
+      "--tw-ring-color": "rgba(59,130,246,.5)",
+      "--tw-ring-offset-shadow": "0 0 #0000",
+      "--tw-ring-shadow": "0 0 #0000",
+      "--tw-shadow": "0 0 #0000",
+      "--tw-shadow-colored": "0 0 #0000",
+      "--tw-blur": "",
+      "--tw-brightness": "",
+      "--tw-contrast": "",
+      "--tw-grayscale": "",
+      "--tw-hue-rotate": "",
+      "--tw-invert": "",
+      "--tw-saturate": "",
+      "--tw-sepia": "",
+      "--tw-drop-shadow": "",
+      "--tw-backdrop-blur": "",
+      "--tw-backdrop-brightness": "",
+      "--tw-backdrop-contrast": "",
+      "--tw-backdrop-grayscale": "",
+      "--tw-backdrop-hue-rotate": "",
+      "--tw-backdrop-invert": "",
+      "--tw-backdrop-opacity": "",
+      "--tw-backdrop-saturate": "",
+      "--tw-backdrop-sepia": "",
+      "--tw-contain-size": "",
+      "--tw-contain-layout": "",
+      "--tw-contain-paint": "",
+      "--tw-contain-style": ""
+    },
+    "light": {
+      "--tw-border-spacing-x": "0",
+      "--tw-border-spacing-y": "0",
+      "--tw-translate-x": "0",
+      "--tw-translate-y": "0",
+      "--tw-rotate": "0",
+      "--tw-skew-x": "0",
+      "--tw-skew-y": "0",
+      "--tw-scale-x": "1",
+      "--tw-scale-y": "1",
+      "--tw-pan-x": "",
+      "--tw-pan-y": "",
+      "--tw-pinch-zoom": "",
+      "--tw-scroll-snap-strictness": "proximity",
+      "--tw-gradient-from-position": "",
+      "--tw-gradient-via-position": "",
+      "--tw-gradient-to-position": "",
+      "--tw-ordinal": "",
+      "--tw-slashed-zero": "",
+      "--tw-numeric-figure": "",
+      "--tw-numeric-spacing": "",
+      "--tw-numeric-fraction": "",
+      "--tw-ring-inset": "",
+      "--tw-ring-offset-width": "0px",
+      "--tw-ring-offset-color": "#fff",
+      "--tw-ring-color": "rgb(183 216 255/var(--tw-ring-opacity,1))",
+      "--tw-ring-offset-shadow": "var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color)",
+      "--tw-ring-shadow": "var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color)",
+      "--tw-shadow": "0 0 #0000",
+      "--tw-shadow-colored": "0 0 #0000",
+      "--tw-blur": "",
+      "--tw-brightness": "",
+      "--tw-contrast": "",
+      "--tw-grayscale": "",
+      "--tw-hue-rotate": "",
+      "--tw-invert": "",
+      "--tw-saturate": "",
+      "--tw-sepia": "",
+      "--tw-drop-shadow": "",
+      "--tw-backdrop-blur": "",
+      "--tw-backdrop-brightness": "",
+      "--tw-backdrop-contrast": "",
+      "--tw-backdrop-grayscale": "",
+      "--tw-backdrop-hue-rotate": "",
+      "--tw-backdrop-invert": "",
+      "--tw-backdrop-opacity": "",
+      "--tw-backdrop-saturate": "",
+      "--tw-backdrop-sepia": "",
+      "--tw-contain-size": "",
+      "--tw-contain-layout": "",
+      "--tw-contain-paint": "",
+      "--tw-contain-style": "",
+      "--tw-content": "\"\"",
+      "--tw-space-x-reverse": "0",
+      "--tw-space-y-reverse": "0",
+      "--tw-divide-y-reverse": "0",
+      "--tw-divide-opacity": "1",
+      "--tw-border-opacity": "1",
+      "--tw-bg-opacity": "1",
+      "--tw-gradient-from": "#16a34a var(--tw-gradient-from-position)",
+      "--tw-gradient-to": "transparent var(--tw-gradient-to-position)",
+      "--tw-gradient-stops": "var(--tw-gradient-from),var(--tw-gradient-to)",
+      "--tw-text-opacity": "1",
+      "--tw-placeholder-opacity": "1",
+      "--tw-shadow-color": "#b7d8ff",
+      "--tw-ring-opacity": "1",
+      "--tw-divide-x-reverse": "0",
+      "--primary-950": "#081D36",
+      "--primary-900": "#12427C",
+      "--primary-800": "#2265B5",
+      "--primary-700": "#3D96FF",
+      "--primary-600": "#449AFF",
+      "--primary-500": "#63ABFF",
+      "--primary-400": "#77B6FF",
+      "--primary-300": "#FFBBD3",
+      "--primary-200": "#B7D8FF",
+      "--primary-100": "#E2EFFF",
+      "--primary-50": "#F5FAFF",
+      "--primary-25": "#FBFDFF",
+      "--gray-800": "#1D2939",
+      "--gray-700": "#344054",
+      "--gray-600": "#475467",
+      "--gray-500": "#667085",
+      "--gray-400": "#98A2B3",
+      "--gray-300": "#D0D5DD",
+      "--gray-200": "#EAECF0",
+      "--gray-100": "#F2F4F7",
+      "--gray-50": "#F9FAFB",
+      "--gray-25": "#FCFCFD",
+      "--warning-25": "#FFFCF5",
+      "--warning-50": "#FFFAEB",
+      "--warning-100": "#FEF0C7",
+      "--warning-200": "#FEDF89",
+      "--warning-300": "#FEC84B",
+      "--warning-400": "#FDB022",
+      "--warning-500": "#F79009",
+      "--warning-600": "#DC6803",
+      "--warning-700": "#B54708",
+      "--warning-800": "#93370D",
+      "--warning-900": "#7A2E0E",
+      "--warning-950": "#4E1D09"
+    },
+    "dark": {},
+    "defaultMode": "light"
+  },
+  "coverage": {
+    "overall": {
+      "detected": 16,
+      "total": 32,
+      "percent": 50
+    },
+    "by_layer": {
+      "L1": {
+        "detected": 0,
+        "total": 5,
+        "percent": 0
+      },
+      "L2": {
+        "detected": 5,
+        "total": 15,
+        "percent": 33
+      },
+      "L3": {
+        "detected": 5,
+        "total": 6,
+        "percent": 83
+      },
+      "L4": {
+        "detected": 3,
+        "total": 3,
+        "percent": 100
+      },
+      "L5": {
+        "detected": 3,
+        "total": 3,
+        "percent": 100
+      }
+    },
+    "detected": [
+      "L2.button",
+      "L2.input",
+      "L2.alert",
+      "L2.modal",
+      "L2.label",
+      "L3.shadow_ladder",
+      "L3.motion_buckets",
+      "L3.gradient",
+      "L3.opacity_scale",
+      "L3.focus_ring",
+      "L4.breakpoints",
+      "L4.z_index",
+      "L4.container_max_width",
+      "L5.style_archetype",
+      "L5.density",
+      "L5.motion_preference"
+    ],
+    "missing": [
+      {
+        "category": "L1.colors_semantic",
+        "reason": "unknown"
+      },
+      {
+        "category": "L1.colors_extended",
+        "reason": "unknown"
+      },
+      {
+        "category": "L1.typography",
+        "reason": "unknown"
+      },
+      {
+        "category": "L1.rounded",
+        "reason": "unknown"
+      },
+      {
+        "category": "L1.spacing",
+        "reason": "unknown"
+      },
+      {
+        "category": "L2.button.states",
+        "reason": "extractor_limitation"
+      },
+      {
+        "category": "L2.button.variants",
+        "reason": "no_variants"
+      },
+      {
+        "category": "L2.card",
+        "reason": "unknown"
+      },
+      {
+        "category": "L2.badge",
+        "reason": "not_used_by_site"
+      },
+      {
+        "category": "L2.link",
+        "reason": "unknown"
+      },
+      {
+        "category": "L2.nav",
+        "reason": "not_used_by_site"
+      },
+      {
+        "category": "L2.tab",
+        "reason": "marketing_surface"
+      },
+      {
+        "category": "L2.table",
+        "reason": "not_used_by_site"
+      },
+      {
+        "category": "L2.tooltip",
+        "reason": "not_used_by_site"
+      },
+      {
+        "category": "L2.avatar",
+        "reason": "marketing_surface"
+      },
+      {
+        "category": "L3.backdrop_blur",
+        "reason": "extractor_limitation"
+      }
+    ],
+    "reason_codes": {
+      "not_used_by_site": "Site does not use this token category. CSS has no relevant declarations.",
+      "flat_design": "Site is intentionally flat. No box-shadow declarations beyond 'none'.",
+      "no_glassmorphism": "Site does not use backdrop-filter. Glass effects absent by design.",
+      "no_form_surface": "Site lacks public forms. Label/help/error tokens are conventionally undefined.",
+      "marketing_surface": "Marketing-only site. Component (tabs/avatar/tooltip) doesn't appear in homepage flow.",
+      "no_variants": "Site uses a single button style. No variant suffix detected (primary/secondary/ghost).",
+      "obfuscated": "Site uses CSS-in-JS / hash-based class names that elude pattern matching.",
+      "extractor_limitation": "Signal exists in CSS but current detector heuristics didn't match.",
+      "theme_mismatch": "Tokens encode the opposite theme of what the site renders by default. Re-extract recommended.",
+      "unknown": "Could not classify — investigate manually."
+    }
+  },
+  "theme": {
+    "default": "light",
+    "confidence": "medium",
+    "signals": [
+      "theme-color=\"#3D96FF\" luminance=0.54 → light"
+    ]
+  }
+}

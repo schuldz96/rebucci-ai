@@ -1,0 +1,1122 @@
+url: http://localhost:9099/dashboard.html
+extracted_at: 2026-05-01T09:48:41.332Z
+sources:
+  external_css_files: 11
+  preload_css_files: 0
+  imports_resolved: 0
+  inline_style_blocks: 1
+  inline_style_attrs: 12
+  failed_fetches: 0
+detection:
+  css_vars_total: 1681
+  css_vars_primitive: 1554
+  css_vars_alias: 127
+  font_faces: 19
+  unique_tokens_in_graph: 409
+tokens:
+  colors:
+    primary:
+      value: "#ff0083"
+      source: css_var
+      confidence: high
+      origin: --fav-pink
+    secondary:
+      value: "#449aff"
+      source: css_var
+      confidence: high
+      origin: --primary-600
+    tertiary:
+      value: "#89c0e8"
+      source: css_var
+      confidence: high
+      origin: --primary-color-var4
+    neutral:
+      value: "#033961"
+      source: css_var
+      confidence: high
+      origin: --primary-color
+    surface:
+      value: "#03101c"
+      source: css_var
+      confidence: high
+      origin: --body-bg
+    text:
+      value: "#ffffff"
+      source: css_var
+      confidence: high
+      origin: --common-color1
+    text-muted:
+      value: "#667085"
+      source: css_var
+      confidence: high
+      origin: --gray-500
+    border:
+      value: "#eaecf0"
+      source: css_var
+      confidence: high
+      origin: --zebra-border
+    error:
+      value: "#f04438"
+      source: css_var
+      confidence: high
+      origin: --error-500
+    success:
+      value: "#17b26a"
+      source: css_var
+      confidence: high
+      origin: --success-500
+    fav-pink:
+      value: "#ff0083"
+      source: css_var
+      confidence: high
+      origin: --fav-pink
+    first-color:
+      value: "#001f35"
+      source: css_var
+      confidence: high
+      origin: --first-color
+    primary-navy:
+      value: "#033961"
+      source: css_var
+      confidence: high
+      origin: --primary-color
+    primary-blue:
+      value: "#045c9d"
+      source: css_var
+      confidence: high
+      origin: --primary-color-var3
+    warning:
+      value: "#f79009"
+      source: css_var
+      confidence: high
+      origin: --warning-500
+    teal:
+      value: "#15b79e"
+      source: css_var
+      confidence: high
+      origin: --teal-500
+  typography:
+    display-hero:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 50px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "700"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.2"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: -0.02em
+          source: unknown
+          confidence: low
+          origin: null
+    display-large:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 40px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "700"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.25"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: -0.01em
+          source: unknown
+          confidence: low
+          origin: null
+    section-heading:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 32px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "600"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.3"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    subheading-large:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 28px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "600"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.35"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    subheading:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 24px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "600"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    body-large:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 18px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.6"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    body:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 14px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.5"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    body-small:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 13px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.5"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    button:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 14px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "500"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    button-small:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 12px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "500"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    link:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 14px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "500"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.5"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    caption:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 12px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    caption-small:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: font_face
+          confidence: high
+          origin: "@font-face"
+        fontSize:
+          value: 10px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    h1:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 40px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "700"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.25"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: -0.01em
+          source: unknown
+          confidence: low
+          origin: null
+    h2:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 32px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "600"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.3"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    h3:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 24px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "600"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    h4:
+      properties:
+        fontFamily:
+          value: Onest, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 20px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "600"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    body-lg:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 18px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.6"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    body-md:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 14px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.5"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    body-sm:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 12px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    label:
+      properties:
+        fontFamily:
+          value: Inter, sans-serif
+          source: unknown
+          confidence: low
+          origin: null
+        fontSize:
+          value: 13px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "500"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.4"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+    mono:
+      properties:
+        fontFamily:
+          value: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace
+          source: css_declaration
+          confidence: medium
+          origin: tokens-detected
+        fontSize:
+          value: 13px
+          source: unknown
+          confidence: low
+          origin: null
+        fontWeight:
+          value: "400"
+          source: unknown
+          confidence: low
+          origin: null
+        lineHeight:
+          value: "1.5"
+          source: unknown
+          confidence: low
+          origin: null
+        letterSpacing:
+          value: 0em
+          source: unknown
+          confidence: low
+          origin: null
+  rounded:
+    none:
+      value: 0px
+      source: unknown
+      confidence: low
+      origin: null
+    sm:
+      value: 2px
+      source: unknown
+      confidence: low
+      origin: null
+    md:
+      value: 4px
+      source: css_declaration
+      confidence: medium
+      origin: component-properties button border-radius most_common
+    lg:
+      value: 8px
+      source: unknown
+      confidence: low
+      origin: null
+    xl:
+      value: 16px
+      source: unknown
+      confidence: low
+      origin: null
+    full:
+      value: 9999px
+      source: unknown
+      confidence: low
+      origin: null
+  spacing:
+    xs:
+      value: 4px
+      source: unknown
+      confidence: low
+      origin: null
+    sm:
+      value: 8px
+      source: unknown
+      confidence: low
+      origin: null
+    md:
+      value: 16px
+      source: unknown
+      confidence: low
+      origin: null
+    lg:
+      value: 24px
+      source: unknown
+      confidence: low
+      origin: null
+    xl:
+      value: 40px
+      source: unknown
+      confidence: low
+      origin: null
+confidence_summary:
+  high: 29
+  medium: 2
+  low: 106
+lint:
+  ran: true
+  exit_code: 0
+  errors_count: 0
+  warnings_count: 55
+  errors: []
+  warnings:
+    - &a1
+      severity: warning
+      path: components.button-primary.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a2
+      severity: warning
+      path: components.button-primary.text
+      message: "'text' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a3
+      severity: warning
+      path: components.button-primary.border
+      message: "'border' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a4
+      severity: warning
+      path: components.button-primary.radius
+      message: "'radius' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a5
+      severity: warning
+      path: components.button-primary.font
+      message: "'font' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a6
+      severity: warning
+      path: components.button-primary.hover_bg
+      message: "'hover_bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a7
+      severity: warning
+      path: components.button-secondary.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a8
+      severity: warning
+      path: components.button-secondary.text
+      message: "'text' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a9
+      severity: warning
+      path: components.button-secondary.border
+      message: "'border' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a10
+      severity: warning
+      path: components.button-secondary.radius
+      message: "'radius' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a11
+      severity: warning
+      path: components.button-secondary.font
+      message: "'font' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a12
+      severity: warning
+      path: components.button-secondary.hover_bg
+      message: "'hover_bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a13
+      severity: warning
+      path: components.button-ghost.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a14
+      severity: warning
+      path: components.button-ghost.text
+      message: "'text' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a15
+      severity: warning
+      path: components.button-ghost.border
+      message: "'border' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a16
+      severity: warning
+      path: components.button-ghost.radius
+      message: "'radius' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a17
+      severity: warning
+      path: components.button-ghost.font
+      message: "'font' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a18
+      severity: warning
+      path: components.button-danger.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a19
+      severity: warning
+      path: components.button-danger.text
+      message: "'text' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a20
+      severity: warning
+      path: components.button-danger.border
+      message: "'border' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a21
+      severity: warning
+      path: components.button-danger.radius
+      message: "'radius' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a22
+      severity: warning
+      path: components.button-danger.font
+      message: "'font' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a23
+      severity: warning
+      path: components.card.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a24
+      severity: warning
+      path: components.card.border
+      message: "'border' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a25
+      severity: warning
+      path: components.card.radius
+      message: "'radius' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a26
+      severity: warning
+      path: components.card.shadow
+      message: "'shadow' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a27
+      severity: warning
+      path: components.input-text.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a28
+      severity: warning
+      path: components.input-text.text
+      message: "'text' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a29
+      severity: warning
+      path: components.input-text.border
+      message: "'border' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a30
+      severity: warning
+      path: components.input-text.radius
+      message: "'radius' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a31
+      severity: warning
+      path: components.input-text.focus_border
+      message: "'focus_border' is not a recognized component sub-token. Valid
+        sub-tokens: backgroundColor, textColor, typography, rounded, padding,
+        size, height, width."
+    - &a32
+      severity: warning
+      path: components.badge-default.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a33
+      severity: warning
+      path: components.badge-default.text
+      message: "'text' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a34
+      severity: warning
+      path: components.badge-default.border
+      message: "'border' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a35
+      severity: warning
+      path: components.badge-default.radius
+      message: "'radius' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a36
+      severity: warning
+      path: components.badge-default.font
+      message: "'font' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a37
+      severity: warning
+      path: components.nav-header.bg
+      message: "'bg' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a38
+      severity: warning
+      path: components.nav-header.text
+      message: "'text' is not a recognized component sub-token. Valid sub-tokens:
+        backgroundColor, textColor, typography, rounded, padding, size, height,
+        width."
+    - &a39
+      severity: warning
+      path: components.nav-header.border_bottom
+      message: "'border_bottom' is not a recognized component sub-token. Valid
+        sub-tokens: backgroundColor, textColor, typography, rounded, padding,
+        size, height, width."
+    - &a40
+      severity: warning
+      path: colors.primary
+      message: "'primary' is defined but never referenced by any component."
+    - &a41
+      severity: warning
+      path: colors.secondary
+      message: "'secondary' is defined but never referenced by any component."
+    - &a42
+      severity: warning
+      path: colors.tertiary
+      message: "'tertiary' is defined but never referenced by any component."
+    - &a43
+      severity: warning
+      path: colors.neutral
+      message: "'neutral' is defined but never referenced by any component."
+    - &a44
+      severity: warning
+      path: colors.surface
+      message: "'surface' is defined but never referenced by any component."
+    - &a45
+      severity: warning
+      path: colors.text
+      message: "'text' is defined but never referenced by any component."
+    - &a46
+      severity: warning
+      path: colors.text-muted
+      message: "'text-muted' is defined but never referenced by any component."
+    - &a47
+      severity: warning
+      path: colors.border
+      message: "'border' is defined but never referenced by any component."
+    - &a48
+      severity: warning
+      path: colors.error
+      message: "'error' is defined but never referenced by any component."
+    - &a49
+      severity: warning
+      path: colors.success
+      message: "'success' is defined but never referenced by any component."
+    - &a50
+      severity: warning
+      path: colors.fav-pink
+      message: "'fav-pink' is defined but never referenced by any component."
+    - &a51
+      severity: warning
+      path: colors.first-color
+      message: "'first-color' is defined but never referenced by any component."
+    - &a52
+      severity: warning
+      path: colors.primary-navy
+      message: "'primary-navy' is defined but never referenced by any component."
+    - &a53
+      severity: warning
+      path: colors.primary-blue
+      message: "'primary-blue' is defined but never referenced by any component."
+    - &a54
+      severity: warning
+      path: colors.warning
+      message: "'warning' is defined but never referenced by any component."
+    - &a55
+      severity: warning
+      path: colors.teal
+      message: "'teal' is defined but never referenced by any component."
+  raw:
+    findings:
+      - *a1
+      - *a2
+      - *a3
+      - *a4
+      - *a5
+      - *a6
+      - *a7
+      - *a8
+      - *a9
+      - *a10
+      - *a11
+      - *a12
+      - *a13
+      - *a14
+      - *a15
+      - *a16
+      - *a17
+      - *a18
+      - *a19
+      - *a20
+      - *a21
+      - *a22
+      - *a23
+      - *a24
+      - *a25
+      - *a26
+      - *a27
+      - *a28
+      - *a29
+      - *a30
+      - *a31
+      - *a32
+      - *a33
+      - *a34
+      - *a35
+      - *a36
+      - *a37
+      - *a38
+      - *a39
+      - *a40
+      - *a41
+      - *a42
+      - *a43
+      - *a44
+      - *a45
+      - *a46
+      - *a47
+      - *a48
+      - *a49
+      - *a50
+      - *a51
+      - *a52
+      - *a53
+      - *a54
+      - *a55
+      - severity: info
+        message: Design system defines 16 colors, 22 typography scales, 6 rounding
+          levels, 5 spacing tokens, 8 components.
+    summary:
+      errors: 0
+      warnings: 55
+      infos: 1

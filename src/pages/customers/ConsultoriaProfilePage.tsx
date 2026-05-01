@@ -267,6 +267,59 @@ const EditableField = ({
   );
 };
 
+// ─── Card de data editável ────────────────────────────────────────────────────
+
+const DateEditCard = ({
+  label, value, warn = false, onSave,
+}: { label: string; value: string; warn?: boolean; onSave: (v: string) => Promise<void> }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!draft) return;
+    setSaving(true);
+    await onSave(draft);
+    setSaving(false);
+    setEditing(false);
+  };
+
+  const display = value ? format(parseISO(value), "dd/MM/yyyy") : "—";
+
+  return (
+    <div className="rounded-xl bg-muted/40 px-3 py-2.5 group relative">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      {editing ? (
+        <div className="flex items-center gap-1 mt-0.5">
+          <input
+            type="date"
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            className="bg-transparent text-sm font-medium text-foreground focus:outline-none w-32"
+          />
+          <button onClick={save} disabled={saving} className="p-1 text-green-400 hover:bg-green-400/10 rounded">
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+          </button>
+          <button onClick={() => { setEditing(false); setDraft(value); }} className="p-1 text-muted-foreground hover:bg-muted rounded">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <p className={cn("text-sm font-medium mt-0.5", warn ? "text-red-400" : "text-foreground")}>{display}</p>
+          <button
+            onClick={() => { setDraft(value); setEditing(true); }}
+            className="opacity-0 group-hover:opacity-100 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const ConsultoriaProfilePage = () => {
@@ -417,13 +470,22 @@ const ConsultoriaProfilePage = () => {
                       <Plus className="w-3.5 h-3.5 text-violet-400" /> Adicionar produto
                     </button>
                     <div className="border-t border-border my-1" />
-                    <button onClick={async () => {
-                      if (!confirm("Pausar consultoria?")) return;
-                      await supabase.from("consultorias").update({ status: "paused" }).eq("id", consultoria.id);
-                      toast({ title: "Consultoria pausada" }); load(); setActionMenu(false);
-                    }} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-yellow-400">
-                      <PauseCircle className="w-3.5 h-3.5" /> Pausar
-                    </button>
+                    {consultoria.status === "paused" ? (
+                      <button onClick={async () => {
+                        await supabase.from("consultorias").update({ status: "active" }).eq("id", consultoria.id);
+                        toast({ title: "Consultoria reativada!" }); load(); setActionMenu(false);
+                      }} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-green-400">
+                        <Check className="w-3.5 h-3.5" /> Reativar
+                      </button>
+                    ) : (
+                      <button onClick={async () => {
+                        if (!confirm("Pausar consultoria?")) return;
+                        await supabase.from("consultorias").update({ status: "paused" }).eq("id", consultoria.id);
+                        toast({ title: "Consultoria pausada" }); load(); setActionMenu(false);
+                      }} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-yellow-400">
+                        <PauseCircle className="w-3.5 h-3.5" /> Pausar
+                      </button>
+                    )}
                     <button onClick={async () => {
                       if (!confirm("Desativar? O aluno perderá o acesso.")) return;
                       await supabase.from("consultorias").update({ status: "inactive" }).eq("id", consultoria.id);
@@ -443,18 +505,27 @@ const ConsultoriaProfilePage = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-muted/40 px-3 py-2.5">
-                  <p className="text-xs text-muted-foreground">Início</p>
-                  <p className="text-sm font-medium text-foreground mt-0.5">
-                    {consultoria.start_date ? format(parseISO(consultoria.start_date), "dd/MM/yyyy") : "—"}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-muted/40 px-3 py-2.5">
-                  <p className="text-xs text-muted-foreground">Vencimento</p>
-                  <p className={cn("text-sm font-medium mt-0.5", daysLeft !== null && daysLeft <= 7 ? "text-red-400" : "text-foreground")}>
-                    {consultoria.end_date ? format(parseISO(consultoria.end_date), "dd/MM/yyyy") : "—"}
-                  </p>
-                </div>
+                <DateEditCard
+                  label="Início"
+                  value={consultoria.start_date ?? ""}
+                  onSave={async (v) => {
+                    const { error } = await supabase.from("consultorias").update({ start_date: v }).eq("id", consultoria.id);
+                    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+                    setConsultoria(prev => prev ? { ...prev, start_date: v } : prev);
+                    toast({ title: "Data de início atualizada!" });
+                  }}
+                />
+                <DateEditCard
+                  label="Vencimento"
+                  value={consultoria.end_date ?? ""}
+                  warn={daysLeft !== null && daysLeft <= 7}
+                  onSave={async (v) => {
+                    const { error } = await supabase.from("consultorias").update({ end_date: v }).eq("id", consultoria.id);
+                    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+                    setConsultoria(prev => prev ? { ...prev, end_date: v } : prev);
+                    toast({ title: "Vencimento atualizado!" });
+                  }}
+                />
               </div>
 
               {daysLeft !== null && (

@@ -1,0 +1,25 @@
+{
+  "value": "1024px",
+  "all": [
+    {
+      "value": "1024px",
+      "count": 5
+    },
+    {
+      "value": "768px",
+      "count": 3
+    },
+    {
+      "value": "1280px",
+      "count": 3
+    },
+    {
+      "value": "1536px",
+      "count": 3
+    },
+    {
+      "value": "48rem",
+      "count": 2
+    }
+  ]
+}

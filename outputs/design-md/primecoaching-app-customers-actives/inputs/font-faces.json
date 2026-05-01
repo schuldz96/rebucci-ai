@@ -1,0 +1,146 @@
+[
+  {
+    "family": "Inter",
+    "weight": "100",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-100.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 100;\n  font-display: swap;\n  src: url(inter-100.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "200",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-200.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 200;\n  font-display: swap;\n  src: url(inter-200.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "300",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-300.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 300;\n  font-display: swap;\n  src: url(inter-300.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "400",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-400.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 400;\n  font-display: swap;\n  src: url(inter-400.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "500",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-500.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 500;\n  font-display: swap;\n  src: url(inter-500.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "600",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-600.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 600;\n  font-display: swap;\n  src: url(inter-600.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "700",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-700.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 700;\n  font-display: swap;\n  src: url(inter-700.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "800",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-800.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 800;\n  font-display: swap;\n  src: url(inter-800.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "900",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-900.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "raw": "@font-face {\n  font-family: 'Inter';\n  font-style: normal;\n  font-weight: 900;\n  font-display: swap;\n  src: url(inter-900.ttf) format('truetype');\n}"
+  }
+]

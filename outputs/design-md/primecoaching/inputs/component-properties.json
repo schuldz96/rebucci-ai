@@ -1,0 +1,4689 @@
+{
+  "summary": {
+    "button": {
+      "states": {
+        "default": {
+          "font-size": {
+            "most_common": "14px",
+            "most_common_count": 15,
+            "total_declarations": 54,
+            "all_values": [
+              {
+                "value": "14px",
+                "count": 15
+              },
+              {
+                "value": "13px",
+                "count": 9
+              },
+              {
+                "value": "16px",
+                "count": 6
+              },
+              {
+                "value": "12px",
+                "count": 5
+              },
+              {
+                "value": "1em",
+                "count": 4
+              }
+            ]
+          },
+          "outline": {
+            "most_common": "none",
+            "most_common_count": 11,
+            "total_declarations": 12,
+            "all_values": [
+              {
+                "value": "none",
+                "count": 11
+              },
+              {
+                "value": "none !important",
+                "count": 1
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "4px",
+            "most_common_count": 17,
+            "total_declarations": 41,
+            "all_values": [
+              {
+                "value": "4px",
+                "count": 17
+              },
+              {
+                "value": "0.2em",
+                "count": 9
+              },
+              {
+                "value": ".25em",
+                "count": 4
+              },
+              {
+                "value": "0.2em !important",
+                "count": 2
+              },
+              {
+                "value": "8px",
+                "count": 2
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "10px",
+            "most_common_count": 8,
+            "total_declarations": 54,
+            "all_values": [
+              {
+                "value": "10px",
+                "count": 8
+              },
+              {
+                "value": "10px 18px",
+                "count": 6
+              },
+              {
+                "value": "5px 10px",
+                "count": 5
+              },
+              {
+                "value": "0",
+                "count": 3
+              },
+              {
+                "value": "15px",
+                "count": 3
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "500",
+            "most_common_count": 22,
+            "total_declarations": 32,
+            "all_values": [
+              {
+                "value": "500",
+                "count": 22
+              },
+              {
+                "value": "600",
+                "count": 4
+              },
+              {
+                "value": "normal",
+                "count": 2
+              },
+              {
+                "value": "600 !important",
+                "count": 2
+              },
+              {
+                "value": "400",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "var(--primary-600)",
+            "most_common_count": 10,
+            "total_declarations": 50,
+            "all_values": [
+              {
+                "value": "var(--primary-600)",
+                "count": 10
+              },
+              {
+                "value": "transparent",
+                "count": 7
+              },
+              {
+                "value": "var(--primary-700) !important",
+                "count": 4
+              },
+              {
+                "value": "var(--primary-800)",
+                "count": 2
+              },
+              {
+                "value": "var(--primary-200) !important",
+                "count": 2
+              }
+            ]
+          },
+          "color": {
+            "most_common": "white",
+            "most_common_count": 14,
+            "total_declarations": 60,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 14
+              },
+              {
+                "value": "var(--primary-600)",
+                "count": 11
+              },
+              {
+                "value": "#fff",
+                "count": 11
+              },
+              {
+                "value": "var(--common-color1-80)",
+                "count": 4
+              },
+              {
+                "value": "var(--list-header-button)",
+                "count": 3
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "pointer",
+            "most_common_count": 37,
+            "total_declarations": 39,
+            "all_values": [
+              {
+                "value": "pointer",
+                "count": 37
+              },
+              {
+                "value": "pointer !important",
+                "count": 2
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": "1",
+            "most_common_count": 3,
+            "total_declarations": 14,
+            "all_values": [
+              {
+                "value": "1",
+                "count": 3
+              },
+              {
+                "value": "0.7 !important",
+                "count": 2
+              },
+              {
+                "value": "1 !important",
+                "count": 2
+              },
+              {
+                "value": "0.7",
+                "count": 2
+              },
+              {
+                "value": "0.9",
+                "count": 2
+              }
+            ]
+          },
+          "transform": {
+            "most_common": "rotate(180deg)",
+            "most_common_count": 1,
+            "total_declarations": 4,
+            "all_values": [
+              {
+                "value": "rotate(180deg)",
+                "count": 1
+              },
+              {
+                "value": "none",
+                "count": 1
+              },
+              {
+                "value": "translateY(-2px)",
+                "count": 1
+              },
+              {
+                "value": "scale(1.15)",
+                "count": 1
+              }
+            ]
+          },
+          "transition": {
+            "most_common": "all 0.2s ease",
+            "most_common_count": 2,
+            "total_declarations": 13,
+            "all_values": [
+              {
+                "value": "all 0.2s ease",
+                "count": 2
+              },
+              {
+                "value": "background-color 0.2s",
+                "count": 2
+              },
+              {
+                "value": "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                "count": 2
+              },
+              {
+                "value": "all 0.3s ease",
+                "count": 2
+              },
+              {
+                "value": "transform 0.3s ease",
+                "count": 1
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 2px 8px rgba(0, 0, 0, 0.15)",
+            "most_common_count": 2,
+            "total_declarations": 11,
+            "all_values": [
+              {
+                "value": "0 2px 8px rgba(0, 0, 0, 0.15)",
+                "count": 2
+              },
+              {
+                "value": "0 0 0 .2rem rgba(76, 91, 106, .5)",
+                "count": 2
+              },
+              {
+                "value": "0 0 0 3px rgba(0, 0, 0, 0)",
+                "count": 1
+              },
+              {
+                "value": "0 0 0 3px rgba(112, 102, 224, .5)",
+                "count": 1
+              },
+              {
+                "value": "0 0 0 3px rgba(220, 55, 65, .5)",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "hover": {
+          "opacity": {
+            "most_common": "1",
+            "most_common_count": 3,
+            "total_declarations": 4,
+            "all_values": [
+              {
+                "value": "1",
+                "count": 3
+              },
+              {
+                "value": "0.75",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "#fff",
+            "most_common_count": 2,
+            "total_declarations": 4,
+            "all_values": [
+              {
+                "value": "#fff",
+                "count": 2
+              },
+              {
+                "value": "var(--common-color1)",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-700)",
+                "count": 1
+              }
+            ]
+          },
+          "transform": {
+            "most_common": "scale(1.05)",
+            "most_common_count": 2,
+            "total_declarations": 6,
+            "all_values": [
+              {
+                "value": "scale(1.05)",
+                "count": 2
+              },
+              {
+                "value": "none",
+                "count": 1
+              },
+              {
+                "value": "scale(1.1)",
+                "count": 1
+              },
+              {
+                "value": "translateY(-2px)",
+                "count": 1
+              },
+              {
+                "value": "scale(1.15)",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "rgba(255, 255, 255, 0.12)",
+            "most_common_count": 1,
+            "total_declarations": 5,
+            "all_values": [
+              {
+                "value": "rgba(255, 255, 255, 0.12)",
+                "count": 1
+              },
+              {
+                "value": "rgb(197, 39, 11)",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-400) !important",
+                "count": 1
+              },
+              {
+                "value": "#1e2b37",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-100)",
+                "count": 1
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 4px 12px rgba(37, 99, 235, 0.15)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0 4px 12px rgba(37, 99, 235, 0.15)",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "disabled": {
+          "background-color": {
+            "most_common": "var(--error-100) !important",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "var(--error-100) !important",
+                "count": 1
+              },
+              {
+                "value": "var(--fav-pink)",
+                "count": 1
+              },
+              {
+                "value": "#2C3E50",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "var(--error-500)",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "var(--error-500)",
+                "count": 1
+              },
+              {
+                "value": "#fff",
+                "count": 1
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": ".65",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": ".65",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "focus": {
+          "box-shadow": {
+            "most_common": "none !important",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "none !important",
+                "count": 1
+              },
+              {
+                "value": "0 0 0 .2rem rgba(44, 62, 80, .25)",
+                "count": 1
+              },
+              {
+                "value": "0 0 0 .2rem rgba(76, 91, 106, .5)",
+                "count": 1
+              }
+            ]
+          },
+          "outline": {
+            "most_common": "0",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "active": {
+          "transform": {
+            "most_common": "translateY(0) scale(0.98)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "translateY(0) scale(0.98)",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "font-size": {
+        "most_common": "14px",
+        "most_common_count": 15,
+        "total_declarations": 54,
+        "all_values": [
+          {
+            "value": "14px",
+            "count": 15
+          },
+          {
+            "value": "13px",
+            "count": 9
+          },
+          {
+            "value": "16px",
+            "count": 6
+          },
+          {
+            "value": "12px",
+            "count": 5
+          },
+          {
+            "value": "1em",
+            "count": 4
+          }
+        ]
+      },
+      "outline": {
+        "most_common": "none",
+        "most_common_count": 11,
+        "total_declarations": 12,
+        "all_values": [
+          {
+            "value": "none",
+            "count": 11
+          },
+          {
+            "value": "none !important",
+            "count": 1
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "4px",
+        "most_common_count": 17,
+        "total_declarations": 41,
+        "all_values": [
+          {
+            "value": "4px",
+            "count": 17
+          },
+          {
+            "value": "0.2em",
+            "count": 9
+          },
+          {
+            "value": ".25em",
+            "count": 4
+          },
+          {
+            "value": "0.2em !important",
+            "count": 2
+          },
+          {
+            "value": "8px",
+            "count": 2
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "10px",
+        "most_common_count": 8,
+        "total_declarations": 54,
+        "all_values": [
+          {
+            "value": "10px",
+            "count": 8
+          },
+          {
+            "value": "10px 18px",
+            "count": 6
+          },
+          {
+            "value": "5px 10px",
+            "count": 5
+          },
+          {
+            "value": "0",
+            "count": 3
+          },
+          {
+            "value": "15px",
+            "count": 3
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "500",
+        "most_common_count": 22,
+        "total_declarations": 32,
+        "all_values": [
+          {
+            "value": "500",
+            "count": 22
+          },
+          {
+            "value": "600",
+            "count": 4
+          },
+          {
+            "value": "normal",
+            "count": 2
+          },
+          {
+            "value": "600 !important",
+            "count": 2
+          },
+          {
+            "value": "400",
+            "count": 1
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "var(--primary-600)",
+        "most_common_count": 10,
+        "total_declarations": 50,
+        "all_values": [
+          {
+            "value": "var(--primary-600)",
+            "count": 10
+          },
+          {
+            "value": "transparent",
+            "count": 7
+          },
+          {
+            "value": "var(--primary-700) !important",
+            "count": 4
+          },
+          {
+            "value": "var(--primary-800)",
+            "count": 2
+          },
+          {
+            "value": "var(--primary-200) !important",
+            "count": 2
+          }
+        ]
+      },
+      "color": {
+        "most_common": "white",
+        "most_common_count": 14,
+        "total_declarations": 60,
+        "all_values": [
+          {
+            "value": "white",
+            "count": 14
+          },
+          {
+            "value": "var(--primary-600)",
+            "count": 11
+          },
+          {
+            "value": "#fff",
+            "count": 11
+          },
+          {
+            "value": "var(--common-color1-80)",
+            "count": 4
+          },
+          {
+            "value": "var(--list-header-button)",
+            "count": 3
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "pointer",
+        "most_common_count": 37,
+        "total_declarations": 39,
+        "all_values": [
+          {
+            "value": "pointer",
+            "count": 37
+          },
+          {
+            "value": "pointer !important",
+            "count": 2
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": "1",
+        "most_common_count": 3,
+        "total_declarations": 14,
+        "all_values": [
+          {
+            "value": "1",
+            "count": 3
+          },
+          {
+            "value": "0.7 !important",
+            "count": 2
+          },
+          {
+            "value": "1 !important",
+            "count": 2
+          },
+          {
+            "value": "0.7",
+            "count": 2
+          },
+          {
+            "value": "0.9",
+            "count": 2
+          }
+        ]
+      },
+      "transform": {
+        "most_common": "rotate(180deg)",
+        "most_common_count": 1,
+        "total_declarations": 4,
+        "all_values": [
+          {
+            "value": "rotate(180deg)",
+            "count": 1
+          },
+          {
+            "value": "none",
+            "count": 1
+          },
+          {
+            "value": "translateY(-2px)",
+            "count": 1
+          },
+          {
+            "value": "scale(1.15)",
+            "count": 1
+          }
+        ]
+      },
+      "transition": {
+        "most_common": "all 0.2s ease",
+        "most_common_count": 2,
+        "total_declarations": 13,
+        "all_values": [
+          {
+            "value": "all 0.2s ease",
+            "count": 2
+          },
+          {
+            "value": "background-color 0.2s",
+            "count": 2
+          },
+          {
+            "value": "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            "count": 2
+          },
+          {
+            "value": "all 0.3s ease",
+            "count": 2
+          },
+          {
+            "value": "transform 0.3s ease",
+            "count": 1
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "0 2px 8px rgba(0, 0, 0, 0.15)",
+        "most_common_count": 2,
+        "total_declarations": 11,
+        "all_values": [
+          {
+            "value": "0 2px 8px rgba(0, 0, 0, 0.15)",
+            "count": 2
+          },
+          {
+            "value": "0 0 0 .2rem rgba(76, 91, 106, .5)",
+            "count": 2
+          },
+          {
+            "value": "0 0 0 3px rgba(0, 0, 0, 0)",
+            "count": 1
+          },
+          {
+            "value": "0 0 0 3px rgba(112, 102, 224, .5)",
+            "count": 1
+          },
+          {
+            "value": "0 0 0 3px rgba(220, 55, 65, .5)",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "card": {
+      "states": {
+        "default": {
+          "background-color": {
+            "most_common": "white",
+            "most_common_count": 2,
+            "total_declarations": 6,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 2
+              },
+              {
+                "value": "rgb(0, 0, 0, 0.5)",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-color-var3)",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-100)",
+                "count": 1
+              },
+              {
+                "value": "var(--common-color1-90)",
+                "count": 1
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "0",
+            "most_common_count": 1,
+            "total_declarations": 5,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 1
+              },
+              {
+                "value": "4px",
+                "count": 1
+              },
+              {
+                "value": "8px",
+                "count": 1
+              },
+              {
+                "value": "0.2em",
+                "count": 1
+              },
+              {
+                "value": "50%",
+                "count": 1
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "0",
+            "most_common_count": 6,
+            "total_declarations": 13,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 6
+              },
+              {
+                "value": "20px",
+                "count": 2
+              },
+              {
+                "value": "0px 20px 0px 0px",
+                "count": 1
+              },
+              {
+                "value": "0 0 10px 30px",
+                "count": 1
+              },
+              {
+                "value": "10px",
+                "count": 1
+              }
+            ]
+          },
+          "transform": {
+            "most_common": "translate(-50%, -50%)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "translate(-50%, -50%)",
+                "count": 1
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "600",
+            "most_common_count": 5,
+            "total_declarations": 7,
+            "all_values": [
+              {
+                "value": "600",
+                "count": 5
+              },
+              {
+                "value": "500",
+                "count": 2
+              }
+            ]
+          },
+          "color": {
+            "most_common": "var(--common-color1)",
+            "most_common_count": 5,
+            "total_declarations": 9,
+            "all_values": [
+              {
+                "value": "var(--common-color1)",
+                "count": 5
+              },
+              {
+                "value": "var(--primary-600)",
+                "count": 1
+              },
+              {
+                "value": "var(--common-color1-50)",
+                "count": 1
+              },
+              {
+                "value": "var(--home-cliente-title)",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-color-var3)",
+                "count": 1
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "pointer",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "pointer",
+                "count": 1
+              },
+              {
+                "value": "default",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "10px",
+            "most_common_count": 6,
+            "total_declarations": 12,
+            "all_values": [
+              {
+                "value": "10px",
+                "count": 6
+              },
+              {
+                "value": "14px",
+                "count": 2
+              },
+              {
+                "value": "40px",
+                "count": 1
+              },
+              {
+                "value": "14px !important",
+                "count": 1
+              },
+              {
+                "value": "20px",
+                "count": 1
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 0 1px var(--common-color0-90)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0 0 1px var(--common-color0-90)",
+                "count": 1
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": "1",
+            "most_common_count": 3,
+            "total_declarations": 7,
+            "all_values": [
+              {
+                "value": "1",
+                "count": 3
+              },
+              {
+                "value": "0.5",
+                "count": 1
+              },
+              {
+                "value": "0.75",
+                "count": 1
+              },
+              {
+                "value": "0.8",
+                "count": 1
+              },
+              {
+                "value": "0.7",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "background-color": {
+        "most_common": "white",
+        "most_common_count": 2,
+        "total_declarations": 6,
+        "all_values": [
+          {
+            "value": "white",
+            "count": 2
+          },
+          {
+            "value": "rgb(0, 0, 0, 0.5)",
+            "count": 1
+          },
+          {
+            "value": "var(--primary-color-var3)",
+            "count": 1
+          },
+          {
+            "value": "var(--primary-100)",
+            "count": 1
+          },
+          {
+            "value": "var(--common-color1-90)",
+            "count": 1
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "0",
+        "most_common_count": 1,
+        "total_declarations": 5,
+        "all_values": [
+          {
+            "value": "0",
+            "count": 1
+          },
+          {
+            "value": "4px",
+            "count": 1
+          },
+          {
+            "value": "8px",
+            "count": 1
+          },
+          {
+            "value": "0.2em",
+            "count": 1
+          },
+          {
+            "value": "50%",
+            "count": 1
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "0",
+        "most_common_count": 6,
+        "total_declarations": 13,
+        "all_values": [
+          {
+            "value": "0",
+            "count": 6
+          },
+          {
+            "value": "20px",
+            "count": 2
+          },
+          {
+            "value": "0px 20px 0px 0px",
+            "count": 1
+          },
+          {
+            "value": "0 0 10px 30px",
+            "count": 1
+          },
+          {
+            "value": "10px",
+            "count": 1
+          }
+        ]
+      },
+      "transform": {
+        "most_common": "translate(-50%, -50%)",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "translate(-50%, -50%)",
+            "count": 1
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "600",
+        "most_common_count": 5,
+        "total_declarations": 7,
+        "all_values": [
+          {
+            "value": "600",
+            "count": 5
+          },
+          {
+            "value": "500",
+            "count": 2
+          }
+        ]
+      },
+      "color": {
+        "most_common": "var(--common-color1)",
+        "most_common_count": 5,
+        "total_declarations": 9,
+        "all_values": [
+          {
+            "value": "var(--common-color1)",
+            "count": 5
+          },
+          {
+            "value": "var(--primary-600)",
+            "count": 1
+          },
+          {
+            "value": "var(--common-color1-50)",
+            "count": 1
+          },
+          {
+            "value": "var(--home-cliente-title)",
+            "count": 1
+          },
+          {
+            "value": "var(--primary-color-var3)",
+            "count": 1
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "pointer",
+        "most_common_count": 1,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "pointer",
+            "count": 1
+          },
+          {
+            "value": "default",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "10px",
+        "most_common_count": 6,
+        "total_declarations": 12,
+        "all_values": [
+          {
+            "value": "10px",
+            "count": 6
+          },
+          {
+            "value": "14px",
+            "count": 2
+          },
+          {
+            "value": "40px",
+            "count": 1
+          },
+          {
+            "value": "14px !important",
+            "count": 1
+          },
+          {
+            "value": "20px",
+            "count": 1
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "0 0 1px var(--common-color0-90)",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "0 0 1px var(--common-color0-90)",
+            "count": 1
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": "1",
+        "most_common_count": 3,
+        "total_declarations": 7,
+        "all_values": [
+          {
+            "value": "1",
+            "count": 3
+          },
+          {
+            "value": "0.5",
+            "count": 1
+          },
+          {
+            "value": "0.75",
+            "count": 1
+          },
+          {
+            "value": "0.8",
+            "count": 1
+          },
+          {
+            "value": "0.7",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "input": {
+      "states": {
+        "default": {
+          "padding": {
+            "most_common": "8px",
+            "most_common_count": 11,
+            "total_declarations": 27,
+            "all_values": [
+              {
+                "value": "8px",
+                "count": 11
+              },
+              {
+                "value": "0",
+                "count": 5
+              },
+              {
+                "value": "10px",
+                "count": 3
+              },
+              {
+                "value": "10px 14px 10px 36px",
+                "count": 1
+              },
+              {
+                "value": "5px",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "100%",
+            "most_common_count": 4,
+            "total_declarations": 22,
+            "all_values": [
+              {
+                "value": "100%",
+                "count": 4
+              },
+              {
+                "value": "13px",
+                "count": 4
+              },
+              {
+                "value": "1.125em",
+                "count": 4
+              },
+              {
+                "value": "14px",
+                "count": 3
+              },
+              {
+                "value": "14px !important",
+                "count": 3
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "6px",
+            "most_common_count": 5,
+            "total_declarations": 18,
+            "all_values": [
+              {
+                "value": "6px",
+                "count": 5
+              },
+              {
+                "value": "4px",
+                "count": 4
+              },
+              {
+                "value": ".1875em",
+                "count": 3
+              },
+              {
+                "value": "0.2em",
+                "count": 2
+              },
+              {
+                "value": "2px",
+                "count": 1
+              }
+            ]
+          },
+          "outline": {
+            "most_common": "none",
+            "most_common_count": 19,
+            "total_declarations": 25,
+            "all_values": [
+              {
+                "value": "none",
+                "count": 19
+              },
+              {
+                "value": "0",
+                "count": 3
+              },
+              {
+                "value": "none !important",
+                "count": 3
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "inset 0 1px 1px rgba(0, 0, 0, .06), 0 0 0 3px rgba(0, 0, 0, 0)",
+            "most_common_count": 3,
+            "total_declarations": 8,
+            "all_values": [
+              {
+                "value": "inset 0 1px 1px rgba(0, 0, 0, .06), 0 0 0 3px rgba(0, 0, 0, 0)",
+                "count": 3
+              },
+              {
+                "value": "inset 0 1px 1px rgba(0, 0, 0, .06), 0 0 0 3px rgba(100, 150, 200, .5)",
+                "count": 3
+              },
+              {
+                "value": "none",
+                "count": 2
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "inherit",
+            "most_common_count": 3,
+            "total_declarations": 7,
+            "all_values": [
+              {
+                "value": "inherit",
+                "count": 3
+              },
+              {
+                "value": "400",
+                "count": 1
+              },
+              {
+                "value": "500",
+                "count": 1
+              },
+              {
+                "value": "600",
+                "count": 1
+              },
+              {
+                "value": "bold",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "transparent",
+            "most_common_count": 4,
+            "total_declarations": 10,
+            "all_values": [
+              {
+                "value": "transparent",
+                "count": 4
+              },
+              {
+                "value": "white",
+                "count": 2
+              },
+              {
+                "value": "var(--captacao-input)",
+                "count": 1
+              },
+              {
+                "value": "var(--common-color1-5)",
+                "count": 1
+              },
+              {
+                "value": "var(--gray-50)",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "#667085",
+            "most_common_count": 9,
+            "total_declarations": 25,
+            "all_values": [
+              {
+                "value": "#667085",
+                "count": 9
+              },
+              {
+                "value": "inherit",
+                "count": 6
+              },
+              {
+                "value": "#9ca3af",
+                "count": 4
+              },
+              {
+                "value": "var(--captacao-text)",
+                "count": 1
+              },
+              {
+                "value": "#797B85",
+                "count": 1
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": "1",
+            "most_common_count": 4,
+            "total_declarations": 8,
+            "all_values": [
+              {
+                "value": "1",
+                "count": 4
+              },
+              {
+                "value": "0",
+                "count": 2
+              },
+              {
+                "value": "0.8",
+                "count": 1
+              },
+              {
+                "value": "0.75",
+                "count": 1
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "pointer",
+            "most_common_count": 2,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "pointer",
+                "count": 2
+              }
+            ]
+          },
+          "border-width": {
+            "most_common": "0",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 1
+              }
+            ]
+          },
+          "transition": {
+            "most_common": "border-color .1s, box-shadow .1s",
+            "most_common_count": 3,
+            "total_declarations": 4,
+            "all_values": [
+              {
+                "value": "border-color .1s, box-shadow .1s",
+                "count": 3
+              },
+              {
+                "value": "all 0.3s ease",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "focus": {
+          "box-shadow": {
+            "most_common": "var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)",
+            "most_common_count": 3,
+            "total_declarations": 5,
+            "all_values": [
+              {
+                "value": "var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)",
+                "count": 3
+              },
+              {
+                "value": "none !important",
+                "count": 1
+              },
+              {
+                "value": "0 0 0 4px rgba(59, 130, 246, 0.1)",
+                "count": 1
+              }
+            ]
+          },
+          "outline": {
+            "most_common": "none",
+            "most_common_count": 2,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "none",
+                "count": 2
+              },
+              {
+                "value": "none !important",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "checked": {
+          "background-color": {
+            "most_common": "var(--primary-700)",
+            "most_common_count": 2,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "var(--primary-700)",
+                "count": 2
+              }
+            ]
+          }
+        },
+        "disabled": {
+          "background-color": {
+            "most_common": "#f2f4f7",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "#f2f4f7",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "padding": {
+        "most_common": "8px",
+        "most_common_count": 11,
+        "total_declarations": 27,
+        "all_values": [
+          {
+            "value": "8px",
+            "count": 11
+          },
+          {
+            "value": "0",
+            "count": 5
+          },
+          {
+            "value": "10px",
+            "count": 3
+          },
+          {
+            "value": "10px 14px 10px 36px",
+            "count": 1
+          },
+          {
+            "value": "5px",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "100%",
+        "most_common_count": 4,
+        "total_declarations": 22,
+        "all_values": [
+          {
+            "value": "100%",
+            "count": 4
+          },
+          {
+            "value": "13px",
+            "count": 4
+          },
+          {
+            "value": "1.125em",
+            "count": 4
+          },
+          {
+            "value": "14px",
+            "count": 3
+          },
+          {
+            "value": "14px !important",
+            "count": 3
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "6px",
+        "most_common_count": 5,
+        "total_declarations": 18,
+        "all_values": [
+          {
+            "value": "6px",
+            "count": 5
+          },
+          {
+            "value": "4px",
+            "count": 4
+          },
+          {
+            "value": ".1875em",
+            "count": 3
+          },
+          {
+            "value": "0.2em",
+            "count": 2
+          },
+          {
+            "value": "2px",
+            "count": 1
+          }
+        ]
+      },
+      "outline": {
+        "most_common": "none",
+        "most_common_count": 19,
+        "total_declarations": 25,
+        "all_values": [
+          {
+            "value": "none",
+            "count": 19
+          },
+          {
+            "value": "0",
+            "count": 3
+          },
+          {
+            "value": "none !important",
+            "count": 3
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "inset 0 1px 1px rgba(0, 0, 0, .06), 0 0 0 3px rgba(0, 0, 0, 0)",
+        "most_common_count": 3,
+        "total_declarations": 8,
+        "all_values": [
+          {
+            "value": "inset 0 1px 1px rgba(0, 0, 0, .06), 0 0 0 3px rgba(0, 0, 0, 0)",
+            "count": 3
+          },
+          {
+            "value": "inset 0 1px 1px rgba(0, 0, 0, .06), 0 0 0 3px rgba(100, 150, 200, .5)",
+            "count": 3
+          },
+          {
+            "value": "none",
+            "count": 2
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "inherit",
+        "most_common_count": 3,
+        "total_declarations": 7,
+        "all_values": [
+          {
+            "value": "inherit",
+            "count": 3
+          },
+          {
+            "value": "400",
+            "count": 1
+          },
+          {
+            "value": "500",
+            "count": 1
+          },
+          {
+            "value": "600",
+            "count": 1
+          },
+          {
+            "value": "bold",
+            "count": 1
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "transparent",
+        "most_common_count": 4,
+        "total_declarations": 10,
+        "all_values": [
+          {
+            "value": "transparent",
+            "count": 4
+          },
+          {
+            "value": "white",
+            "count": 2
+          },
+          {
+            "value": "var(--captacao-input)",
+            "count": 1
+          },
+          {
+            "value": "var(--common-color1-5)",
+            "count": 1
+          },
+          {
+            "value": "var(--gray-50)",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "#667085",
+        "most_common_count": 9,
+        "total_declarations": 25,
+        "all_values": [
+          {
+            "value": "#667085",
+            "count": 9
+          },
+          {
+            "value": "inherit",
+            "count": 6
+          },
+          {
+            "value": "#9ca3af",
+            "count": 4
+          },
+          {
+            "value": "var(--captacao-text)",
+            "count": 1
+          },
+          {
+            "value": "#797B85",
+            "count": 1
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": "1",
+        "most_common_count": 4,
+        "total_declarations": 8,
+        "all_values": [
+          {
+            "value": "1",
+            "count": 4
+          },
+          {
+            "value": "0",
+            "count": 2
+          },
+          {
+            "value": "0.8",
+            "count": 1
+          },
+          {
+            "value": "0.75",
+            "count": 1
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "pointer",
+        "most_common_count": 2,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "pointer",
+            "count": 2
+          }
+        ]
+      },
+      "border-width": {
+        "most_common": "0",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "0",
+            "count": 1
+          }
+        ]
+      },
+      "transition": {
+        "most_common": "border-color .1s, box-shadow .1s",
+        "most_common_count": 3,
+        "total_declarations": 4,
+        "all_values": [
+          {
+            "value": "border-color .1s, box-shadow .1s",
+            "count": 3
+          },
+          {
+            "value": "all 0.3s ease",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "badge": {
+      "states": {
+        "default": {
+          "font-weight": {
+            "most_common": "600",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "600",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "12px",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "12px",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "rgba(34, 197, 94, 0.1)",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "rgba(34, 197, 94, 0.1)",
+                "count": 1
+              },
+              {
+                "value": "rgba(239, 68, 68, 0.1)",
+                "count": 1
+              },
+              {
+                "value": "rgba(107, 114, 128, 0.1)",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "#16a34a",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "#16a34a",
+                "count": 1
+              },
+              {
+                "value": "#dc2626",
+                "count": 1
+              },
+              {
+                "value": "#6b7280",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "font-weight": {
+        "most_common": "600",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "600",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "12px",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "12px",
+            "count": 1
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "rgba(34, 197, 94, 0.1)",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "rgba(34, 197, 94, 0.1)",
+            "count": 1
+          },
+          {
+            "value": "rgba(239, 68, 68, 0.1)",
+            "count": 1
+          },
+          {
+            "value": "rgba(107, 114, 128, 0.1)",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "#16a34a",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "#16a34a",
+            "count": 1
+          },
+          {
+            "value": "#dc2626",
+            "count": 1
+          },
+          {
+            "value": "#6b7280",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "link": {
+      "states": {
+        "default": {
+          "padding": {
+            "most_common": "0 10px",
+            "most_common_count": 2,
+            "total_declarations": 10,
+            "all_values": [
+              {
+                "value": "0 10px",
+                "count": 2
+              },
+              {
+                "value": "0 20px",
+                "count": 1
+              },
+              {
+                "value": "10px",
+                "count": 1
+              },
+              {
+                "value": "5px",
+                "count": 1
+              },
+              {
+                "value": "12px 0",
+                "count": 1
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "600",
+            "most_common_count": 7,
+            "total_declarations": 13,
+            "all_values": [
+              {
+                "value": "600",
+                "count": 7
+              },
+              {
+                "value": "500",
+                "count": 6
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "14px",
+            "most_common_count": 5,
+            "total_declarations": 16,
+            "all_values": [
+              {
+                "value": "14px",
+                "count": 5
+              },
+              {
+                "value": "16px",
+                "count": 4
+              },
+              {
+                "value": "12px",
+                "count": 3
+              },
+              {
+                "value": "10px",
+                "count": 1
+              },
+              {
+                "value": "30px",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "inherit",
+            "most_common_count": 6,
+            "total_declarations": 31,
+            "all_values": [
+              {
+                "value": "inherit",
+                "count": 6
+              },
+              {
+                "value": "var(--primary-700)",
+                "count": 4
+              },
+              {
+                "value": "var(--primary-600)",
+                "count": 3
+              },
+              {
+                "value": "var(--common-color1)",
+                "count": 2
+              },
+              {
+                "value": "var(--common-color1-50)",
+                "count": 2
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "4px",
+            "most_common_count": 2,
+            "total_declarations": 5,
+            "all_values": [
+              {
+                "value": "4px",
+                "count": 2
+              },
+              {
+                "value": "8px",
+                "count": 1
+              },
+              {
+                "value": "10px",
+                "count": 1
+              },
+              {
+                "value": "3px",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "var(--primary-200)",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "var(--primary-200)",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-600)",
+                "count": 1
+              },
+              {
+                "value": "transparent",
+                "count": 1
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "pointer",
+            "most_common_count": 4,
+            "total_declarations": 4,
+            "all_values": [
+              {
+                "value": "pointer",
+                "count": 4
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": "0",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 1
+              },
+              {
+                "value": "0.9",
+                "count": 1
+              },
+              {
+                "value": "0.7",
+                "count": 1
+              }
+            ]
+          },
+          "transition": {
+            "most_common": "all 0.2s ease",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "all 0.2s ease",
+                "count": 1
+              },
+              {
+                "value": "opacity 0.2s ease, max-width 0.3s ease",
+                "count": 1
+              },
+              {
+                "value": "0.3s ease",
+                "count": 1
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 2px 8px rgba(0, 0, 0, 0.15)",
+            "most_common_count": 2,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "0 2px 8px rgba(0, 0, 0, 0.15)",
+                "count": 2
+              },
+              {
+                "value": "0 0 0 1px #fff",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "hover": {
+          "color": {
+            "most_common": "var(--second-color-80)",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "var(--second-color-80)",
+                "count": 1
+              },
+              {
+                "value": "#fff",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "rgba(255, 255, 255, 0.12)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "rgba(255, 255, 255, 0.12)",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "padding": {
+        "most_common": "0 10px",
+        "most_common_count": 2,
+        "total_declarations": 10,
+        "all_values": [
+          {
+            "value": "0 10px",
+            "count": 2
+          },
+          {
+            "value": "0 20px",
+            "count": 1
+          },
+          {
+            "value": "10px",
+            "count": 1
+          },
+          {
+            "value": "5px",
+            "count": 1
+          },
+          {
+            "value": "12px 0",
+            "count": 1
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "600",
+        "most_common_count": 7,
+        "total_declarations": 13,
+        "all_values": [
+          {
+            "value": "600",
+            "count": 7
+          },
+          {
+            "value": "500",
+            "count": 6
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "14px",
+        "most_common_count": 5,
+        "total_declarations": 16,
+        "all_values": [
+          {
+            "value": "14px",
+            "count": 5
+          },
+          {
+            "value": "16px",
+            "count": 4
+          },
+          {
+            "value": "12px",
+            "count": 3
+          },
+          {
+            "value": "10px",
+            "count": 1
+          },
+          {
+            "value": "30px",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "inherit",
+        "most_common_count": 6,
+        "total_declarations": 31,
+        "all_values": [
+          {
+            "value": "inherit",
+            "count": 6
+          },
+          {
+            "value": "var(--primary-700)",
+            "count": 4
+          },
+          {
+            "value": "var(--primary-600)",
+            "count": 3
+          },
+          {
+            "value": "var(--common-color1)",
+            "count": 2
+          },
+          {
+            "value": "var(--common-color1-50)",
+            "count": 2
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "4px",
+        "most_common_count": 2,
+        "total_declarations": 5,
+        "all_values": [
+          {
+            "value": "4px",
+            "count": 2
+          },
+          {
+            "value": "8px",
+            "count": 1
+          },
+          {
+            "value": "10px",
+            "count": 1
+          },
+          {
+            "value": "3px",
+            "count": 1
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "var(--primary-200)",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "var(--primary-200)",
+            "count": 1
+          },
+          {
+            "value": "var(--primary-600)",
+            "count": 1
+          },
+          {
+            "value": "transparent",
+            "count": 1
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "pointer",
+        "most_common_count": 4,
+        "total_declarations": 4,
+        "all_values": [
+          {
+            "value": "pointer",
+            "count": 4
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": "0",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "0",
+            "count": 1
+          },
+          {
+            "value": "0.9",
+            "count": 1
+          },
+          {
+            "value": "0.7",
+            "count": 1
+          }
+        ]
+      },
+      "transition": {
+        "most_common": "all 0.2s ease",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "all 0.2s ease",
+            "count": 1
+          },
+          {
+            "value": "opacity 0.2s ease, max-width 0.3s ease",
+            "count": 1
+          },
+          {
+            "value": "0.3s ease",
+            "count": 1
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "0 2px 8px rgba(0, 0, 0, 0.15)",
+        "most_common_count": 2,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "0 2px 8px rgba(0, 0, 0, 0.15)",
+            "count": 2
+          },
+          {
+            "value": "0 0 0 1px #fff",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "nav": {
+      "states": {
+        "default": {
+          "color": {
+            "most_common": "var(--common-color1-90)",
+            "most_common_count": 2,
+            "total_declarations": 6,
+            "all_values": [
+              {
+                "value": "var(--common-color1-90)",
+                "count": 2
+              },
+              {
+                "value": "var(--nav-links-active) !important",
+                "count": 2
+              },
+              {
+                "value": "var(--nav-links-active)",
+                "count": 1
+              },
+              {
+                "value": "var(--icons-nav)",
+                "count": 1
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "pointer",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "pointer",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "16px",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "16px",
+                "count": 1
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "8px 16px 12px 16px",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "8px 16px 12px 16px",
+                "count": 1
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 -4px 20px rgba(0, 0, 0, 0.08)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0 -4px 20px rgba(0, 0, 0, 0.08)",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "color": {
+        "most_common": "var(--common-color1-90)",
+        "most_common_count": 2,
+        "total_declarations": 6,
+        "all_values": [
+          {
+            "value": "var(--common-color1-90)",
+            "count": 2
+          },
+          {
+            "value": "var(--nav-links-active) !important",
+            "count": 2
+          },
+          {
+            "value": "var(--nav-links-active)",
+            "count": 1
+          },
+          {
+            "value": "var(--icons-nav)",
+            "count": 1
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "pointer",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "pointer",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "16px",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "16px",
+            "count": 1
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "8px 16px 12px 16px",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "8px 16px 12px 16px",
+            "count": 1
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "0 -4px 20px rgba(0, 0, 0, 0.08)",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "0 -4px 20px rgba(0, 0, 0, 0.08)",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "tab": {
+      "states": {
+        "default": {
+          "color": {
+            "most_common": "#344054",
+            "most_common_count": 15,
+            "total_declarations": 36,
+            "all_values": [
+              {
+                "value": "#344054",
+                "count": 15
+              },
+              {
+                "value": "var(--primary-800)",
+                "count": 5
+              },
+              {
+                "value": "#98A2B3",
+                "count": 4
+              },
+              {
+                "value": "#344056",
+                "count": 3
+              },
+              {
+                "value": "var(--common-color1-25)",
+                "count": 2
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "500",
+            "most_common_count": 7,
+            "total_declarations": 21,
+            "all_values": [
+              {
+                "value": "500",
+                "count": 7
+              },
+              {
+                "value": "600",
+                "count": 7
+              },
+              {
+                "value": "normal",
+                "count": 5
+              },
+              {
+                "value": "bold",
+                "count": 2
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "11px",
+            "most_common_count": 5,
+            "total_declarations": 18,
+            "all_values": [
+              {
+                "value": "11px",
+                "count": 5
+              },
+              {
+                "value": "12px",
+                "count": 5
+              },
+              {
+                "value": "13px",
+                "count": 2
+              },
+              {
+                "value": "12px !important",
+                "count": 2
+              },
+              {
+                "value": "14px",
+                "count": 2
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "white",
+            "most_common_count": 6,
+            "total_declarations": 27,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 6
+              },
+              {
+                "value": "var(--zebra-th)",
+                "count": 4
+              },
+              {
+                "value": "var(--common-color1-50)",
+                "count": 4
+              },
+              {
+                "value": "var(--first-color-5)",
+                "count": 3
+              },
+              {
+                "value": "var(--first-color-075)",
+                "count": 3
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "8px",
+            "most_common_count": 8,
+            "total_declarations": 9,
+            "all_values": [
+              {
+                "value": "8px",
+                "count": 8
+              },
+              {
+                "value": "10px",
+                "count": 1
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "default",
+            "most_common_count": 7,
+            "total_declarations": 8,
+            "all_values": [
+              {
+                "value": "default",
+                "count": 7
+              },
+              {
+                "value": "pointer",
+                "count": 1
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "15px",
+            "most_common_count": 8,
+            "total_declarations": 28,
+            "all_values": [
+              {
+                "value": "15px",
+                "count": 8
+              },
+              {
+                "value": "10px 15px",
+                "count": 6
+              },
+              {
+                "value": "16px",
+                "count": 3
+              },
+              {
+                "value": "10px 16px",
+                "count": 3
+              },
+              {
+                "value": "20px 5px",
+                "count": 2
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": "1",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "1",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {
+        "negative": {
+          "color": {
+            "most_common": "var(--financeiro-negativo)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "var(--financeiro-negativo)",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "color": {
+        "most_common": "#344054",
+        "most_common_count": 15,
+        "total_declarations": 36,
+        "all_values": [
+          {
+            "value": "#344054",
+            "count": 15
+          },
+          {
+            "value": "var(--primary-800)",
+            "count": 5
+          },
+          {
+            "value": "#98A2B3",
+            "count": 4
+          },
+          {
+            "value": "#344056",
+            "count": 3
+          },
+          {
+            "value": "var(--common-color1-25)",
+            "count": 2
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "500",
+        "most_common_count": 7,
+        "total_declarations": 21,
+        "all_values": [
+          {
+            "value": "500",
+            "count": 7
+          },
+          {
+            "value": "600",
+            "count": 7
+          },
+          {
+            "value": "normal",
+            "count": 5
+          },
+          {
+            "value": "bold",
+            "count": 2
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "11px",
+        "most_common_count": 5,
+        "total_declarations": 18,
+        "all_values": [
+          {
+            "value": "11px",
+            "count": 5
+          },
+          {
+            "value": "12px",
+            "count": 5
+          },
+          {
+            "value": "13px",
+            "count": 2
+          },
+          {
+            "value": "12px !important",
+            "count": 2
+          },
+          {
+            "value": "14px",
+            "count": 2
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "white",
+        "most_common_count": 6,
+        "total_declarations": 27,
+        "all_values": [
+          {
+            "value": "white",
+            "count": 6
+          },
+          {
+            "value": "var(--zebra-th)",
+            "count": 4
+          },
+          {
+            "value": "var(--common-color1-50)",
+            "count": 4
+          },
+          {
+            "value": "var(--first-color-5)",
+            "count": 3
+          },
+          {
+            "value": "var(--first-color-075)",
+            "count": 3
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "8px",
+        "most_common_count": 8,
+        "total_declarations": 9,
+        "all_values": [
+          {
+            "value": "8px",
+            "count": 8
+          },
+          {
+            "value": "10px",
+            "count": 1
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "default",
+        "most_common_count": 7,
+        "total_declarations": 8,
+        "all_values": [
+          {
+            "value": "default",
+            "count": 7
+          },
+          {
+            "value": "pointer",
+            "count": 1
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "15px",
+        "most_common_count": 8,
+        "total_declarations": 28,
+        "all_values": [
+          {
+            "value": "15px",
+            "count": 8
+          },
+          {
+            "value": "10px 15px",
+            "count": 6
+          },
+          {
+            "value": "16px",
+            "count": 3
+          },
+          {
+            "value": "10px 16px",
+            "count": 3
+          },
+          {
+            "value": "20px 5px",
+            "count": 2
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": "1",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "1",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "alert": {
+      "states": {
+        "default": {
+          "font-size": {
+            "most_common": "13px",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "13px",
+                "count": 1
+              },
+              {
+                "value": "11px",
+                "count": 1
+              },
+              {
+                "value": "1em",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "#64748b",
+            "most_common_count": 2,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "#64748b",
+                "count": 2
+              },
+              {
+                "value": "var(--financeiro-negativo)",
+                "count": 1
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "16px",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "16px",
+                "count": 1
+              },
+              {
+                "value": "8px 12px",
+                "count": 1
+              },
+              {
+                "value": "40px",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "white",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-100)",
+                "count": 1
+              },
+              {
+                "value": "var(--gray-100)",
+                "count": 1
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "8px",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "8px",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "font-size": {
+        "most_common": "13px",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "13px",
+            "count": 1
+          },
+          {
+            "value": "11px",
+            "count": 1
+          },
+          {
+            "value": "1em",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "#64748b",
+        "most_common_count": 2,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "#64748b",
+            "count": 2
+          },
+          {
+            "value": "var(--financeiro-negativo)",
+            "count": 1
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "16px",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "16px",
+            "count": 1
+          },
+          {
+            "value": "8px 12px",
+            "count": 1
+          },
+          {
+            "value": "40px",
+            "count": 1
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "white",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "white",
+            "count": 1
+          },
+          {
+            "value": "var(--primary-100)",
+            "count": 1
+          },
+          {
+            "value": "var(--gray-100)",
+            "count": 1
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "8px",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "8px",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "table": {
+      "states": {
+        "default": {
+          "background-color": {
+            "most_common": "var(--primary-50)",
+            "most_common_count": 5,
+            "total_declarations": 27,
+            "all_values": [
+              {
+                "value": "var(--primary-50)",
+                "count": 5
+              },
+              {
+                "value": "var(--gray-100)",
+                "count": 4
+              },
+              {
+                "value": "white",
+                "count": 2
+              },
+              {
+                "value": "var(--gray-50)",
+                "count": 2
+              },
+              {
+                "value": "var(--gray-25)",
+                "count": 2
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "default",
+            "most_common_count": 3,
+            "total_declarations": 6,
+            "all_values": [
+              {
+                "value": "default",
+                "count": 3
+              },
+              {
+                "value": "pointer",
+                "count": 3
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "10px",
+            "most_common_count": 7,
+            "total_declarations": 26,
+            "all_values": [
+              {
+                "value": "10px",
+                "count": 7
+              },
+              {
+                "value": "12px 16px",
+                "count": 3
+              },
+              {
+                "value": "15px 20px",
+                "count": 3
+              },
+              {
+                "value": "0",
+                "count": 2
+              },
+              {
+                "value": "2px 6px",
+                "count": 2
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "500",
+            "most_common_count": 9,
+            "total_declarations": 14,
+            "all_values": [
+              {
+                "value": "500",
+                "count": 9
+              },
+              {
+                "value": "600",
+                "count": 3
+              },
+              {
+                "value": "bold",
+                "count": 2
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "13px",
+            "most_common_count": 3,
+            "total_declarations": 12,
+            "all_values": [
+              {
+                "value": "13px",
+                "count": 3
+              },
+              {
+                "value": "11px",
+                "count": 3
+              },
+              {
+                "value": "16px",
+                "count": 3
+              },
+              {
+                "value": "14px",
+                "count": 1
+              },
+              {
+                "value": "12px",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "var(--gray-400)",
+            "most_common_count": 3,
+            "total_declarations": 15,
+            "all_values": [
+              {
+                "value": "var(--gray-400)",
+                "count": 3
+              },
+              {
+                "value": "black",
+                "count": 2
+              },
+              {
+                "value": "var(--gray-500)",
+                "count": 2
+              },
+              {
+                "value": "var(--gray-800)",
+                "count": 2
+              },
+              {
+                "value": "white",
+                "count": 2
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "4px",
+            "most_common_count": 3,
+            "total_declarations": 4,
+            "all_values": [
+              {
+                "value": "4px",
+                "count": 3
+              },
+              {
+                "value": "8px",
+                "count": 1
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)",
+                "count": 1
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": "0.7",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0.7",
+                "count": 1
+              }
+            ]
+          },
+          "transition": {
+            "most_common": "0.25s all",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0.25s all",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "hover": {
+          "cursor": {
+            "most_common": "default !important",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "default !important",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "#f5f5f5",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "#f5f5f5",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "background-color": {
+        "most_common": "var(--primary-50)",
+        "most_common_count": 5,
+        "total_declarations": 27,
+        "all_values": [
+          {
+            "value": "var(--primary-50)",
+            "count": 5
+          },
+          {
+            "value": "var(--gray-100)",
+            "count": 4
+          },
+          {
+            "value": "white",
+            "count": 2
+          },
+          {
+            "value": "var(--gray-50)",
+            "count": 2
+          },
+          {
+            "value": "var(--gray-25)",
+            "count": 2
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "default",
+        "most_common_count": 3,
+        "total_declarations": 6,
+        "all_values": [
+          {
+            "value": "default",
+            "count": 3
+          },
+          {
+            "value": "pointer",
+            "count": 3
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "10px",
+        "most_common_count": 7,
+        "total_declarations": 26,
+        "all_values": [
+          {
+            "value": "10px",
+            "count": 7
+          },
+          {
+            "value": "12px 16px",
+            "count": 3
+          },
+          {
+            "value": "15px 20px",
+            "count": 3
+          },
+          {
+            "value": "0",
+            "count": 2
+          },
+          {
+            "value": "2px 6px",
+            "count": 2
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "500",
+        "most_common_count": 9,
+        "total_declarations": 14,
+        "all_values": [
+          {
+            "value": "500",
+            "count": 9
+          },
+          {
+            "value": "600",
+            "count": 3
+          },
+          {
+            "value": "bold",
+            "count": 2
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "13px",
+        "most_common_count": 3,
+        "total_declarations": 12,
+        "all_values": [
+          {
+            "value": "13px",
+            "count": 3
+          },
+          {
+            "value": "11px",
+            "count": 3
+          },
+          {
+            "value": "16px",
+            "count": 3
+          },
+          {
+            "value": "14px",
+            "count": 1
+          },
+          {
+            "value": "12px",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "var(--gray-400)",
+        "most_common_count": 3,
+        "total_declarations": 15,
+        "all_values": [
+          {
+            "value": "var(--gray-400)",
+            "count": 3
+          },
+          {
+            "value": "black",
+            "count": 2
+          },
+          {
+            "value": "var(--gray-500)",
+            "count": 2
+          },
+          {
+            "value": "var(--gray-800)",
+            "count": 2
+          },
+          {
+            "value": "white",
+            "count": 2
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "4px",
+        "most_common_count": 3,
+        "total_declarations": 4,
+        "all_values": [
+          {
+            "value": "4px",
+            "count": 3
+          },
+          {
+            "value": "8px",
+            "count": 1
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)",
+            "count": 1
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": "0.7",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "0.7",
+            "count": 1
+          }
+        ]
+      },
+      "transition": {
+        "most_common": "0.25s all",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "0.25s all",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "tooltip": {
+      "states": {
+        "default": {
+          "cursor": {
+            "most_common": "pointer",
+            "most_common_count": 5,
+            "total_declarations": 10,
+            "all_values": [
+              {
+                "value": "pointer",
+                "count": 5
+              },
+              {
+                "value": "default",
+                "count": 3
+              },
+              {
+                "value": "text",
+                "count": 2
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "4px",
+            "most_common_count": 4,
+            "total_declarations": 4,
+            "all_values": [
+              {
+                "value": "4px",
+                "count": 4
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "white",
+            "most_common_count": 2,
+            "total_declarations": 5,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 2
+              },
+              {
+                "value": "#e4e4e4",
+                "count": 2
+              },
+              {
+                "value": "#eee",
+                "count": 1
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "0 5px",
+            "most_common_count": 4,
+            "total_declarations": 7,
+            "all_values": [
+              {
+                "value": "0 5px",
+                "count": 4
+              },
+              {
+                "value": "1px",
+                "count": 1
+              },
+              {
+                "value": "3px 4px",
+                "count": 1
+              },
+              {
+                "value": "10px",
+                "count": 1
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "bold",
+            "most_common_count": 3,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "bold",
+                "count": 3
+              }
+            ]
+          },
+          "color": {
+            "most_common": "#999",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "#999",
+                "count": 1
+              },
+              {
+                "value": "#888",
+                "count": 1
+              }
+            ]
+          },
+          "outline": {
+            "most_common": "0",
+            "most_common_count": 2,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 2
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 2px 6px rgba(0, 0, 0, .15)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0 2px 6px rgba(0, 0, 0, .15)",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "1.1em",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "1.1em",
+                "count": 1
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": ".65",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": ".65",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "hover": {
+          "color": {
+            "most_common": "#333",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "#333",
+                "count": 1
+              },
+              {
+                "value": "#555",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "cursor": {
+        "most_common": "pointer",
+        "most_common_count": 5,
+        "total_declarations": 10,
+        "all_values": [
+          {
+            "value": "pointer",
+            "count": 5
+          },
+          {
+            "value": "default",
+            "count": 3
+          },
+          {
+            "value": "text",
+            "count": 2
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "4px",
+        "most_common_count": 4,
+        "total_declarations": 4,
+        "all_values": [
+          {
+            "value": "4px",
+            "count": 4
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "white",
+        "most_common_count": 2,
+        "total_declarations": 5,
+        "all_values": [
+          {
+            "value": "white",
+            "count": 2
+          },
+          {
+            "value": "#e4e4e4",
+            "count": 2
+          },
+          {
+            "value": "#eee",
+            "count": 1
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "0 5px",
+        "most_common_count": 4,
+        "total_declarations": 7,
+        "all_values": [
+          {
+            "value": "0 5px",
+            "count": 4
+          },
+          {
+            "value": "1px",
+            "count": 1
+          },
+          {
+            "value": "3px 4px",
+            "count": 1
+          },
+          {
+            "value": "10px",
+            "count": 1
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "bold",
+        "most_common_count": 3,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "bold",
+            "count": 3
+          }
+        ]
+      },
+      "color": {
+        "most_common": "#999",
+        "most_common_count": 1,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "#999",
+            "count": 1
+          },
+          {
+            "value": "#888",
+            "count": 1
+          }
+        ]
+      },
+      "outline": {
+        "most_common": "0",
+        "most_common_count": 2,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "0",
+            "count": 2
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "0 2px 6px rgba(0, 0, 0, .15)",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "0 2px 6px rgba(0, 0, 0, .15)",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "1.1em",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "1.1em",
+            "count": 1
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": ".65",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": ".65",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "modal": {
+      "states": {
+        "default": {
+          "background-color": {
+            "most_common": "#3D96FF !important",
+            "most_common_count": 2,
+            "total_declarations": 7,
+            "all_values": [
+              {
+                "value": "#3D96FF !important",
+                "count": 2
+              },
+              {
+                "value": "#667085 !important",
+                "count": 2
+              },
+              {
+                "value": "var(--popup-bg)",
+                "count": 1
+              },
+              {
+                "value": "white",
+                "count": 1
+              },
+              {
+                "value": "#000",
+                "count": 1
+              }
+            ]
+          },
+          "border-radius": {
+            "most_common": "0",
+            "most_common_count": 1,
+            "total_declarations": 6,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 1
+              },
+              {
+                "value": "4px",
+                "count": 1
+              },
+              {
+                "value": "50%",
+                "count": 1
+              },
+              {
+                "value": "4em 0 0 4em",
+                "count": 1
+              },
+              {
+                "value": "0 4em 4em 0",
+                "count": 1
+              }
+            ]
+          },
+          "padding": {
+            "most_common": "0",
+            "most_common_count": 4,
+            "total_declarations": 10,
+            "all_values": [
+              {
+                "value": "0",
+                "count": 4
+              },
+              {
+                "value": "20px",
+                "count": 2
+              },
+              {
+                "value": "1em",
+                "count": 1
+              },
+              {
+                "value": ".5em 0 0",
+                "count": 1
+              },
+              {
+                "value": "0 .5em",
+                "count": 1
+              }
+            ]
+          },
+          "transform": {
+            "most_common": "translate(-50%, -50%)",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "translate(-50%, -50%)",
+                "count": 1
+              },
+              {
+                "value": "rotate(-45deg)",
+                "count": 1
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "500",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "500",
+                "count": 1
+              },
+              {
+                "value": "bold",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "1em",
+            "most_common_count": 3,
+            "total_declarations": 7,
+            "all_values": [
+              {
+                "value": "1em",
+                "count": 3
+              },
+              {
+                "value": "16px",
+                "count": 1
+              },
+              {
+                "value": ".8em",
+                "count": 1
+              },
+              {
+                "value": "2em",
+                "count": 1
+              },
+              {
+                "value": "1.8em",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "white !important",
+            "most_common_count": 2,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "white !important",
+                "count": 2
+              },
+              {
+                "value": "#374151",
+                "count": 1
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "default",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "default",
+                "count": 1
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": ".5",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": ".5",
+                "count": 1
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 0 1px rgba(0, 0, 0, .075), 0 1px 2px rgba(0, 0, 0, .075), 1px 2px 4px rgba(0, 0, 0, .075), 1px 3px 8px rgba(0, 0, 0, .075), 2px 4px 16px rgba(0, 0, 0, .075)",
+            "most_common_count": 1,
+            "total_declarations": 3,
+            "all_values": [
+              {
+                "value": "0 0 1px rgba(0, 0, 0, .075), 0 1px 2px rgba(0, 0, 0, .075), 1px 2px 4px rgba(0, 0, 0, .075), 1px 3px 8px rgba(0, 0, 0, .075), 2px 4px 16px rgba(0, 0, 0, .075)",
+                "count": 1
+              },
+              {
+                "value": "0 0 10px rgba(0, 0, 0, .4)",
+                "count": 1
+              },
+              {
+                "value": "0 20px 60px rgba(0, 0, 0, 0.3)",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "hover": {
+          "background-color": {
+            "most_common": "#3D96FF !important",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "#3D96FF !important",
+                "count": 1
+              },
+              {
+                "value": "#4B5563 !important",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "white !important",
+            "most_common_count": 2,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "white !important",
+                "count": 2
+              }
+            ]
+          }
+        },
+        "focus": {
+          "background-color": {
+            "most_common": "#3D96FF !important",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "#3D96FF !important",
+                "count": 1
+              },
+              {
+                "value": "#4B5563 !important",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "white !important",
+            "most_common_count": 2,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "white !important",
+                "count": 2
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0 0 0 3px rgba(61, 150, 255, 0.25) !important",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "0 0 0 3px rgba(61, 150, 255, 0.25) !important",
+                "count": 1
+              },
+              {
+                "value": "0 0 0 3px rgba(102, 112, 133, 0.25) !important",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {
+        "fullscreen-popup": {
+          "padding": {
+            "most_common": "var(--iti-mobile-popup-margin)",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "var(--iti-mobile-popup-margin)",
+                "count": 1
+              },
+              {
+                "value": "10px 10px",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "rgba(0, 0, 0, 0.5)",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "rgba(0, 0, 0, 0.5)",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "background-color": {
+        "most_common": "#3D96FF !important",
+        "most_common_count": 2,
+        "total_declarations": 7,
+        "all_values": [
+          {
+            "value": "#3D96FF !important",
+            "count": 2
+          },
+          {
+            "value": "#667085 !important",
+            "count": 2
+          },
+          {
+            "value": "var(--popup-bg)",
+            "count": 1
+          },
+          {
+            "value": "white",
+            "count": 1
+          },
+          {
+            "value": "#000",
+            "count": 1
+          }
+        ]
+      },
+      "border-radius": {
+        "most_common": "0",
+        "most_common_count": 1,
+        "total_declarations": 6,
+        "all_values": [
+          {
+            "value": "0",
+            "count": 1
+          },
+          {
+            "value": "4px",
+            "count": 1
+          },
+          {
+            "value": "50%",
+            "count": 1
+          },
+          {
+            "value": "4em 0 0 4em",
+            "count": 1
+          },
+          {
+            "value": "0 4em 4em 0",
+            "count": 1
+          }
+        ]
+      },
+      "padding": {
+        "most_common": "0",
+        "most_common_count": 4,
+        "total_declarations": 10,
+        "all_values": [
+          {
+            "value": "0",
+            "count": 4
+          },
+          {
+            "value": "20px",
+            "count": 2
+          },
+          {
+            "value": "1em",
+            "count": 1
+          },
+          {
+            "value": ".5em 0 0",
+            "count": 1
+          },
+          {
+            "value": "0 .5em",
+            "count": 1
+          }
+        ]
+      },
+      "transform": {
+        "most_common": "translate(-50%, -50%)",
+        "most_common_count": 1,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "translate(-50%, -50%)",
+            "count": 1
+          },
+          {
+            "value": "rotate(-45deg)",
+            "count": 1
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "500",
+        "most_common_count": 1,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "500",
+            "count": 1
+          },
+          {
+            "value": "bold",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "1em",
+        "most_common_count": 3,
+        "total_declarations": 7,
+        "all_values": [
+          {
+            "value": "1em",
+            "count": 3
+          },
+          {
+            "value": "16px",
+            "count": 1
+          },
+          {
+            "value": ".8em",
+            "count": 1
+          },
+          {
+            "value": "2em",
+            "count": 1
+          },
+          {
+            "value": "1.8em",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "white !important",
+        "most_common_count": 2,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "white !important",
+            "count": 2
+          },
+          {
+            "value": "#374151",
+            "count": 1
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "default",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "default",
+            "count": 1
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": ".5",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": ".5",
+            "count": 1
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "0 0 1px rgba(0, 0, 0, .075), 0 1px 2px rgba(0, 0, 0, .075), 1px 2px 4px rgba(0, 0, 0, .075), 1px 3px 8px rgba(0, 0, 0, .075), 2px 4px 16px rgba(0, 0, 0, .075)",
+        "most_common_count": 1,
+        "total_declarations": 3,
+        "all_values": [
+          {
+            "value": "0 0 1px rgba(0, 0, 0, .075), 0 1px 2px rgba(0, 0, 0, .075), 1px 2px 4px rgba(0, 0, 0, .075), 1px 3px 8px rgba(0, 0, 0, .075), 2px 4px 16px rgba(0, 0, 0, .075)",
+            "count": 1
+          },
+          {
+            "value": "0 0 10px rgba(0, 0, 0, .4)",
+            "count": 1
+          },
+          {
+            "value": "0 20px 60px rgba(0, 0, 0, 0.3)",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "avatar": {
+      "states": {
+        "default": {
+          "border-radius": {
+            "most_common": "100%",
+            "most_common_count": 3,
+            "total_declarations": 5,
+            "all_values": [
+              {
+                "value": "100%",
+                "count": 3
+              },
+              {
+                "value": "50%",
+                "count": 1
+              },
+              {
+                "value": "10px",
+                "count": 1
+              }
+            ]
+          },
+          "cursor": {
+            "most_common": "pointer",
+            "most_common_count": 2,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "pointer",
+                "count": 2
+              }
+            ]
+          },
+          "box-shadow": {
+            "most_common": "0px 0px 1px rgba(0, 0, 0, 0.25)",
+            "most_common_count": 2,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "0px 0px 1px rgba(0, 0, 0, 0.25)",
+                "count": 2
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "600",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "600",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "14px",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "14px",
+                "count": 1
+              },
+              {
+                "value": "20px",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "white",
+            "most_common_count": 1,
+            "total_declarations": 2,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 1
+              },
+              {
+                "value": "#475569",
+                "count": 1
+              }
+            ]
+          },
+          "background-color": {
+            "most_common": "#cbd5e1",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "#cbd5e1",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {
+        "initials-lg": {
+          "font-weight": {
+            "most_common": "600",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "600",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "18px",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "18px",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "white",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 1
+              }
+            ]
+          }
+        },
+        "initials-chat": {
+          "border-radius": {
+            "most_common": "100%",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "100%",
+                "count": 1
+              }
+            ]
+          },
+          "font-weight": {
+            "most_common": "600",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "600",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "14px",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "14px",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "white",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "white",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "border-radius": {
+        "most_common": "100%",
+        "most_common_count": 3,
+        "total_declarations": 5,
+        "all_values": [
+          {
+            "value": "100%",
+            "count": 3
+          },
+          {
+            "value": "50%",
+            "count": 1
+          },
+          {
+            "value": "10px",
+            "count": 1
+          }
+        ]
+      },
+      "cursor": {
+        "most_common": "pointer",
+        "most_common_count": 2,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "pointer",
+            "count": 2
+          }
+        ]
+      },
+      "box-shadow": {
+        "most_common": "0px 0px 1px rgba(0, 0, 0, 0.25)",
+        "most_common_count": 2,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "0px 0px 1px rgba(0, 0, 0, 0.25)",
+            "count": 2
+          }
+        ]
+      },
+      "font-weight": {
+        "most_common": "600",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "600",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "14px",
+        "most_common_count": 1,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "14px",
+            "count": 1
+          },
+          {
+            "value": "20px",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "white",
+        "most_common_count": 1,
+        "total_declarations": 2,
+        "all_values": [
+          {
+            "value": "white",
+            "count": 1
+          },
+          {
+            "value": "#475569",
+            "count": 1
+          }
+        ]
+      },
+      "background-color": {
+        "most_common": "#cbd5e1",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "#cbd5e1",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "label": {
+      "states": {
+        "default": {
+          "font-weight": {
+            "most_common": "500",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "500",
+                "count": 1
+              }
+            ]
+          },
+          "color": {
+            "most_common": "#344054",
+            "most_common_count": 3,
+            "total_declarations": 5,
+            "all_values": [
+              {
+                "value": "#344054",
+                "count": 3
+              },
+              {
+                "value": "#667085",
+                "count": 1
+              },
+              {
+                "value": "var(--primary-color-var4)",
+                "count": 1
+              }
+            ]
+          },
+          "font-size": {
+            "most_common": "11px",
+            "most_common_count": 2,
+            "total_declarations": 6,
+            "all_values": [
+              {
+                "value": "11px",
+                "count": 2
+              },
+              {
+                "value": "1.125em",
+                "count": 2
+              },
+              {
+                "value": "14px",
+                "count": 1
+              },
+              {
+                "value": "16px",
+                "count": 1
+              }
+            ]
+          },
+          "opacity": {
+            "most_common": "0.7",
+            "most_common_count": 1,
+            "total_declarations": 1,
+            "all_values": [
+              {
+                "value": "0.7",
+                "count": 1
+              }
+            ]
+          }
+        }
+      },
+      "variants": {},
+      "font-weight": {
+        "most_common": "500",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "500",
+            "count": 1
+          }
+        ]
+      },
+      "color": {
+        "most_common": "#344054",
+        "most_common_count": 3,
+        "total_declarations": 5,
+        "all_values": [
+          {
+            "value": "#344054",
+            "count": 3
+          },
+          {
+            "value": "#667085",
+            "count": 1
+          },
+          {
+            "value": "var(--primary-color-var4)",
+            "count": 1
+          }
+        ]
+      },
+      "font-size": {
+        "most_common": "11px",
+        "most_common_count": 2,
+        "total_declarations": 6,
+        "all_values": [
+          {
+            "value": "11px",
+            "count": 2
+          },
+          {
+            "value": "1.125em",
+            "count": 2
+          },
+          {
+            "value": "14px",
+            "count": 1
+          },
+          {
+            "value": "16px",
+            "count": 1
+          }
+        ]
+      },
+      "opacity": {
+        "most_common": "0.7",
+        "most_common_count": 1,
+        "total_declarations": 1,
+        "all_values": [
+          {
+            "value": "0.7",
+            "count": 1
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "external": [
+    "http://localhost:9099/assets/select2/css/select2.min.css",
+    "http://localhost:9099/assets/admin.css?version=1777500492",
+    "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "http://localhost:9099/assets/cropperjs/cropper.min.css?version=1777500492",
+    "http://localhost:9099/assets/jquery-jsonview/jquery.jsonview.min.css?version=1777500492",
+    "http://localhost:9099/assets/intl-tel-input/intlTelInput.css?version=1777500492",
+    "http://localhost:9099/assets/fullcalendar/main.min.css?version=1777500492",
+    "http://localhost:9099/assets/sweetalert2/sweetalert2.min.css?version=1777500492",
+    "http://localhost:9099/assets/output.css?version=1777500492",
+    "http://localhost:9099/assets/css/mobile-navbar.css?version=1777500492"
+  ],
+  "preload": [],
+  "inline_style_blocks": 1,
+  "inline_style_attrs": 12,
+  "imports_resolved": 0,
+  "failed": []
+}

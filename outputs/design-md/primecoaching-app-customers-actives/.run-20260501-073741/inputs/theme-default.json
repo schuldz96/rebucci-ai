@@ -1,0 +1,7 @@
+{
+  "default": "light",
+  "confidence": "medium",
+  "signals": [
+    "theme-color=\"#3D96FF\" luminance=0.54 → light"
+  ]
+}

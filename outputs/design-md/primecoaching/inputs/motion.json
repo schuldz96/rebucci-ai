@@ -1,0 +1,96 @@
+{
+  "durations": [
+    {
+      "value": "0.3s",
+      "count": 20
+    },
+    {
+      "value": "0.2s",
+      "count": 12
+    },
+    {
+      "value": "15s",
+      "count": 8
+    },
+    {
+      "value": "1s",
+      "count": 7
+    },
+    {
+      "value": "0.15s",
+      "count": 3
+    },
+    {
+      "value": "0.5s",
+      "count": 2
+    },
+    {
+      "value": "1.2s",
+      "count": 2
+    },
+    {
+      "value": "0.25s",
+      "count": 1
+    },
+    {
+      "value": "2s",
+      "count": 1
+    },
+    {
+      "value": "3s",
+      "count": 1
+    }
+  ],
+  "easings": [
+    {
+      "value": "cubic-bezier(0.4,0,0.2,1)",
+      "count": 8
+    },
+    {
+      "value": "cubic-bezier(.4,0,.2,1)",
+      "count": 8
+    },
+    {
+      "value": "cubic-bezier(0,0,.2,1)",
+      "count": 3
+    },
+    {
+      "value": "cubic-bezier(.8,0,1,1)",
+      "count": 1
+    },
+    {
+      "value": "cubic-bezier(.4,0,.6,1)",
+      "count": 1
+    },
+    {
+      "value": "cubic-bezier(.4,0,1,1)",
+      "count": 1
+    }
+  ],
+  "keyframes": [
+    "skel-shine",
+    "swal2-toast-show",
+    "swal2-toast-hide",
+    "swal2-toast-animate-success-line-tip",
+    "swal2-toast-animate-success-line-long",
+    "swal2-show",
+    "swal2-hide",
+    "swal2-animate-success-line-tip",
+    "swal2-animate-success-line-long",
+    "swal2-rotate-success-circular-line",
+    "swal2-animate-error-x-mark",
+    "swal2-animate-error-icon",
+    "swal2-rotate-loading",
+    "swal2-animate-question-mark",
+    "swal2-animate-i-mark",
+    "bounce",
+    "ping",
+    "pulse",
+    "spin",
+    "slideDown",
+    "fadeIn",
+    "slideUp",
+    "bounce-up",
+    "bounce-down"
+  ]
+}

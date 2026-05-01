@@ -1,0 +1,502 @@
+[
+  {
+    "name": "--tw-bg-opacity",
+    "declarations": 198,
+    "references": 189
+  },
+  {
+    "name": "--tw-text-opacity",
+    "declarations": 190,
+    "references": 189
+  },
+  {
+    "name": "--tw-gradient-to-position",
+    "declarations": 3,
+    "references": 132
+  },
+  {
+    "name": "--tw-border-opacity",
+    "declarations": 104,
+    "references": 104
+  },
+  {
+    "name": "--tw-gradient-from",
+    "declarations": 60,
+    "references": 69
+  },
+  {
+    "name": "--tw-gradient-to",
+    "declarations": 132,
+    "references": 69
+  },
+  {
+    "name": "--tw-gradient-from-position",
+    "declarations": 2,
+    "references": 60
+  },
+  {
+    "name": "--tw-ring-opacity",
+    "declarations": 46,
+    "references": 45
+  },
+  {
+    "name": "--tw-ring-inset",
+    "declarations": 2,
+    "references": 28
+  },
+  {
+    "name": "--tw-ring-offset-width",
+    "declarations": 5,
+    "references": 28
+  },
+  {
+    "name": "--tw-space-y-reverse",
+    "declarations": 13,
+    "references": 26
+  },
+  {
+    "name": "--tw-shadow-color",
+    "declarations": 3,
+    "references": 20
+  },
+  {
+    "name": "--tw-content",
+    "declarations": 2,
+    "references": 19
+  },
+  {
+    "name": "--tw-ring-offset-shadow",
+    "declarations": 16,
+    "references": 18
+  },
+  {
+    "name": "--tw-ring-shadow",
+    "declarations": 16,
+    "references": 18
+  },
+  {
+    "name": "--tw-shadow",
+    "declarations": 20,
+    "references": 18
+  },
+  {
+    "name": "--tw-translate-x",
+    "declarations": 13,
+    "references": 17
+  },
+  {
+    "name": "--tw-translate-y",
+    "declarations": 5,
+    "references": 17
+  },
+  {
+    "name": "--tw-rotate",
+    "declarations": 8,
+    "references": 17
+  },
+  {
+    "name": "--tw-skew-x",
+    "declarations": 2,
+    "references": 17
+  },
+  {
+    "name": "--tw-skew-y",
+    "declarations": 2,
+    "references": 17
+  },
+  {
+    "name": "--tw-scale-x",
+    "declarations": 12,
+    "references": 17
+  },
+  {
+    "name": "--tw-scale-y",
+    "declarations": 10,
+    "references": 17
+  },
+  {
+    "name": "--tw-ring-offset-color",
+    "declarations": 3,
+    "references": 14
+  },
+  {
+    "name": "--tw-ring-color",
+    "declarations": 48,
+    "references": 14
+  },
+  {
+    "name": "--tw-gradient-via-position",
+    "declarations": 3,
+    "references": 9
+  },
+  {
+    "name": "--tw-space-x-reverse",
+    "declarations": 4,
+    "references": 8
+  },
+  {
+    "name": "--tw-gradient-stops",
+    "declarations": 69,
+    "references": 6
+  },
+  {
+    "name": "--tw-blur",
+    "declarations": 5,
+    "references": 4
+  },
+  {
+    "name": "--tw-brightness",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-contrast",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-grayscale",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-hue-rotate",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-invert",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-saturate",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-sepia",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-drop-shadow",
+    "declarations": 5,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-blur",
+    "declarations": 4,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-brightness",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-contrast",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-grayscale",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-hue-rotate",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-invert",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-opacity",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-saturate",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-backdrop-sepia",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-divide-y-reverse",
+    "declarations": 2,
+    "references": 4
+  },
+  {
+    "name": "--tw-shadow-colored",
+    "declarations": 17,
+    "references": 3
+  },
+  {
+    "name": "--tw-divide-opacity",
+    "declarations": 3,
+    "references": 3
+  },
+  {
+    "name": "--tw-placeholder-opacity",
+    "declarations": 2,
+    "references": 2
+  },
+  {
+    "name": "--tw-divide-x-reverse",
+    "declarations": 1,
+    "references": 2
+  },
+  {
+    "name": "--gray-500",
+    "declarations": 1,
+    "references": 1
+  },
+  {
+    "name": "--gray-300",
+    "declarations": 1,
+    "references": 1
+  },
+  {
+    "name": "--gray-100",
+    "declarations": 1,
+    "references": 1
+  },
+  {
+    "name": "--tw-border-spacing-x",
+    "declarations": 3,
+    "references": 1
+  },
+  {
+    "name": "--tw-border-spacing-y",
+    "declarations": 3,
+    "references": 1
+  },
+  {
+    "name": "--tw-scroll-snap-strictness",
+    "declarations": 3,
+    "references": 1
+  },
+  {
+    "name": "--tw-ordinal",
+    "declarations": 2,
+    "references": 1
+  },
+  {
+    "name": "--tw-slashed-zero",
+    "declarations": 2,
+    "references": 1
+  },
+  {
+    "name": "--tw-numeric-figure",
+    "declarations": 2,
+    "references": 1
+  },
+  {
+    "name": "--tw-numeric-spacing",
+    "declarations": 3,
+    "references": 1
+  },
+  {
+    "name": "--tw-numeric-fraction",
+    "declarations": 2,
+    "references": 1
+  },
+  {
+    "name": "--primary-950",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-900",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-800",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-700",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-600",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-500",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-400",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-300",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-200",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-100",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-50",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--primary-25",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--gray-800",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--gray-700",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--gray-600",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--gray-400",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--gray-200",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--gray-50",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--gray-25",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-25",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-50",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-100",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-200",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-300",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-400",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-500",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-600",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-700",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-800",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-900",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--warning-950",
+    "declarations": 1,
+    "references": 0
+  },
+  {
+    "name": "--tw-pan-x",
+    "declarations": 2,
+    "references": 0
+  },
+  {
+    "name": "--tw-pan-y",
+    "declarations": 2,
+    "references": 0
+  },
+  {
+    "name": "--tw-pinch-zoom",
+    "declarations": 2,
+    "references": 0
+  },
+  {
+    "name": "--tw-contain-size",
+    "declarations": 2,
+    "references": 0
+  },
+  {
+    "name": "--tw-contain-layout",
+    "declarations": 2,
+    "references": 0
+  },
+  {
+    "name": "--tw-contain-paint",
+    "declarations": 2,
+    "references": 0
+  },
+  {
+    "name": "--tw-contain-style",
+    "declarations": 2,
+    "references": 0
+  }
+]

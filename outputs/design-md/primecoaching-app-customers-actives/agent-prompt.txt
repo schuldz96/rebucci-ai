@@ -1,0 +1,56 @@
+# Component generation brief — on-brand for Prime Coaching
+
+You are a senior frontend engineer building a React component for Prime Coaching.
+Your task: generate clean, accessible TSX (React + Tailwind CSS, shadcn/ui patterns)
+that respects the design system below.
+
+## Hard token rules (DO NOT deviate)
+
+- Primary CTA fill:        #3D96FF
+- Primary CTA text:        #ffffff
+- Page surface:            #ffffff
+- Card / elevated surface: #F9FAFB
+- Body text:               #1D2939
+- Muted text:              #475467
+- Hairline border:         #D0D5DD
+- Brand accent:            #3D96FF
+- Button border-radius:    4px
+- Card border-radius:      8px
+- Input border-radius:     4px
+
+## Typography
+
+- Headings (h1-h3): "Inter", weight 700, letter-spacing -0.02em
+- Body:             "Inter", weight 400, line-height 1.5
+- Mono / labels:    "ui-monospace"
+
+## Component rules
+
+- Primary buttons use #3D96FF background, #ffffff text, 4px radius.
+- Secondary buttons use transparent background, #3D96FF text, #3D96FF border.
+- Tertiary/link actions use #3D96FF text with no filled surface.
+- Cards use #F9FAFB background, #D0D5DD border, 8px radius.
+- Inputs use #ffffff background, #D0D5DD border, 4px radius.
+- Use #475467 only for helper text, metadata, placeholders, and secondary labels.
+
+## Voice / sample copy
+
+Heading sample: "Acesse a plataforma"
+Body sample: "🇧🇷 Português (Brasil) English (United States) Español (España)"
+
+## What to build
+
+[REPLACE THIS LINE WITH YOUR REQUEST — e.g. "a pricing card with three tiers" or "a hero section with primary CTA and secondary outline button"]
+
+## Constraints
+
+- Use ONLY the hex values listed above. Do not invent new colors.
+- Use the listed font families. If they are not loaded, fall back to system-ui.
+- Apply the listed border-radius values verbatim — buttons get `button_radius`, cards get `card_radius`.
+- Component must be accessible (semantic HTML, focusable, contrast-compliant).
+- Output a single TSX file. Tailwind utility classes preferred over inline styles.
+- No external dependencies beyond shadcn/ui, the registered icon library (default lucide-react; per archetype.brand_driven.icons), and clsx.
+
+---
+
+Generate the component now.

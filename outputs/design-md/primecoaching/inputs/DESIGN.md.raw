@@ -1,0 +1,576 @@
+---
+name: Prime Coaching
+colors:
+  primary: "#ff0083"        # from --fav-pink (hot pink brand accent — nav active, form borders, CTA highlights)
+  secondary: "#449aff"      # from --primary-600 (blue CTA — most-used interactive color, 34 refs)
+  tertiary: "#89c0e8"       # from --primary-color-var4 / --second-color (steel blue highlight)
+  neutral: "#033961"        # from --primary-color (dark navy brand base)
+  surface: "#03101c"        # from --body-bg rgb(3,16,28) (near-black app background)
+  text: "#ffffff"           # from --common-color1 rgb(255,255,255) (white text on dark, 29 refs)
+  text-muted: "#667085"     # from --gray-500 (secondary/muted text)
+  border: "#eaecf0"         # from --zebra-border / --gray-200 (table and card borders, 20 refs)
+  error: "#f04438"          # from --error-500 (12 refs)
+  success: "#17b26a"        # from --success-500 (6 refs)
+  fav-pink: "#ff0083"       # from --fav-pink (alias for primary — hot pink brand accent)
+  first-color: "#001f35"    # from --first-color rgba(0,31,53) (darkest navy overlay base)
+  primary-navy: "#033961"   # from --primary-color (dark navy — sidebar/brand body)
+  primary-blue: "#045c9d"   # from --primary-color-var3 (mid blue — active states)
+  warning: "#f79009"        # from --warning-500 (5 refs)
+  teal: "#15b79e"           # from --teal-500 (decorative teal accent)
+
+typography:
+  display-hero:
+    fontFamily: "Onest, sans-serif"    # from @font-face Onest
+    fontSize: "50px"
+    fontWeight: "700"
+    lineHeight: "1.2"
+    letterSpacing: "-0.02em"
+  display-large:
+    fontFamily: "Onest, sans-serif"    # from @font-face Onest
+    fontSize: "40px"
+    fontWeight: "700"
+    lineHeight: "1.25"
+    letterSpacing: "-0.01em"
+  section-heading:
+    fontFamily: "Onest, sans-serif"    # from @font-face Onest
+    fontSize: "32px"
+    fontWeight: "600"
+    lineHeight: "1.3"
+    letterSpacing: "0em"
+  subheading-large:
+    fontFamily: "Onest, sans-serif"    # from @font-face Onest
+    fontSize: "28px"
+    fontWeight: "600"
+    lineHeight: "1.35"
+    letterSpacing: "0em"
+  subheading:
+    fontFamily: "Onest, sans-serif"    # from @font-face Onest
+    fontSize: "24px"
+    fontWeight: "600"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  body-large:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter
+    fontSize: "18px"
+    fontWeight: "400"
+    lineHeight: "1.6"
+    letterSpacing: "0em"
+  body:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter
+    fontSize: "14px"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+  body-small:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter
+    fontSize: "13px"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+  button:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter; from button component most_common
+    fontSize: "14px"
+    fontWeight: "500"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  button-small:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter
+    fontSize: "12px"
+    fontWeight: "500"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  link:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter
+    fontSize: "14px"
+    fontWeight: "500"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+  caption:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter
+    fontSize: "12px"
+    fontWeight: "400"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  caption-small:
+    fontFamily: "Inter, sans-serif"    # from @font-face Inter
+    fontSize: "10px"
+    fontWeight: "400"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  # Legacy aliases for backward compat
+  h1:
+    fontFamily: "Onest, sans-serif"
+    fontSize: "40px"
+    fontWeight: "700"
+    lineHeight: "1.25"
+    letterSpacing: "-0.01em"
+  h2:
+    fontFamily: "Onest, sans-serif"
+    fontSize: "32px"
+    fontWeight: "600"
+    lineHeight: "1.3"
+    letterSpacing: "0em"
+  h3:
+    fontFamily: "Onest, sans-serif"
+    fontSize: "24px"
+    fontWeight: "600"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  h4:
+    fontFamily: "Onest, sans-serif"
+    fontSize: "20px"
+    fontWeight: "600"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  body-lg:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "18px"
+    fontWeight: "400"
+    lineHeight: "1.6"
+    letterSpacing: "0em"
+  body-md:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "14px"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+  body-sm:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "12px"
+    fontWeight: "400"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  label:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "13px"
+    fontWeight: "500"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+  mono:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"  # from tokens-detected
+    fontSize: "13px"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+
+rounded:
+  none: "0px"
+  sm: "2px"
+  md: "4px"     # from component-properties button border-radius most_common
+  lg: "8px"
+  xl: "16px"
+  full: "9999px"
+
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "16px"
+  lg: "24px"
+  xl: "40px"
+
+preview_tokens:
+  button_primary_bg: "#449aff"        # from --primary-600
+  button_primary_text: "#ffffff"      # from button.color most_common = white
+  button_primary_border: "#449aff"    # matches bg — no separate border token
+  button_secondary_bg: "transparent"  # from button.background-color transparent variant
+  button_secondary_text: "#449aff"    # from --primary-600
+  button_secondary_border: "#449aff"
+  button_tertiary_text: "#449aff"     # link color = primary-600
+  surface_bg: "#03101c"               # from --body-bg rgb(3,16,28)
+  card_bg: "#ffffff"                  # from card.background-color most_common = white
+  text: "#ffffff"                     # from --common-color1
+  text_muted: "#667085"               # from --gray-500
+  border: "#eaecf0"                   # from --zebra-border
+  accent: "#ff0083"                   # from --fav-pink
+  button_radius: "4px"                # from button border-radius most_common
+  card_radius: "8px"                  # from card border-radius 8px variant
+  input_radius: "6px"                 # from input border-radius most_common
+
+components:
+  button-primary:
+    bg: "#449aff"
+    text: "#ffffff"
+    border: "#449aff"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+    hover_bg: "#77b6ff"
+  button-secondary:
+    bg: "transparent"
+    text: "#449aff"
+    border: "#449aff"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+    hover_bg: "#e2efff"
+  button-ghost:
+    bg: "transparent"
+    text: "#ffffff"
+    border: "transparent"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+  button-danger:
+    bg: "#f04438"
+    text: "#ffffff"
+    border: "#f04438"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+  card:
+    bg: "#ffffff"
+    border: "#eaecf0"
+    radius: "8px"
+    shadow: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)"
+    padding: "20px"
+  input-text:
+    bg: "transparent"
+    text: "#667085"
+    border: "#d0d5dd"
+    radius: "6px"
+    padding: "8px"
+    focus_border: "#449aff"
+  badge-default:
+    bg: "transparent"
+    text: "#ffffff"
+    border: "#ffffff"
+    radius: "4px"
+    padding: "2px 8px"
+    font: "12px Inter weight 500"
+  nav-header:
+    bg: "#000000"
+    text: "#ffffff"
+    border_bottom: "transparent"
+    height: "60px"
+---
+
+## 1. Visual Theme & Atmosphere
+
+Prime Coaching is a dark-mode SaaS admin panel for fitness coaches managing athletes in Brazil. The visual language is built on a near-black body (`#03101c`) that evokes the focused intensity of a training environment, punctuated by a hot pink accent (`#ff0083`) that signals energy, performance, and brand ownership. White cards float on the dark surface as elevated work areas — a classic dark-dashboard pattern that keeps data legible while immersing the coach in the application.
+
+The type system pairs Inter (a pragmatic, workhorse grotesque used for all data and UI copy) with Onest (a slightly rounded grotesque used for headings), creating a hierarchy that feels data-dense but not cold. Weight 500 dominates interactive elements; 600-700 anchors headings and metric labels. Letter-spacing stays tight at zero to slightly negative — this is an operational tool, not a marketing page.
+
+Surfaces use two distinct treatments: the app body and nav are pure black, while cards are either white (form dialogs, data tables) or glass — translucent white overlays on the dark background (`--card-block-bg: linear-gradient(45deg, rgba(255,255,255,0.05)...)`). Focus states and active navigation links snap to the hot pink rather than the blue, reinforcing the brand's identity anchor.
+
+The single most distinctive visual choice is the hot pink (`#ff0083`) used as the active/accent signal. In a field of blue CTAs and dark surfaces, every pink indicator — nav active link, form popup header border, consultoria button, floating icon badge — reads as a brand signature rather than a generic interactive affordance.
+
+**Key Characteristics:**
+- Dark near-black body `#03101c` with pure black navigation `#000000`
+- Hot pink `#ff0083` for brand-identity signals (nav active, popup borders, acccent badges)
+- Blue `#449aff` / `#3d96ff` scale for all interactive CTAs and links
+- White cards and modals float as elevated work surfaces on dark background
+- Glass card blocks: white semi-transparent gradients (`rgba(255,255,255,0.05-0.2)`)
+- Inter (body) + Onest (headings) type pairing — no third family in use
+- Medium border-radius (4px buttons, 6px inputs, 8px cards) — utilitarian, not rounded
+- Tailwind CSS v3.4 utility foundation with custom semantic var layer on top
+
+## 2. Color Palette & Roles
+
+### Primary
+- **Hot Pink** (`#ff0083`): `--fav-pink`. The brand's identity signal — nav active links, form popup header borders, consultoria nav buttons, records-not-found icon. Used sparingly: this is the color you'd point to when naming the brand.
+- **Pink Active Glow** (`#ff0083` at 70% opacity): `--nav-links-active`. The navigation active state rendering.
+
+### Brand & Dark
+- **Near-Black** (`#03101c`): `--body-bg` = `rgb(3, 16, 28)`. App shell background — the canvas everything sits on.
+- **Pure Black** (`#000000`): `--nav-bg`. Navigation sidebar background.
+- **Dark Navy** (`#033961`): `--primary-color`. The darkest blue anchor — used in dark overlay gradients.
+- **First Color Navy** (`#001f35`): `--first-color` = `rgba(0, 31, 53)`. Deep navy overlay used for form backgrounds and branded dark sections.
+
+### Accent Colors
+- **Steel Blue** (`#89c0e8`): `--primary-color-var4` / `--second-color`. Lighter accent used in icons and consultoria type markers.
+- **Teal** (`#15b79e`): `--teal-500`. Decorative teal — not a primary UI token but available in the palette.
+- **Third Color Peach** (`#ffe3c4`): `--third-color` = `rgba(255, 227, 196)`. Warm peach used for consultoria completed states.
+
+### Interactive
+- **CTA Blue** (`#449aff`): `--primary-600`. Primary button fill — 34 references, the dominant action color.
+- **Hover Blue** (`#3d96ff`): `--primary-700`. Button hover and emphasis fill — 30 references.
+- **Bright Blue** (`#63abff`): `--primary-500`. Lighter interactive blue for subtle states.
+- **Light Blue** (`#77b6ff`): `--primary-400`. Hover overlay and secondary button highlight.
+- **Mid Blue** (`#045c9d`): `--primary-color-var3`. Used for card headers and active list elements.
+
+### Neutral Scale
+- **Heading / Text** (`#ffffff`): `--common-color1`. White — primary text on dark surfaces (29 references).
+- **Subtitle 1** (`rgba(255,255,255,0.9)`): `--common-subtitle1`. Near-white for secondary headings.
+- **Gray 700** (`#344054`): `--gray-700`. Darkest gray for text on white card surfaces.
+- **Gray 500** (`#667085`): `--gray-500`. Muted/secondary text on white (10 references).
+- **Gray 400** (`#98a2b3`): `--gray-400`. Placeholder and deemphasized labels.
+- **Gray 300** (`#d0d5dd`): `--gray-300`. Input borders and hairlines.
+- **Gray 200** (`#eaecf0`): `--gray-200`. Card borders and dividers.
+- **Gray 100** (`#f2f4f7`): `--gray-100`. Zebra-stripe backgrounds on light tables.
+- **Gray 50** (`#f9fafb`): `--gray-50`. Table header backgrounds, lightest surface.
+
+### Surface & Borders
+- **Card White** (`#ffffff`): Card and modal backgrounds.
+- **Zebra Border** (`#eaecf0`): `--zebra-border`. Table row dividers — matches gray-200.
+- **Glass Card** (`rgba(255,255,255,0.05-0.20)`): `--card-block-bg`, `--card-block-border`. Semi-transparent card surfaces on dark.
+
+### Shadow Colors
+- **Dark Shadow** (`rgba(0,0,0,0.4)`): `--form-popup-shadow`. Backdrop overlay behind modals.
+
+### Color Philosophy
+The palette is built around a dark foundation plus three layered identity signals: navy for depth, blue for action, and pink for brand presence. Blue is the workhorse — it drives every CTA, checkbox, and focus ring. Pink is the personality — you see it where the product wants you to feel Prime Coaching's identity rather than perform a task. White cards create optical breathing room inside the dark shell, and the gray neutral scale bridges the two worlds when displaying tabular data.
+
+## 3. Typography Rules
+
+### Font Family
+- **Primary UI (body, labels, data):** `Inter` — weights 100-900, self-hosted `.ttf`, `font-display: swap`. The pragmatic choice for dense data UIs; designed for screen legibility at small sizes.
+- **Headings:** `Onest` — weights 100-900, self-hosted `.ttf`, `font-display: swap`. A friendly, slightly humanist grotesque that adds warmth without softening the data-dense context.
+- **Monospace (code, numeric):** `ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace`. System stack — no self-hosted mono font declared.
+- **Icon Font:** `fcicons` — embedded base64 font for FullCalendar calendar icons.
+
+No OpenType feature flags are declared in the CSS. Tabular numerics (`tnum`) are not explicitly enabled — designers building financial tables should add `font-feature-settings: "tnum"` manually.
+
+### Hierarchy
+
+| Role | Font | Size | Weight | Line Height | Letter Spacing | Notes |
+|------|------|------|--------|-------------|----------------|-------|
+| display-hero | Onest | 50px | 700 | 1.2 | -0.02em | Hero stats/dashboard KPIs |
+| display-large | Onest | 40px | 700 | 1.25 | -0.01em | Page titles |
+| section-heading | Onest | 32px | 600 | 1.3 | 0em | Section headers |
+| subheading-large | Onest | 28px | 600 | 1.35 | 0em | Card headers, modal titles |
+| subheading | Onest | 24px | 600 | 1.4 | 0em | Sub-section labels |
+| body-large | Inter | 18px | 400 | 1.6 | 0em | Feature descriptions |
+| body | Inter | 14px | 400 | 1.5 | 0em | Default body copy, table cells |
+| body-small | Inter | 13px | 400 | 1.5 | 0em | Secondary body, helper text |
+| button | Inter | 14px | 500 | 1.4 | 0em | All button labels |
+| button-small | Inter | 12px | 500 | 1.4 | 0em | Compact/icon buttons |
+| link | Inter | 14px | 500 | 1.5 | 0em | Inline links, action text |
+| caption | Inter | 12px | 400 | 1.4 | 0em | Figure captions, footnotes |
+| caption-small | Inter | 10px | 400 | 1.4 | 0em | Micro labels, status chips |
+
+### Principles
+- **Two-font system only:** Onest for headings, Inter for everything else — never swap them; never introduce a third face.
+- **Weight 500 is the button neutral:** All CTA labels use weight 500. Using 400 on buttons reads as passive; using 600 reads as aggressive — 500 is the calibrated middle.
+- **Small is the default:** At 14px body and 13px secondary, the system is tuned for data-dense coach dashboards, not marketing pages. Never inflate body text to 16px+ in the admin context.
+- **Tight letter-spacing at all sizes:** The system does not use positive letter-spacing. Large headings track at -0.01em to -0.02em; body and UI text track at 0em. Loose tracking belongs on luxury marketing, not fitness SaaS.
+- **Numeric data uses body weight, not bold:** Metric values in stats cards are weight 400-500 — bold numerics create visual noise across dashboards. Reserve 600-700 for label/heading hierarchy only.
+
+## 4. Components
+
+### Buttons
+
+**Primary Blue** (`button-primary`)
+- Background: `#449aff`
+- Text: `#ffffff`
+- Border: `#449aff`
+- Padding: 10px 18px
+- Radius: 4px
+- Font: 14px Inter weight 500
+- Hover: `#77b6ff` background (from --primary-400)
+- Use: Primary CTA ("Salvar", "Adicionar aluno", "Confirmar")
+
+**Secondary Outlined** (`button-secondary`)
+- Background: `transparent`
+- Text: `#449aff`
+- Border: `#449aff`
+- Padding: 10px 18px
+- Radius: 4px
+- Font: 14px Inter weight 500
+- Hover: `#e2efff` background (from --primary-100)
+- Use: Secondary actions alongside a primary button
+
+**Ghost** (`button-ghost`)
+- Background: `transparent`
+- Text: `#ffffff`
+- Border: `transparent`
+- Padding: 10px 18px
+- Radius: 4px
+- Use: Nav-level controls, cancel actions on dark backgrounds
+
+**Danger** (`button-danger`)
+- Background: `#f04438`
+- Text: `#ffffff`
+- Border: `#f04438`
+- Radius: 4px
+- Use: Destructive actions (excluir, cancelar plano)
+
+### Cards & Containers
+
+**Data Card** (`card`)
+- Background: `#ffffff`
+- Border: `#eaecf0` (1px solid)
+- Radius: 8px
+- Padding: 20px
+- Shadow: `0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)`
+- Use: Student profile panels, metrics cards, consultoria blocks
+
+**Glass Card Block** (decorative, no YAML atom)
+- Background: `linear-gradient(45deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025), rgba(255,255,255,0.05))`
+- Border: `rgba(255,255,255,0.20)`
+- Use: Dark-surface shortcut blocks, dashboard highlight boxes
+
+### Inputs & Forms
+
+**Text Input** (`input-text`)
+- Background: `transparent`
+- Text: `#667085`
+- Border: `#d0d5dd` (--gray-300)
+- Radius: 6px
+- Padding: 8px
+- Focus border: `#449aff` via ring shadow
+- Disabled background: `#f2f4f7`
+- Use: Search fields, student data forms, filter inputs
+
+### Badges / Tags / Pills
+
+**Default Badge** (`badge-default`)
+- Background: `transparent`
+- Text: `#ffffff`
+- Border: `#ffffff`
+- Radius: 4px
+- Padding: 2px 8px
+- Font: 12px Inter weight 500
+- Use: Status labels, plan type indicators
+
+### Navigation
+
+**Side Navigation** (`nav-header`)
+- Background: `#000000` (--nav-bg)
+- Text: `#ffffff` (--nav-links)
+- Active text/accent: `#ff0083` (--nav-links-active at 70% = rendered hot pink)
+- Border bottom: none
+- Height: 60px (estimated sidebar link height)
+- Use: Primary application sidebar
+
+### Decorative Elements
+The system uses a distinctive diagonal-stripe gradient background for select marketing/lead-capture sections:
+```
+--gradient-bg: linear-gradient(135deg, #ff008355 25%, transparent 25%) -10px 0/20px 20px,
+               linear-gradient(225deg, #ff0083 25%, transparent 25%) -10px 0/20px 20px,
+               linear-gradient(315deg, #ff008355 25%, transparent 25%) 0px 0/20px 20px,
+               linear-gradient(45deg, #ff0083 25%, #e5e5f7 25%) 0px 0/20px 20px
+```
+This halftone/argyle pattern in pink and lavender appears in lead-capture (captação) sections. It is a brand-specific motif — do not replicate it in data-view screens.
+
+## 5. Layout Principles
+
+### Spacing System
+Base unit: 8px. Common values extracted from the CSS:
+- `4px` — icon gaps, tight inline padding
+- `8px` — default padding (inputs, compact blocks)
+- `10px` — button padding vertically
+- `16px` — standard horizontal padding
+- `20px` — card internal padding
+- `24px` — section gaps
+- `40px` — large section margins
+
+### Grid & Container
+No explicit CSS grid system vars are declared. The layout uses Tailwind's utility grid. Typical patterns observed:
+- Sidebar navigation: fixed-width (~200-240px), full-height
+- Main content: fluid fill with `max-width` capped at the viewport minus sidebar
+- Dashboard cards: responsive grid, typically 3-4 columns on desktop
+- Table containers: full-width within the main panel
+
+### Whitespace Philosophy
+Whitespace in Prime Coaching is functional rather than generous. This is a coach-facing operational tool used under time pressure — whitespace is used to separate data groups and create scan paths through dense tables, not to breathe like a marketing page. Cards get 20px internal padding; tables get 8-10px cell padding. The system adds space to create hierarchy, not atmosphere.
+
+### Border Radius Scale
+- `0px` — removed radius; square table cells, zebra row backgrounds
+- `2px` — minimum rounded micro-badges
+- `4px` — buttons, dropdown items, pill tags (most common)
+- `6px` — text inputs, select elements
+- `8px` — cards, modals
+- `16px` — larger badge chips, image containers
+- `9999px` — full pill (toggle switches, loading indicators)
+
+## 6. Depth & Elevation
+
+| Level | Treatment | Use |
+|-------|-----------|-----|
+| Flat | No shadow, transparent/solid bg | Table rows, inline text, nav links |
+| Ambient | `0 1px 3px rgba(0,0,0,0.12)` | Data cards on the dark body |
+| Standard | `0 2px 8px rgba(0,0,0,0.15)` | Button active, card hover |
+| Elevated | `0 4px 12px rgba(37,99,235,0.15)` | Blue-tinted shadow on primary CTA hover |
+| Deep | `0 0 0 .2rem rgba(76,91,106,0.5)` | Focus ring on buttons |
+| Ring | `inset 0 1px 1px rgba(0,0,0,.06), 0 0 0 3px rgba(100,150,200,.5)` | Input focus state |
+
+### Shadow Philosophy
+Shadows in Prime Coaching are muted and neutral — no hue tinting. The system uses opacity-based black shadows rather than color-tinted ones. The one exception is the button-hover shadow which carries a blue tint (`rgba(37,99,235,0.15)`) echoing the CTA blue. Dark background cards float without visible shadows — contrast between the white card and the near-black body provides the elevation signal. Do not add colored or dramatic shadows; the design language favors understated elevation.
+
+## 7. Do's and Don'ts
+
+**Do's**
+- ✅ Use `#ff0083` (hot pink) exclusively for brand-identity signals: nav active state, popup header borders, icon accent markers. Never dilute it to a utility color.
+- ✅ Use Onest weight 600-700 for headings and weight 500 for subheadings — the round grotesque character reads well on dark backgrounds at these weights.
+- ✅ Use `#449aff` (--primary-600) for all interactive buttons and links — it is the established action blue.
+- ✅ Keep cards white (`#ffffff`) — white cards on the `#03101c` body create the elevation without needing explicit shadows.
+- ✅ Use the glass card treatment (`rgba(255,255,255,0.05-0.20)` gradients) only for dark-overlay shortcut blocks, not for form cards or data panels.
+- ✅ Use Inter at 13-14px for body copy — this is tuned for information density; don't inflate to 16px in data views.
+
+**Don'ts**
+- ❌ Don't use `#ff0083` (hot pink) as the CTA background for standard buttons — CTAs use `#449aff` blue; pink is reserved for brand-identity accent moments only.
+- ❌ Don't use Onest for body copy or table cells — Inter is the body font; mixing Onest into data rows disrupts the heading/data hierarchy.
+- ❌ Don't use a light background (`#f9fafb` or white) for the app shell or sidebar — the entire application background is dark (`#03101c`); a light shell would invert the visual contract.
+- ❌ Don't use `#033961` (dark navy) for CTA buttons — it reads as inactive/disabled at screen luminance; `#449aff` is the correct action blue.
+- ❌ Don't use positive letter-spacing on any text element — the system tracks at 0em to -0.02em; positive tracking reads as old-fashioned in this context.
+- ❌ Don't use weight 400 for button labels — weight 500 is the button neutral; weight 400 reads as passive and fails to signal clickability.
+- ❌ Don't introduce the diagonal halftone gradient (`--gradient-bg`) in operational screens — it belongs only in lead-capture/landing surfaces.
+- ❌ Don't apply `backdrop-filter: blur()` to standard cards — the glass treatment uses transparent fills, not blur. Adding blur would create visual weight inconsistent with the rest of the system.
+
+## 8. Responsive Behavior
+
+### Breakpoints
+The system uses Tailwind CSS v3.4 defaults:
+
+| Name | Width | Key Changes |
+|------|-------|-------------|
+| `sm` | 640px | Single-column stacking for card grids |
+| `md` | 768px | Sidebar collapses to icon-only or hamburger |
+| `lg` | 1024px | Full sidebar + 2-3 column dashboard grid |
+| `xl` | 1280px | 3-4 column grid, wider table views |
+| `2xl` | 1536px | Max layout width, no further grid changes |
+
+### Touch Targets
+Minimum interactive element height: 40px (based on `10px` vertical padding on buttons with 14px font). Touch targets for nav icons should be at least 44×44px per WCAG guidelines — ensure sidebar icons have adequate hit area on tablet-width layouts.
+
+### Collapsing Strategy
+- **Navigation:** Full sidebar at lg+, collapses to hamburger or icon rail at md and below.
+- **Dashboard grid:** 4 columns → 2 columns at md → 1 column at sm.
+- **Tables:** Horizontal scroll container at sm; key columns pinned (student name, status).
+- **Typography:** Display sizes (`40-50px`) reduce to `28-32px` at mobile; body stays `14px`.
+- **Cards:** Full padding (`20px`) reduces to `12-16px` at mobile widths.
+
+### Image Behavior
+Profile pictures use `border-radius: 50%` (circular avatars) with `--card-profile-pic-border: rgba(255,255,255,0.10)` border. On small screens, avatar sizes reduce proportionally. Dashboard charts (FullCalendar integration) use responsive containers with the FullCalendar CSS custom properties (`--fc-*`).
+
+## 9. Agent Prompt Guide
+
+### Quick Color Reference
+- Brand Accent / Nav Active: Prime Coaching Pink (`#ff0083`)
+- Primary CTA Button: CTA Blue (`#449aff`)
+- CTA Hover: Light Blue (`#77b6ff`)
+- App Background: Near-Black (`#03101c`)
+- Navigation Background: Pure Black (`#000000`)
+- Card / Modal Background: White (`#ffffff`)
+- Primary Text (on dark): White (`#ffffff`)
+- Muted Text (on white card): Slate Gray (`#667085`)
+- Table Border / Card Border: Light Gray (`#eaecf0`)
+- Input Border: Gray 300 (`#d0d5dd`)
+- Error: Red (`#f04438`)
+- Success: Green (`#17b26a`)
+- Warning: Amber (`#f79009`)
+
+### Example Component Prompts
+
+> "Create a dark-theme admin dashboard shell. App body background `#03101c`. Left sidebar `#000000`, full height, width 240px. Sidebar navigation links in Inter 14px weight 500 `#ffffff`; active link in `#ff0083` (hot pink). Main content area fills the remaining width."
+
+> "Create a data card for a student profile. White background `#ffffff`, border `1px solid #eaecf0`, border-radius 8px, padding 20px, box-shadow `0 1px 3px rgba(0,0,0,0.12)`. Card sits on app background `#03101c`. Heading in Onest 18px weight 600 `#344054`, body text in Inter 14px weight 400 `#667085`."
+
+> "Create a primary CTA button. Background `#449aff`, text `#ffffff`, border-radius 4px, padding `10px 18px`, font Inter 14px weight 500. On hover: background `#77b6ff`, transform `scale(1.05)`."
+
+> "Create a form input field on a white card. Background `transparent`, border `1px solid #d0d5dd`, border-radius 6px, padding 8px, font Inter 14px weight 400, color `#667085`. Focus state: box-shadow `0 0 0 4px rgba(59,130,246,0.1)`, border-color `#449aff`."
+
+> "Create a navigation active badge/pill. Background `transparent`, border `1px solid #ff0083`, border-radius 4px, padding `2px 8px`, font Inter 12px weight 500, color `#ff0083`. This is the brand pink — use only for active state markers, not generic badges."
+
+> "Create a dark section card using the glass treatment. Background: `linear-gradient(45deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025), rgba(255,255,255,0.05))`, border `1px solid rgba(255,255,255,0.20)`, border-radius 8px, padding 20px. Text in white `#ffffff`. Sits directly on the `#03101c` app background."
+
+### Iteration Guide
+
+1. **The hot pink `#ff0083` is a brand signal, not a CTA color** — when you see a button that "stands out" in Prime Coaching, it should be blue (`#449aff`). Pink only appears on nav active states, popup header borders, and icon accents.
+2. **Dark shell, white cards** — never flip this. The `#03101c` body is the canvas; white cards are elevated surfaces. Don't gray-wash the background to `#f9fafb`.
+3. **Inter for data, Onest for headings** — if you're writing a table cell, a label, a placeholder, a metric value — use Inter. If you're writing a page title or card heading — use Onest.
+4. **Font weight 500 is the button neutral** — weight 400 feels passive; weight 600 feels aggressive for standard CTAs. 500 is the calibrated value used across the system.
+5. **Radius 4px → 6px → 8px** — buttons are 4px, inputs are 6px, cards are 8px. Never use pill buttons (`9999px`) for primary actions; that radius belongs to toggle switches only.
+6. **Blue scale for interactive, gray scale for structure** — `#449aff` and `#3d96ff` drive all clicks and navigations. `#d0d5dd` and `#eaecf0` draw borders and dividers. Never use a color-scale border on structural elements.
+7. **Shadow formula for cards:** `0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)` — neutral black opacity shadow, no hue. Blue-tinted shadow only appears on button hover: `0 4px 12px rgba(37,99,235,0.15)`.
+8. **Portuguese locale** — all UI copy is in Brazilian Portuguese. Button labels: "Salvar", "Cancelar", "Adicionar", "Excluir". Section labels follow the domain: "Consultoria", "Treino", "Dieta", "Anamnese", "Financeiro".

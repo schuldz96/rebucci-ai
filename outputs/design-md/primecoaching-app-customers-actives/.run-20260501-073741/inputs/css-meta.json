@@ -1,0 +1,13 @@
+{
+  "external": [
+    "https://app.primecoaching.com.br/assets/fonts/inter.css",
+    "https://app.primecoaching.com.br/assets/login.css?version=1777587564",
+    "https://app.primecoaching.com.br/assets/sweetalert2/sweetalert2.min.css?version=1777587564",
+    "https://app.primecoaching.com.br/assets/output.css?version=1777587564"
+  ],
+  "preload": [],
+  "inline_style_blocks": 2,
+  "inline_style_attrs": 2,
+  "imports_resolved": 0,
+  "failed": []
+}

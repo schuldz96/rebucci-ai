@@ -9,7 +9,9 @@
       "Grep(*)",
       "Skill(*)",
       "Agent(*)",
-      "Bash(SUPABASE_ACCESS_TOKEN=sbp_9c6bc83210cf0b76d4acd736aa10a07fab5efb4b npx supabase db push)"
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_9c6bc83210cf0b76d4acd736aa10a07fab5efb4b npx supabase db push)",
+      "Bash(mkdir -p /Users/maxter/Documents/crm_marco/.claude/skills)",
+      "Bash(cp -R /Users/maxter/Documents/crm_marco/design-md /Users/maxter/Documents/crm_marco/.claude/skills/design-md)"
     ],
     "defaultMode": "bypassPermissions"
   },

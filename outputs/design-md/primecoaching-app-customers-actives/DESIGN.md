@@ -1,0 +1,745 @@
+---
+name: Prime Coaching
+url: https://app.primecoaching.com.br/customers/actives
+extracted: 2026-05-01
+
+colors:
+  primary: "#3D96FF"
+  secondary: "#2265B5"
+  tertiary: "#FFBBD3"
+  neutral: "#667085"
+  surface: "#FFFFFF"
+  text: "#1D2939"
+  text-muted: "#475467"
+  border: "#D0D5DD"
+  error: "#DC3741"
+  success: "#17B26A"
+
+  # Extended palette — Untitled UI–style gray scale
+  gray-800: "#1D2939"
+  gray-700: "#344054"
+  gray-600: "#475467"
+  gray-500: "#667085"
+  gray-400: "#98A2B3"
+  gray-300: "#D0D5DD"
+  gray-200: "#EAECF0"
+  gray-100: "#F2F4F7"
+  gray-50: "#F9FAFB"
+  gray-25: "#FCFCFD"
+
+  # Extended palette — primary blue scale
+  primary-950: "#081D36"
+  primary-900: "#12427C"
+  primary-800: "#2265B5"
+  primary-700: "#3D96FF"
+  primary-600: "#449AFF"
+  primary-500: "#63ABFF"
+  primary-400: "#77B6FF"
+  primary-200: "#B7D8FF"
+  primary-100: "#E2EFFF"
+  primary-50: "#F5FAFF"
+
+  # Warning / amber scale
+  warning-500: "#F79009"
+  warning-400: "#FDB022"
+  warning-300: "#FEC84B"
+  warning-100: "#FEF0C7"
+  warning-50: "#FFFAEB"
+
+typography:
+  display-hero:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "3rem"
+    fontWeight: "700"
+    lineHeight: "1.1"
+    letterSpacing: "-0.02em"
+    features: "normal"
+
+  display-large:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "2.25rem"
+    fontWeight: "700"
+    lineHeight: "1.15"
+    letterSpacing: "-0.015em"
+    features: "normal"
+
+  section-heading:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.875rem"
+    fontWeight: "600"
+    lineHeight: "1.2"
+    letterSpacing: "-0.01em"
+    features: "normal"
+
+  subheading-large:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: "600"
+    lineHeight: "1.3"
+    letterSpacing: "0em"
+    features: "normal"
+
+  subheading:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: "600"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+    features: "normal"
+
+  body-large:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: "400"
+    lineHeight: "1.6"
+    letterSpacing: "0em"
+    features: "normal"
+
+  body:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1rem"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+    features: "normal"
+
+  body-small:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+    features: "normal"
+
+  button:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: "500"
+    lineHeight: "1.25"
+    letterSpacing: "0em"
+    features: "normal"
+
+  button-small:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: "500"
+    lineHeight: "1.25"
+    letterSpacing: "0em"
+    features: "normal"
+
+  link:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: "500"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+    features: "normal"
+
+  caption:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: "400"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+    features: "normal"
+
+  caption-small:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.6875rem"
+    fontWeight: "400"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+    features: "normal"
+
+  label:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: "500"
+    lineHeight: "1.25"
+    letterSpacing: "0em"
+    features: "normal"
+
+  # Backward-compat aliases
+  h1:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "3rem"
+    fontWeight: "700"
+    lineHeight: "1.1"
+    letterSpacing: "-0.02em"
+    features: "normal"
+  h2:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.875rem"
+    fontWeight: "600"
+    lineHeight: "1.2"
+    letterSpacing: "-0.01em"
+    features: "normal"
+  h3:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: "600"
+    lineHeight: "1.3"
+    letterSpacing: "0em"
+    features: "normal"
+  h4:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: "600"
+    lineHeight: "1.4"
+    letterSpacing: "0em"
+    features: "normal"
+  body-lg:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: "400"
+    lineHeight: "1.6"
+    letterSpacing: "0em"
+    features: "normal"
+  body-md:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "1rem"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+    features: "normal"
+  body-sm:
+    fontFamily: "Inter, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+    features: "normal"
+  mono:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+    fontSize: "0.875rem"
+    fontWeight: "400"
+    lineHeight: "1.5"
+    letterSpacing: "0em"
+    features: "normal"
+
+rounded:
+  none: "0px"
+  sm: "4px"
+  md: "6px"
+  lg: "8px"
+  xl: "12px"
+  full: "9999px"
+
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "16px"
+  lg: "24px"
+  xl: "32px"
+  xxl: "48px"
+
+preview_tokens:
+  button_primary_bg: "#3D96FF"
+  button_primary_text: "#ffffff"
+  button_primary_border: "#3D96FF"
+  button_secondary_bg: "transparent"
+  button_secondary_text: "#3D96FF"
+  button_secondary_border: "#3D96FF"
+  button_tertiary_text: "#3D96FF"
+  surface_bg: "#ffffff"
+  card_bg: "#F9FAFB"
+  text: "#1D2939"
+  text_muted: "#475467"
+  border: "#D0D5DD"
+  accent: "#3D96FF"
+  button_radius: "4px"
+  card_radius: "8px"
+  input_radius: "4px"
+
+components:
+  button-primary:
+    bg: "#3D96FF"
+    text: "#ffffff"
+    border: "#3D96FF"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+    hover_bg: "#2265B5"
+
+  button-primary-hover:
+    bg: "#2265B5"
+    text: "#ffffff"
+    border: "#2265B5"
+
+  button-secondary:
+    bg: "transparent"
+    text: "#3D96FF"
+    border: "#3D96FF"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+    hover_bg: "#E2EFFF"
+
+  button-ghost:
+    bg: "transparent"
+    text: "#344054"
+    border: "transparent"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+
+  button-danger:
+    bg: "#DC3741"
+    text: "#ffffff"
+    border: "#DC3741"
+    radius: "4px"
+    padding: "10px 18px"
+    font: "14px Inter weight 500"
+
+  card:
+    bg: "#ffffff"
+    border: "#EAECF0"
+    radius: "8px"
+    shadow: "0 1px 3px rgba(16,24,40,0.1), 0 1px 2px rgba(16,24,40,0.06)"
+    padding: "24px"
+
+  input-text:
+    bg: "#ffffff"
+    text: "#1D2939"
+    border: "#D0D5DD"
+    radius: "4px"
+    padding: "10px 14px"
+    focus_border: "#3D96FF"
+
+  badge-default:
+    bg: "#F2F4F7"
+    text: "#344054"
+    border: "#EAECF0"
+    radius: "9999px"
+    padding: "2px 10px"
+    font: "12px Inter weight 500"
+
+  badge-primary:
+    bg: "#E2EFFF"
+    text: "#2265B5"
+    border: "#B7D8FF"
+    radius: "9999px"
+    padding: "2px 10px"
+    font: "12px Inter weight 500"
+
+  badge-success:
+    bg: "#DCFAE6"
+    text: "#17B26A"
+    border: "#BBFFD0"
+    radius: "9999px"
+    padding: "2px 10px"
+    font: "12px Inter weight 500"
+
+  badge-warning:
+    bg: "#FFFAEB"
+    text: "#B54708"
+    border: "#FEF0C7"
+    radius: "9999px"
+    padding: "2px 10px"
+    font: "12px Inter weight 500"
+
+  nav-header:
+    bg: "#ffffff"
+    text: "#1D2939"
+    border_bottom: "#EAECF0"
+    backdrop_filter: "none"
+    height: "64px"
+---
+
+## 1. Visual Theme & Atmosphere
+
+Prime Coaching is a Brazilian SaaS coaching and CRM platform designed to help coaches manage their active clients. The interface favors clarity and operational efficiency over decorative flair — a tool professionals use for hours each day, where cognitive load reduction matters more than visual novelty.
+
+The color palette is anchored by a confident, saturated sky-blue (`#3D96FF`) that conveys trust and modernity, complemented by a structured gray neutral scale borrowed from the Untitled UI design vocabulary. The blue primary scale descends all the way to near-black navy (`#081D36`), creating enough tonal depth to support both vibrant interactive elements and heavy data-dense screens. An unexpected pink (`#FFBBD3` at primary-300) adds warmth to badge and highlight moments without undermining the professional baseline. Warning ambers (`--warning-*` scale) complete the semantic palette for status states in coaching dashboards.
+
+Typography is built entirely on Inter, a font that was purpose-built for screen legibility at UI densities. The system deploys the full weight range (100–900), but the operational weight vocabulary sits firmly in the 400–600 range — regular text flows in 400, interactive labels and buttons in 500, headings in 600–700. There is no stylistic use of ultra-light (100–300) weight as a luxury signal; the hierarchy is purely functional.
+
+Surface treatment is clean and flat. Cards use a minimal `1px solid #EAECF0` border with a light lift shadow — depth is communicated by surface contrast rather than dramatic elevation. No glassmorphism, no backdrop blurs on the main surfaces. The layout density is moderate, following Tailwind's 8px base grid, which keeps the interface comfortable on 13-inch laptop displays common in the Brazilian SMB market.
+
+**Key Characteristics:**
+- Sky-blue primary (`#3D96FF`) as the single interactive anchor color — links, CTAs, focus rings
+- Full Inter weight range deployed; 500 is the "active" weight for buttons and labels
+- Pill-shaped badges (`border-radius: 9999px`) for status chips, sharp `4px` radius for buttons
+- Flat-first surface design — depth via border + surface contrast, not shadow stacks
+- Untitled UI–style gray scale (25–800) for semantic neutral hierarchy
+- Pink accent (`#FFBBD3`) is a hue inflection in the primary scale, used for rose highlights
+- Warning amber scale for coaching status, deadlines, and attention indicators
+- SweetAlert2 used for modal confirmations — its purple (#7066e0) is library-native, not brand
+- Tailwind CSS v3.4 utility-first, served via Cloudflare CDN
+
+---
+
+## 2. Color Palette & Roles
+
+### Primary
+
+- **Blue 700** (`#3D96FF`): `--primary-700`. Main brand interactive color. Used for primary buttons, links, active nav states, focus rings.
+- **Blue 600** (`#449AFF`): `--primary-600`. Slightly lighter variant for hover states and gradient to/from anchors.
+- **Blue 800** (`#2265B5`): `--primary-800`. Pressed/active state, deep emphasis, icon fills in brand moments.
+- **Blue 500** (`#63ABFF`): `--primary-500`. Hover glow, progress bar fill, lighter interactive surface.
+
+### Brand & Dark
+
+- **Navy 950** (`#081D36`): `--primary-950`. Deepest brand dark — suitable for hero band backgrounds or immersive sections.
+- **Navy 900** (`#12427C`): `--primary-900`. Dark section backgrounds, sidebar fills.
+- **Navy 800** (`#2265B5`): `--primary-800`. Secondary brand dark used in hover overlays and saturated card borders.
+
+### Accent Colors
+
+- **Rose 300** (`#FFBBD3`): `--primary-300`. Warm pink inflection in the primary scale — used for rose-tinted badge backgrounds, highlight chips, or special coaching status indicators.
+- **Blue 200** (`#B7D8FF`): `--primary-200`. Soft informational surface tint, badge border.
+- **Blue 100** (`#E2EFFF`): `--primary-100`. Secondary button background on hover, informational alert background.
+- **Blue 50** (`#F5FAFF`): `--primary-50`. Subtle row hover tint, selected state background.
+
+### Interactive
+
+- **Danger** (`#DC3741`): from `.btn-danger` declaration. Destructive actions, delete confirmations (SweetAlert2).
+- **Warning 500** (`#F79009`): `--warning-500`. Alert icons, pending status.
+- **Warning 400** (`#FDB022`): `--warning-400`. Warning badge fill.
+- **Success** (`#17B26A`): from tokens-detected. Active / paid / completed status.
+
+### Neutral Scale
+
+- **Gray 800** (`#1D2939`): `--gray-800`. Primary heading text, sidebar labels.
+- **Gray 700** (`#344054`): `--gray-700`. Heavy body text, table cell values.
+- **Gray 600** (`#475467`): `--gray-600`. Secondary body text, form labels.
+- **Gray 500** (`#667085`): `--gray-500`. Placeholder text, muted captions.
+- **Gray 400** (`#98A2B3`): `--gray-400`. Disabled state text, decorative dividers.
+
+### Surface & Borders
+
+- **White** (`#FFFFFF`): Default page and card background.
+- **Gray 50** (`#F9FAFB`): `--gray-50`. Subtle table row alternate, sidebar background.
+- **Gray 25** (`#FCFCFD`): `--gray-25`. Near-white surface tint.
+- **Gray 200** (`#EAECF0`): `--gray-200`. Card borders, table borders, dividers.
+- **Gray 300** (`#D0D5DD`): `--gray-300`. Input borders at rest, section separators.
+- **Gray 100** (`#F2F4F7`): `--gray-100`. Badge backgrounds, tag chips, code inline bg.
+
+### Shadow Colors
+
+- Shadows use neutral black-alpha values: `rgba(16,24,40,0.1)` for standard lift, `rgba(0,0,0,0.06)` for inset input shadows. No colored shadows.
+
+### Color Philosophy
+
+The palette follows the Untitled UI design system convention popular in the Brazilian SaaS market: a systematic blue primary scale for all interactive affordances, a structured neutral gray for hierarchy, and semantic status colors (green success, amber warning, red danger). The pink inflection at primary-300 is an unusual choice for a CRM tool — it softens the otherwise cold blue scale and may signal coaching-category warmth. The deliberate absence of pure black (`#000000`) in any semantic role (headings use `#1D2939`) keeps the interface from feeling overly harsh on sustained use.
+
+---
+
+## 3. Typography Rules
+
+### Font Family
+
+**Primary:** Inter — a variable-weight humanist sans-serif purpose-built for screen interfaces. Self-hosted in 9 discrete weight files (100–900) served from `https://app.primecoaching.com.br/assets/fonts/inter.css` with `font-display: swap`.
+
+No custom monospace font is declared. Fallback for code/mono contexts uses the Tailwind-default system monospace stack: `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`.
+
+No OpenType feature settings are declared in the source CSS — Inter is used in its default rendering configuration.
+
+### Hierarchy
+
+| Role | Font | Size | Weight | Line Height | Letter Spacing | Features | Notes |
+|------|------|------|--------|-------------|----------------|----------|-------|
+| display-hero | Inter | 3rem (48px) | 700 | 1.1 | -0.02em | normal | Page-level hero headlines |
+| display-large | Inter | 2.25rem (36px) | 700 | 1.15 | -0.015em | normal | Section hero, modal titles |
+| section-heading | Inter | 1.875rem (30px) | 600 | 1.2 | -0.01em | normal | h2 equivalents |
+| subheading-large | Inter | 1.5rem (24px) | 600 | 1.3 | 0em | normal | Card group headings |
+| subheading | Inter | 1.25rem (20px) | 600 | 1.4 | 0em | normal | Panel titles, h4 |
+| body-large | Inter | 1.125rem (18px) | 400 | 1.6 | 0em | normal | Lead paragraph, label font-size |
+| body | Inter | 1rem (16px) | 400 | 1.5 | 0em | normal | Default body text |
+| body-small | Inter | 0.875rem (14px) | 400 | 1.5 | 0em | normal | Secondary body, table cells |
+| button | Inter | 0.875rem (14px) | 500 | 1.25 | 0em | normal | CTA labels |
+| button-small | Inter | 0.75rem (12px) | 500 | 1.25 | 0em | normal | Compact actions |
+| link | Inter | 0.875rem (14px) | 500 | 1.5 | 0em | normal | Inline action links |
+| label | Inter | 0.875rem (14px) | 500 | 1.25 | 0em | normal | Form labels |
+| caption | Inter | 0.75rem (12px) | 400 | 1.4 | 0em | normal | Helper text, timestamps |
+| caption-small | Inter | 0.6875rem (11px) | 400 | 1.4 | 0em | normal | Fine-print, legal |
+
+### Principles
+
+- **Weight 500 is the interaction weight** — every clickable label, button, link, and form field label uses Inter 500, creating a consistent haptic-visual signal for actionable elements.
+- **Headings live in 600–700, never lighter** — Prime Coaching does not use thin/light weights for display text; legibility in a data-dense CRM context takes priority over aesthetic lightness.
+- **No letter-spacing at body sizes** — Inter is designed with optically balanced tracking built in; applying positive letter-spacing at 14–16px degrades legibility.
+- **`font-display: swap` on all Inter faces** — ensures text is visible during font load without layout shift, critical for users on slower Brazilian mobile connections.
+- **No italic weights** — the @font-face declarations cover only `font-style: normal` for all weights (100–900). Italics render as browser-synthesized obliques.
+
+---
+
+## 4. Components
+
+### Buttons
+
+**Primary Blue** (`button-primary`)
+- Background: `#3D96FF`
+- Text: `#ffffff`
+- Border: `#3D96FF`
+- Padding: 10px 18px
+- Radius: 4px
+- Font: 14px Inter weight 500
+- Hover: `#2265B5` background, `#2265B5` border
+- Transition: `background-color 0.15s ease`
+- Use: Primary actions ("Adicionar aluno", "Salvar", "Confirmar")
+
+**Primary Blue Hover** (`button-primary-hover`)
+- Background: `#2265B5`
+- Text: `#ffffff`
+- Border: `#2265B5`
+
+**Secondary Outlined** (`button-secondary`)
+- Background: `transparent`
+- Text: `#3D96FF`
+- Border: `#3D96FF`
+- Padding: 10px 18px
+- Radius: 4px
+- Font: 14px Inter weight 500
+- Hover: `#E2EFFF` background
+- Use: Secondary actions alongside a primary button
+
+**Ghost** (`button-ghost`)
+- Background: `transparent`
+- Text: `#344054`
+- Border: `transparent`
+- Padding: 10px 18px
+- Radius: 4px
+- Font: 14px Inter weight 500
+- Use: Tertiary actions, cancel buttons, icon+text combinations
+
+**Danger** (`button-danger`)
+- Background: `#DC3741`
+- Text: `#ffffff`
+- Border: `#DC3741`
+- Radius: 4px
+- Padding: 10px 18px
+- Font: 14px Inter weight 500
+- Use: Destructive confirmations (SweetAlert2 delete dialogs)
+- Note: SweetAlert2 also injects a purple confirm button (`#7066e0`) for non-destructive confirms — this is library-native and not part of the brand button system.
+
+### Cards & Containers
+
+**Default Card** (`card`)
+- Background: `#ffffff`
+- Border: `1px solid #EAECF0`
+- Radius: 8px
+- Shadow: `0 1px 3px rgba(16,24,40,0.1), 0 1px 2px rgba(16,24,40,0.06)`
+- Padding: 24px
+- Use: Customer list items, metric panels, form containers
+
+### Inputs & Forms
+
+**Text Input** (`input-text`)
+- Background: `#ffffff`
+- Text: `#1D2939`
+- Border: `1px solid #D0D5DD`
+- Radius: 4px (from component-properties input border-radius `.1875em` at 16px root ≈ 3px; Tailwind utilities round to 4px in practice)
+- Padding: 10px 14px
+- Font: 14px Inter weight 400
+- Focus border: `#3D96FF` with `box-shadow: inset 0 1px 1px rgba(0,0,0,0.06), 0 0 0 3px rgba(100,150,200,0.5)`
+- Transition: `border-color 0.1s, box-shadow 0.1s`
+- Placeholder color: `#9ca3af`
+
+### Badges / Tags / Pills
+
+All badge variants use `border-radius: 9999px` (pill shape) — this is the primary shape motif for status chips across the coaching dashboard.
+
+**Default Badge** (`badge-default`)
+- Background: `#F2F4F7`
+- Text: `#344054`
+- Border: `1px solid #EAECF0`
+- Radius: 9999px
+- Padding: 2px 10px
+- Font: 12px Inter weight 500
+
+**Primary Badge** (`badge-primary`)
+- Background: `#E2EFFF`
+- Text: `#2265B5`
+- Border: `1px solid #B7D8FF`
+- Radius: 9999px
+
+**Success Badge** (`badge-success`)
+- Background: `#DCFAE6`
+- Text: `#17B26A`
+- Border: `1px solid #BBFFD0`
+- Radius: 9999px
+
+**Warning Badge** (`badge-warning`)
+- Background: `#FFFAEB`
+- Text: `#B54708`
+- Border: `1px solid #FEF0C7`
+- Radius: 9999px
+
+### Navigation
+
+**Header Nav** (`nav-header`)
+- Background: `#ffffff`
+- Text: `#1D2939`
+- Border bottom: `1px solid #EAECF0`
+- No backdrop blur — solid white surface
+- Height: 64px
+- Active link color: `#3D96FF`
+- Active link indicator: bottom border or background tint in `#E2EFFF`
+
+### Decorative Elements
+
+- **SweetAlert2 modals** use a multi-layer ambient shadow: `0 0 1px rgba(0,0,0,0.075), 0 1px 2px rgba(0,0,0,0.075), 1px 2px 4px rgba(0,0,0,0.075), 1px 3px 8px rgba(0,0,0,0.075), 2px 4px 16px rgba(0,0,0,0.075)` — this is library-native and heavier than the brand card shadow.
+- **Focus rings** use `box-shadow: 0 0 0 3px rgba(X,Y,Z,0.5)` — the color varies by button variant (blue for primary, red for danger). This pattern comes from SweetAlert2 but is consistent with Tailwind focus-ring utilities.
+- **No gradient backgrounds** are defined in the CSS vars or component declarations. Any gradients visible on the page are composed via Tailwind utility classes (`bg-gradient-to-*`).
+
+---
+
+## 5. Layout Principles
+
+### Spacing System
+
+Base unit: **4px** (Tailwind's `spacing.1 = 4px`). The primary working scale doubles at each step:
+
+```
+4px (xs / p-1) → 8px (sm / p-2) → 12px (p-3) → 16px (md / p-4) →
+20px (p-5) → 24px (lg / p-6) → 32px (xl / p-8) → 40px (p-10) →
+48px (xxl / p-12) → 64px (p-16)
+```
+
+Most component internal spacing uses 16px (p-4) for standard and 24px (p-6) for generous sections.
+
+### Grid & Container
+
+This is a Tailwind utility-first layout. The app shell follows a standard sidebar + content area pattern:
+- Sidebar: fixed left, approximately 240–280px wide
+- Main content area: fluid, max-width typically `max-w-7xl` (1280px) centered
+- Customer list uses a full-width table layout with sticky header
+
+### Whitespace Philosophy
+
+The layout density is classified as "moderate" — not the aggressive density of Carbon/enterprise UIs, but not the generous whitespace of marketing pages either. This reflects the daily-use CRM context: coaches need to scan many rows at once without the interface feeling cramped. Padding inside cards is consistently 24px; table row height allows comfortable touch targets while maximizing visible data rows.
+
+### Border Radius Scale
+
+- `0px` — square: table cell separators, some divider lines
+- `4px` — sharp: buttons, text inputs, small actionable elements
+- `8px` — default card: content cards, panels, dropdowns
+- `12px` — large: modal dialogs, prominent surface containers
+- `9999px` — pill: all badge/tag/chip elements
+
+---
+
+## 6. Depth & Elevation
+
+| Level | Treatment | Use |
+|-------|-----------|-----|
+| Flat | `border: 1px solid #EAECF0` | Tables, dividers, inline separators |
+| Ambient | `box-shadow: 0 1px 2px rgba(16,24,40,0.06)` | Input fields, subdued cards |
+| Standard | `box-shadow: 0 1px 3px rgba(16,24,40,0.1), 0 1px 2px rgba(16,24,40,0.06)` | Default cards, nav header |
+| Elevated | `box-shadow: 0 4px 8px rgba(16,24,40,0.08), 0 2px 4px rgba(16,24,40,0.06)` | Dropdowns, tooltips, popovers |
+| Deep | `box-shadow: 0 0 1px rgba(0,0,0,0.075), ... 2px 4px 16px rgba(0,0,0,0.075)` | SweetAlert2 modals (library shadow) |
+| Ring (focus) | `box-shadow: 0 0 0 3px rgba(61,150,255,0.5)` | Focused inputs and buttons |
+
+### Shadow Philosophy
+
+The shadow system is intentionally neutral and low-saturation — all shadow colors are pure black-alpha with no hue influence. This is a functional choice for a data-centric CRM: colored shadows would add visual noise to a UI designed for prolonged data scanning. Depth is communicated primarily through surface contrast (white card on gray-50 background) and border presence, with shadow as a secondary signal used only for interactive elements that "float" above content (modals, dropdowns, focus rings).
+
+---
+
+## 7. Do's and Don'ts
+
+### Do's
+
+- ✅ Use `#3D96FF` for all primary interactive elements — buttons, active links, focus rings, progress bars. This is the single source-of-truth brand blue.
+- ✅ Apply Inter weight 500 to every button label, form label, navigation item, and badge text — this weight signals actionability in the system.
+- ✅ Use `border-radius: 9999px` for all badge/status chips — pill shape is the system's semantic marker for status states.
+- ✅ Use `border-radius: 4px` for buttons and inputs — sharp-ish rounding conveys operational precision appropriate for a business tool.
+- ✅ Use the gray scale (`--gray-200` for borders, `--gray-500` for muted text, `--gray-800` for headings) — the Untitled UI gray scale creates visual hierarchy without inventing new colors.
+- ✅ Use semantic warning amber (`--warning-500 = #F79009`) for coaching deadline alerts, overdue states, and attention-requiring indicators.
+- ✅ Rely on `1px solid #EAECF0` borders for card and table separation — this is the system's depth-at-rest signal.
+
+### Don'ts
+
+- ❌ Don't use the SweetAlert2 purple (`#7066e0`) as a brand color — it is injected by the SweetAlert2 library and has no relationship to the Prime Coaching brand palette. Restrict it to SweetAlert2 confirm dialogs only.
+- ❌ Don't apply Inter weight 300 for headlines — Prime Coaching uses 600–700 for headings. Using weight 300 imports a premium/luxury signal that clashes with the operational CRM context.
+- ❌ Don't use `#000000` pure black for any text — the system's darkest text is `#1D2939` (gray-800), which reads as near-black but with warmth that reduces eye fatigue on long sessions.
+- ❌ Don't apply positive letter-spacing at 14–16px body sizes — Inter's built-in tracking is optimal at these sizes; adding `letter-spacing: 0.05em` creates a noisy, label-like quality inappropriate for body text.
+- ❌ Don't add `backdrop-filter: blur()` to navigation or card surfaces — the design language uses solid white surfaces, not glassmorphism. Blurred surfaces would visually conflict with the flat-first hierarchy.
+- ❌ Don't use the pink `#FFBBD3` (primary-300) for error or danger states — it reads as decorative warmth, not alert severity. Use `#DC3741` for danger.
+- ❌ Don't use large `border-radius: 24px` or `32px` on cards — the system maxes out at `12px` for containers. Oversized rounding makes the interface feel like a consumer app rather than a professional CRM tool.
+
+---
+
+## 8. Responsive Behavior
+
+### Breakpoints
+
+Tailwind CSS v3.4 default breakpoint system:
+
+| Name | Width | Key Changes |
+|------|-------|-------------|
+| xs (default) | 0px | Single column, full-width table scrolls horizontally, sidebar hidden |
+| sm | 640px | 2-column grids begin, form fields full-width |
+| md | 768px | Sidebar may appear as an overlay/drawer |
+| lg | 1024px | Sidebar fixed-left layout, main content fluid |
+| xl | 1280px | Max container width reached, extra whitespace on sides |
+| 2xl | 1536px | Larger screens get wider content columns |
+
+### Touch Targets
+
+- Minimum button height: 40px (Tailwind `h-10`)
+- Minimum touch target area: 44×44px (Apple HIG compliance)
+- Table row height: approximately 52–56px on mobile to allow tap targeting
+
+### Collapsing Strategy
+
+- **Navigation:** Sidebar collapses to bottom tab bar or hamburger drawer on mobile
+- **Tables:** Customer list tables scroll horizontally; essential columns (name, status) are sticky-left
+- **Typography:** Display sizes scale down approximately 20–30% on mobile (e.g., display-hero drops from 48px → 32px)
+- **Cards:** Single-column stack on mobile; 2–3 columns on tablet and desktop
+
+### Image Behavior
+
+This is an application surface (customer CRM), not a marketing page. Images are primarily:
+- User/coach avatars (circular, fixed aspect ratio)
+- Dashboard chart graphics (fluid width, fixed height containers)
+- No hero photography or marketing imagery
+
+---
+
+## 9. Agent Prompt Guide
+
+### Quick Color Reference
+
+- Primary CTA: Prime Coaching Blue (`#3D96FF`)
+- CTA Hover: Deep Blue (`#2265B5`)
+- CTA Light BG: Light Blue (`#E2EFFF`)
+- Heading text: Near-Black Navy (`#1D2939`)
+- Body text: Dark Gray (`#344054`)
+- Muted text: Medium Gray (`#475467`)
+- Placeholder: Cool Gray (`#667085`)
+- Border (default): Light Gray (`#D0D5DD`)
+- Border (card): Softer Gray (`#EAECF0`)
+- Card surface: White (`#FFFFFF`)
+- Page background: Off-white (`#F9FAFB`)
+- Success: Emerald (`#17B26A`)
+- Warning: Amber (`#F79009`)
+- Danger: Red (`#DC3741`)
+- Badge neutral bg: Gray 100 (`#F2F4F7`)
+- Badge primary bg: Blue 100 (`#E2EFFF`)
+
+### Example Component Prompts
+
+> "Create a customer list card for a Brazilian coaching CRM. White background (`#ffffff`), `1px solid #EAECF0` border, `8px` border-radius, `24px` padding, `0 1px 3px rgba(16,24,40,0.1)` shadow. Heading in Inter 600 16px `#1D2939`. Subheading in Inter 400 14px `#475467`. Status badge: `9999px` radius, `#E2EFFF` background, `#2265B5` text, `12px` Inter 500."
+
+> "Create a primary action button for a CRM app. Background `#3D96FF`, text `#ffffff`, `border-radius: 4px`, `padding: 10px 18px`, font Inter 500 14px. On hover, background transitions to `#2265B5` in 0.15s ease."
+
+> "Create a navigation sidebar for Prime Coaching CRM. White background (`#ffffff`), `1px solid #EAECF0` right border, 240px wide. Nav items in Inter 500 14px `#344054`. Active item: `#E2EFFF` background, `#3D96FF` text and left accent border."
+
+> "Create a status badge component set for a coaching dashboard. All badges use `border-radius: 9999px`, `padding: 2px 10px`, Inter 500 12px. Active: `#DCFAE6` bg, `#17B26A` text. Pending: `#FFFAEB` bg, `#B54708` text. Inactive: `#F2F4F7` bg, `#344054` text. At-risk: `#E2EFFF` bg, `#2265B5` text."
+
+> "Create a data table for a client list. Background `#ffffff`, header row background `#F9FAFB`, header text Inter 500 12px `#475467` uppercase letter-spacing 0.05em. Body row text Inter 400 14px `#344054`. Row dividers `1px solid #EAECF0`. Hover row background `#F5FAFF`. Action buttons use ghost style: transparent bg, `#3D96FF` text."
+
+> "Create a form section for adding a new coaching client. Label font: Inter 500 14px `#344054`. Input: `1px solid #D0D5DD` border, `4px` radius, `10px 14px` padding, Inter 400 14px `#1D2939`. Placeholder `#667085`. Focus: `#3D96FF` border with `0 0 0 3px rgba(61,150,255,0.3)` ring. Helper text: Inter 400 12px `#667085`."
+
+### Iteration Guide
+
+1. **Blue is the only interaction color** — every link, button, focus ring, active state, and checked checkbox should resolve to `#3D96FF` or a tint/shade from the `--primary-*` scale. Never use green or orange for primary actions.
+2. **Weight 500 = clickable** — apply `font-weight: 500` to any text that the user can interact with (button labels, nav links, form labels, badge text). Weight 400 is for read-only content.
+3. **Badges are always pill-shaped** — do not apply `4px` or `8px` radius to status chips. `border-radius: 9999px` is the system's semantic marker for categorical labels.
+4. **Inputs focus with a blue ring, not an outline** — use `box-shadow: 0 0 0 3px rgba(61,150,255,0.3)` on focus; `outline: none` removes the browser default. This is the system's established input focus pattern.
+5. **Keep gray text in the `--gray-*` scale** — muted text is `#475467` (gray-600), not `#888` or `#aaa`. Using off-scale grays breaks the visual hierarchy contract.
+6. **Don't invent a purple brand color** — the purple (`#7066e0`) visible in SweetAlert2 dialogs is library-native. The Prime Coaching brand is blue only.
+7. **Table rows hover in `#F5FAFF`** (`--primary-50`) — this creates a blue-tinted hover that reinforces the primary color without being distracting.
+8. **Warning states use amber, not orange** — `--warning-500 (#F79009)` is amber-gold, distinct from the `#ef6820` orange in the token list. For coaching deadline warnings, always use the amber warning scale.

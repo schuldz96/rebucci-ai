@@ -1,0 +1,302 @@
+[
+  {
+    "family": "Inter",
+    "weight": "100",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-100.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 100;\n    font-display: swap;\n    src: url(inter-100.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "200",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-200.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 200;\n    font-display: swap;\n    src: url(inter-200.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "300",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-300.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 300;\n    font-display: swap;\n    src: url(inter-300.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "400",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-400.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 400;\n    font-display: swap;\n    src: url(inter-400.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "500",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-500.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 500;\n    font-display: swap;\n    src: url(inter-500.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "600",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-600.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 600;\n    font-display: swap;\n    src: url(inter-600.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "700",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-700.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 700;\n    font-display: swap;\n    src: url(inter-700.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "800",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-800.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 800;\n    font-display: swap;\n    src: url(inter-800.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Inter",
+    "weight": "900",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "inter-900.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/inter.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Inter';\n    font-style: normal;\n    font-weight: 900;\n    font-display: swap;\n    src: url(inter-900.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "100",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-100.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 100;\n    font-display: swap;\n    src: url(onest-100.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "200",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-200.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 200;\n    font-display: swap;\n    src: url(onest-200.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "300",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-300.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 300;\n    font-display: swap;\n    src: url(onest-300.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "400",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-400.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 400;\n    font-display: swap;\n    src: url(onest-400.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "500",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-500.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 500;\n    font-display: swap;\n    src: url(onest-500.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "600",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-600.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 600;\n    font-display: swap;\n    src: url(onest-600.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "700",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-700.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 700;\n    font-display: swap;\n    src: url(onest-700.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "800",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-800.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 800;\n    font-display: swap;\n    src: url(onest-800.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "Onest",
+    "weight": "900",
+    "style": "normal",
+    "display": "swap",
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [
+      "onest-900.ttf"
+    ],
+    "src_formats": [
+      "truetype"
+    ],
+    "source_css_url": "http://localhost:9099/assets/fonts/onest.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: 'Onest';\n    font-style: normal;\n    font-weight: 900;\n    font-display: swap;\n    src: url(onest-900.ttf) format('truetype');\n}"
+  },
+  {
+    "family": "fcicons",
+    "weight": "400",
+    "style": "normal",
+    "display": null,
+    "stretch": null,
+    "unicode_range": null,
+    "src_urls": [],
+    "src_formats": [],
+    "source_css_url": "http://localhost:9099/assets/fullcalendar/main.min.css?version=1777500492",
+    "raw": "@font-face {\n    font-family: fcicons;\n    src: url(\"data:application/x-font-ttf;charset=utf-8;base64,AAEAAAALAIAAAwAwT1MvMg8SBfAAAAC8AAAAYGNtYXAXVtKNAAABHAAAAFRnYXNwAAAAEAAAAXAAAAAIZ2x5ZgYydxIAAAF4AAAFNGhlYWQUJ7cIAAAGrAAAADZoaGVhB20DzAAABuQAAAAkaG10eCIABhQAAAcIAAAALGxvY2ED4AU6AAAHNAAAABhtYXhwAA8AjAAAB0wAAAAgbmFtZXsr690AAAdsAAABhnBvc3QAAwAAAAAI9AAAACAAAwPAAZAABQAAApkCzAAAAI8CmQLMAAAB6wAzAQkAAAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAAAAAAAABAAADpBgPA/8AAQAPAAEAAAAABAAAAAAAAAAAAAAAgAAAAAAADAAAAAwAAABwAAQ"
+  }
+]

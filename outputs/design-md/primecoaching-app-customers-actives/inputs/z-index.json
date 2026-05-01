@@ -1,0 +1,49 @@
+{
+  "all": [
+    {
+      "value": 1,
+      "count": 4
+    },
+    {
+      "value": 2,
+      "count": 3
+    },
+    {
+      "value": 10,
+      "count": 3
+    },
+    {
+      "value": 20,
+      "count": 2
+    },
+    {
+      "value": 40,
+      "count": 1
+    },
+    {
+      "value": 50,
+      "count": 1
+    },
+    {
+      "value": 60,
+      "count": 1
+    },
+    {
+      "value": 1001,
+      "count": 1
+    },
+    {
+      "value": 1060,
+      "count": 1
+    },
+    {
+      "value": 9999,
+      "count": 2
+    }
+  ],
+  "base": 1,
+  "dropdown": 40,
+  "modal": 1001,
+  "toast": 1060,
+  "tooltip": 9999
+}
