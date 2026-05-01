@@ -223,9 +223,9 @@ const ProductsListPage = () => {
             )}
           </div>
         ) : (
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl">
             {/* Cabeçalho da tabela */}
-            <div className="grid grid-cols-[1fr_120px_100px_100px_80px_120px] gap-4 px-4 py-2.5 border-b border-border bg-muted/30 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="grid grid-cols-[1fr_120px_100px_100px_80px_120px] gap-4 px-4 py-2.5 border-b border-border bg-muted/30 text-xs font-semibold text-muted-foreground uppercase tracking-wider rounded-t-xl">
               <span>Nome</span>
               <span>Modalidade</span>
               <span>Duração</span>
