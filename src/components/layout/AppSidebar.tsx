@@ -129,17 +129,7 @@ const coachingNav: NavGroup[] = [
     icon: Bell,
     path: "/notifications/all",
   },
-  {
-    label: "Conquistas",
-    icon: Trophy,
-    path: "/awards",
-  },
-  {
-    label: "Novidades",
-    icon: Sparkles,
-    path: "/patch-notes",
-  },
-  {
+{
     label: "Suporte",
     icon: HelpCircle,
     path: "/support",
