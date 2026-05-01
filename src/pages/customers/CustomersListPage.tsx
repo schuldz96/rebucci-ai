@@ -298,7 +298,7 @@ const CustomersListPage = () => {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  onClick={() => navigate(`/customers/${c.customer_id}`)}
+                  onClick={() => navigate(`/customers/actives/${c.id}`)}
                   className="flex items-center gap-4 px-6 py-4 hover:bg-muted/20 cursor-pointer transition-colors group"
                 >
                   {/* Avatar */}
