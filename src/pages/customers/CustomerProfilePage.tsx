@@ -5,6 +5,7 @@ import {
   Activity, FlaskConical, MessageCircle, Camera, StickyNote,
   Check, Eye, Mail, CalendarDays, MessageSquare, Pin, Loader2,
   Plus, Trash2, Weight, Droplets, Percent, Edit2, X, Link, Upload, ExternalLink,
+  MoreVertical, RefreshCw, Gift, Package, PauseCircle, XCircle,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -1778,6 +1779,213 @@ const FeedbacksTab = ({ customerId }: { customerId: string }) => {
   );
 };
 
+// ─── Modais de gestão de consultoria ─────────────────────────────────────────
+
+interface Plan { id: string; name: string; plan_category?: string; duration_days: number; }
+
+const TrocarPlanoModal = ({
+  coachId, customerId, consultoria, onClose, onRefresh,
+}: { coachId: string; customerId: string; consultoria: Consultoria; onClose: () => void; onRefresh: () => void }) => {
+  const { toast } = useToast();
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selected, setSelected] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.from("plans").select("id, name, plan_category, duration_days")
+      .eq("coach_id", coachId).eq("active", true)
+      .then(({ data }) => setPlans((data ?? []).filter(p => !p.plan_category || p.plan_category === "principal")));
+  }, [coachId]);
+
+  const confirm = async () => {
+    if (!selected) return;
+    setSaving(true);
+    const plan = plans.find(p => p.id === selected)!;
+    const startDate = new Date().toISOString().split("T")[0];
+    const endDate = new Date(Date.now() + plan.duration_days * 86400000).toISOString().split("T")[0];
+    const { error } = await supabase.from("consultorias").update({
+      plan_id: selected, start_date: startDate, end_date: endDate, status: "active",
+    }).eq("id", consultoria.id);
+    setSaving(false);
+    if (error) { toast({ title: "Erro ao trocar plano", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Plano alterado com sucesso!" });
+    onRefresh();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-md bg-background rounded-2xl border border-border shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="font-semibold text-foreground flex items-center gap-2"><RefreshCw className="w-4 h-4 text-primary" /> Trocar Plano</h3>
+          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <p className="text-sm text-muted-foreground">Plano atual: <span className="text-foreground font-medium">{consultoria.plans?.name ?? "—"}</span></p>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {plans.map((p) => (
+              <button key={p.id} onClick={() => setSelected(p.id)}
+                className={cn("w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
+                  selected === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                )}
+              >
+                <div>
+                  <p className="font-medium text-foreground">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">{p.duration_days} dias</p>
+                </div>
+                {selected === p.id && <Check className="w-4 h-4 text-primary" />}
+              </button>
+            ))}
+            {plans.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Nenhum plano principal disponível</p>}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button className="flex-1" disabled={!selected || saving} onClick={confirm}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BonusDaysModal = ({
+  consultoria, onClose, onRefresh,
+}: { consultoria: Consultoria; onClose: () => void; onRefresh: () => void }) => {
+  const { toast } = useToast();
+  const [days, setDays] = useState("7");
+  const [saving, setSaving] = useState(false);
+
+  const confirm = async () => {
+    const d = parseInt(days);
+    if (!d || d < 1) return;
+    setSaving(true);
+    const currentEnd = consultoria.end_date ? new Date(consultoria.end_date) : new Date();
+    currentEnd.setDate(currentEnd.getDate() + d);
+    const newEnd = currentEnd.toISOString().split("T")[0];
+    const { error } = await supabase.from("consultorias").update({ end_date: newEnd }).eq("id", consultoria.id);
+    setSaving(false);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: `${d} dias de bônus adicionados!`, description: `Novo vencimento: ${newEnd.split("-").reverse().join("/")}` });
+    onRefresh();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-sm bg-background rounded-2xl border border-border shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="font-semibold text-foreground flex items-center gap-2"><Gift className="w-4 h-4 text-primary" /> Dias de Bônus</h3>
+          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Vencimento atual: <span className="text-foreground font-medium">
+              {consultoria.end_date ? consultoria.end_date.split("-").reverse().join("/") : "—"}
+            </span>
+          </p>
+          <div>
+            <label className="text-sm font-medium text-foreground">Quantos dias adicionar?</label>
+            <div className="flex items-center gap-3 mt-2">
+              {[3, 7, 10, 15, 30].map((d) => (
+                <button key={d} onClick={() => setDays(String(d))}
+                  className={cn("px-3 py-1.5 rounded-lg border text-sm transition-colors",
+                    days === String(d) ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40"
+                  )}
+                >{d}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <Input type="number" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)} className="w-24" />
+              <span className="text-sm text-muted-foreground">dias</span>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button className="flex-1" disabled={!days || parseInt(days) < 1 || saving} onClick={confirm}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Adicionar"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AddAddonModal = ({
+  coachId, customerId, consultoriaId, onClose, onRefresh,
+}: { coachId: string; customerId: string; consultoriaId: string; onClose: () => void; onRefresh: () => void }) => {
+  const { toast } = useToast();
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selected, setSelected] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.from("plans").select("id, name, plan_category, duration_days")
+      .eq("coach_id", coachId).eq("active", true)
+      .then(({ data }) => setPlans((data ?? []).filter(p => p.plan_category === "addon" || p.plan_category === "extension")));
+  }, [coachId]);
+
+  const confirm = async () => {
+    if (!selected) return;
+    setSaving(true);
+    const plan = plans.find(p => p.id === selected)!;
+    const startDate = new Date().toISOString().split("T")[0];
+    const endDate = new Date(Date.now() + (plan.duration_days ?? 30) * 86400000).toISOString().split("T")[0];
+    const { error } = await supabase.from("consultoria_addons").insert({
+      coach_id: coachId, customer_id: customerId, consultoria_id: consultoriaId,
+      plan_id: selected, status: "active", start_date: startDate, end_date: endDate,
+    });
+    setSaving(false);
+    if (error) { toast({ title: "Erro ao adicionar produto", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Produto adicional ativado!" });
+    onRefresh();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-md bg-background rounded-2xl border border-border shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="font-semibold text-foreground flex items-center gap-2"><Package className="w-4 h-4 text-primary" /> Adicionar Produto</h3>
+          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {plans.map((p) => (
+              <button key={p.id} onClick={() => setSelected(p.id)}
+                className={cn("w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
+                  selected === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                )}
+              >
+                <div>
+                  <p className="font-medium text-foreground">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.plan_category === "extension" ? "Extensão" : "Adicional"} · {p.duration_days} dias
+                  </p>
+                </div>
+                {selected === p.id && <Check className="w-4 h-4 text-primary" />}
+              </button>
+            ))}
+            {plans.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum produto adicional ou extensão cadastrado. Crie um produto do tipo "Extensão" ou "Adicional".
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button className="flex-1" disabled={!selected || saving || plans.length === 0} onClick={confirm}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ativar"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const CustomerProfilePage = () => {
@@ -1791,13 +1999,29 @@ const CustomerProfilePage = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [consultoria, setConsultoria] = useState<Consultoria | null>(null);
   const [loading, setLoading] = useState(true);
+  const [consultoriaMenuOpen, setConsultoriaMenuOpen] = useState(false);
+  const [consultoriaModal, setConsultoriaModal] = useState<"trocar" | "bonus" | "addon" | null>(null);
+  const [addons, setAddons] = useState<{ id: string; plan_id: string; status: string; end_date: string | null; plans: { name: string } | null }[]>([]);
+
+  const loadConsultoria = async () => {
+    if (!id || !user) return;
+    const cons = await fetchConsultoriaByCustomer(id, user.id);
+    setConsultoria(cons);
+    if (cons) {
+      const { data: addonData } = await supabase
+        .from("consultoria_addons")
+        .select("id, plan_id, status, end_date, plans(name)")
+        .eq("customer_id", id)
+        .eq("status", "active");
+      setAddons((addonData as any) ?? []);
+    }
+  };
 
   useEffect(() => {
     if (!id || !user) return;
     (async () => {
-      const [c, cons] = await Promise.all([fetchCustomerById(id), fetchConsultoriaByCustomer(id, user.id)]);
+      const [c] = await Promise.all([fetchCustomerById(id), loadConsultoria()]);
       setCustomer(c);
-      setConsultoria(cons);
       setLoading(false);
     })();
   }, [id, user]);
@@ -1818,6 +2042,7 @@ const CustomerProfilePage = () => {
   const initials = customer.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
   const age = customer.birthdate ? differenceInYears(new Date(), parseISO(customer.birthdate)) : null;
   return (
+    <>
     <div className="flex flex-col h-full overflow-hidden">
       <div className="shrink-0">
         <div className="px-6 pt-4">
@@ -1835,7 +2060,61 @@ const CustomerProfilePage = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-foreground">{customer.name}</h1>
                 {customer.app_installed && <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">App instalado</span>}
-                {consultoria?.plans && <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">{consultoria.plans.name}</span>}
+                {consultoria?.plans && (
+                  <div className="relative flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">{consultoria.plans.name}</span>
+                    {consultoria.end_date && (
+                      <span className="text-xs text-muted-foreground">até {consultoria.end_date.split("-").reverse().join("/")}</span>
+                    )}
+                    <button
+                      onClick={() => setConsultoriaMenuOpen(!consultoriaMenuOpen)}
+                      className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      title="Ações do plano"
+                    >
+                      <MoreVertical className="w-3.5 h-3.5" />
+                    </button>
+                    {consultoriaMenuOpen && (
+                      <div className="absolute left-0 top-7 bg-popover border border-border rounded-xl shadow-xl z-30 py-1 min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => { setConsultoriaModal("trocar"); setConsultoriaMenuOpen(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground">
+                          <RefreshCw className="w-3.5 h-3.5 text-blue-400" /> Trocar plano
+                        </button>
+                        <button onClick={() => { setConsultoriaModal("bonus"); setConsultoriaMenuOpen(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground">
+                          <Gift className="w-3.5 h-3.5 text-green-400" /> Dar dias de bônus
+                        </button>
+                        <button onClick={() => { setConsultoriaModal("addon"); setConsultoriaMenuOpen(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground">
+                          <Package className="w-3.5 h-3.5 text-violet-400" /> Adicionar produto
+                        </button>
+                        <div className="border-t border-border my-1" />
+                        <button onClick={async () => {
+                          if (!confirm("Pausar consultoria?")) return;
+                          await supabase.from("consultorias").update({ status: "paused" }).eq("id", consultoria.id);
+                          toast({ title: "Consultoria pausada" });
+                          loadConsultoria();
+                          setConsultoriaMenuOpen(false);
+                        }} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-yellow-400">
+                          <PauseCircle className="w-3.5 h-3.5" /> Pausar
+                        </button>
+                        <button onClick={async () => {
+                          if (!confirm("Desativar consultoria? O aluno perderá o acesso.")) return;
+                          await supabase.from("consultorias").update({ status: "inactive" }).eq("id", consultoria.id);
+                          toast({ title: "Consultoria desativada" });
+                          loadConsultoria();
+                          setConsultoriaMenuOpen(false);
+                        }} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-destructive">
+                          <XCircle className="w-3.5 h-3.5" /> Desativar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {addons.map((addon) => (
+                  <span key={addon.id} className="px-2 py-0.5 rounded-full bg-teal-400/10 text-teal-400 text-xs font-medium">
+                    + {addon.plans?.name ?? "Adicional"}
+                  </span>
+                ))}
               </div>
               <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                 {customer.height_cm && <span>{customer.height_cm} cm</span>}
@@ -1890,6 +2169,39 @@ const CustomerProfilePage = () => {
         )}
       </div>
     </div>
+
+    {/* Click-outside para fechar menu consultoria */}
+    {consultoriaMenuOpen && (
+      <div className="fixed inset-0 z-20" onClick={() => setConsultoriaMenuOpen(false)} />
+    )}
+
+    {/* Modais de gestão de consultoria */}
+    {consultoriaModal === "trocar" && consultoria && user && id && (
+      <TrocarPlanoModal
+        coachId={user.id}
+        customerId={id}
+        consultoria={consultoria}
+        onClose={() => setConsultoriaModal(null)}
+        onRefresh={loadConsultoria}
+      />
+    )}
+    {consultoriaModal === "bonus" && consultoria && (
+      <BonusDaysModal
+        consultoria={consultoria}
+        onClose={() => setConsultoriaModal(null)}
+        onRefresh={loadConsultoria}
+      />
+    )}
+    {consultoriaModal === "addon" && consultoria && user && id && (
+      <AddAddonModal
+        coachId={user.id}
+        customerId={id}
+        consultoriaId={consultoria.id}
+        onClose={() => setConsultoriaModal(null)}
+        onRefresh={loadConsultoria}
+      />
+    )}
+    </>
   );
 };
 

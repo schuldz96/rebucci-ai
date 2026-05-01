@@ -26,6 +26,7 @@ interface Plan {
   auto_schedule_feedbacks: boolean;
   feedback_frequency_days: number;
   created_at: string;
+  plan_category?: string;
   active_count?: number;
 }
 
@@ -39,6 +40,18 @@ const MODALITY_COLOR: Record<string, string> = {
   online: "text-blue-400 bg-blue-400/10",
   personal: "text-violet-400 bg-violet-400/10",
   consulta: "text-teal-400 bg-teal-400/10",
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  principal: "Plano Principal",
+  extension: "Extensão",
+  addon: "Adicional",
+};
+
+const CATEGORY_COLOR: Record<string, string> = {
+  principal: "text-violet-400 bg-violet-400/10",
+  extension: "text-orange-400 bg-orange-400/10",
+  addon: "text-teal-400 bg-teal-400/10",
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -251,7 +264,14 @@ const ProductsListPage = () => {
                     <Package className="w-4 h-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{plan.name}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-medium text-foreground truncate">{plan.name}</p>
+                      {plan.plan_category && (
+                        <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0", CATEGORY_COLOR[plan.plan_category] ?? "bg-muted text-muted-foreground")}>
+                          {CATEGORY_LABEL[plan.plan_category] ?? plan.plan_category}
+                        </span>
+                      )}
+                    </div>
                     <span className={cn("text-[10px] font-semibold", plan.active ? "text-green-400" : "text-muted-foreground")}>
                       {plan.active ? "Ativo" : "Inativo"}
                     </span>

@@ -16,7 +16,8 @@ const STEPS = [
   { n: 5, label: "Informações Básicas" },
   { n: 6, label: "Precificação" },
   { n: 7, label: "Configurações Avançadas" },
-  { n: 8, label: "Upsell" },
+  { n: 8, label: "Integração" },
+  { n: 9, label: "Upsell" },
 ];
 
 const DURATION_OPTIONS = [
@@ -30,6 +31,14 @@ const DURATION_OPTIONS = [
 
 const PRESET_VALUES = [30, 60, 90, 180, 365];
 
+const PLATFORM_OPTIONS = [
+  { value: "manual", label: "Manual (sem integração)" },
+  { value: "hotmart", label: "Hotmart" },
+  { value: "kiwify", label: "Kiwify" },
+  { value: "perfectpay", label: "PerfectPay" },
+  { value: "outro", label: "Outro" },
+];
+
 const ProductEditorPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -42,6 +51,7 @@ const ProductEditorPage = () => {
 
   // Form state
   const [productType, setProductType] = useState<"plan" | "event" | "link" | "">("");
+  const [planCategory, setPlanCategory] = useState<"principal" | "extension" | "addon">("principal");
   const [modality, setModality] = useState<"online" | "personal" | "consulta" | "">("");
   const [includes, setIncludes] = useState<string[]>([]);
   const [name, setName] = useState("");
@@ -53,11 +63,12 @@ const ProductEditorPage = () => {
   const [feedbackFreq, setFeedbackFreq] = useState(14);
   const [active, setActive] = useState(true);
   const [deliveryDays, setDeliveryDays] = useState(5);
+  const [platform, setPlatform] = useState("manual");
+  const [externalProductId, setExternalProductId] = useState("");
 
   const toggleInclude = (v: string) =>
     setIncludes((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]);
 
-  // Carregar plano existente ao editar
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -79,6 +90,9 @@ const ProductEditorPage = () => {
         if (data.includes_workout) inc.push("workout");
         setIncludes(inc);
         setProductType("plan");
+        setPlanCategory(data.plan_category ?? "principal");
+        setPlatform(data.platform ?? "manual");
+        setExternalProductId(data.external_product_id ?? "");
       }
       setLoading(false);
     })();
@@ -101,6 +115,9 @@ const ProductEditorPage = () => {
       delivery_days: deliveryDays,
       includes_diet: includes.includes("diet"),
       includes_workout: includes.includes("workout"),
+      plan_category: planCategory,
+      platform,
+      external_product_id: externalProductId || null,
     };
     const { error } = isEdit
       ? await supabase.from("plans").update(payload).eq("id", id!)
@@ -154,29 +171,74 @@ const ProductEditorPage = () => {
       {/* Conteúdo do step */}
       <div className="flex-1 overflow-auto p-6">
         {step === 1 && (
-          <div className="max-w-lg space-y-4">
-            <h2 className="text-lg font-semibold">Selecione o tipo de produto</h2>
-            {[
-              { value: "plan", emoji: "📄", title: "Plano", desc: "Período e prazo definidos" },
-              { value: "event", emoji: "📅", title: "Evento", desc: "Data, hora e local" },
-              { value: "link", emoji: "🔗", title: "Link Avulso", desc: "Cobrança avulsa" },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setProductType(opt.value as any)}
-                className={cn(
-                  "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
-                  productType === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                )}
-              >
-                <span className="text-2xl">{opt.emoji}</span>
-                <div>
-                  <p className="font-semibold text-foreground">{opt.title}</p>
-                  <p className="text-sm text-muted-foreground">{opt.desc}</p>
-                </div>
-                {productType === opt.value && <Check className="w-5 h-5 text-primary ml-auto" />}
-              </button>
-            ))}
+          <div className="max-w-lg space-y-6">
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">Selecione o tipo de produto</h2>
+              {[
+                { value: "plan", emoji: "📄", title: "Plano", desc: "Período e prazo definidos" },
+                { value: "event", emoji: "📅", title: "Evento", desc: "Data, hora e local" },
+                { value: "link", emoji: "🔗", title: "Link Avulso", desc: "Cobrança avulsa" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setProductType(opt.value as any)}
+                  className={cn(
+                    "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                    productType === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                  )}
+                >
+                  <span className="text-2xl">{opt.emoji}</span>
+                  <div>
+                    <p className="font-semibold text-foreground">{opt.title}</p>
+                    <p className="text-sm text-muted-foreground">{opt.desc}</p>
+                  </div>
+                  {productType === opt.value && <Check className="w-5 h-5 text-primary ml-auto" />}
+                </button>
+              ))}
+            </div>
+
+            {productType === "plan" && (
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold">Categoria do plano</h2>
+                <p className="text-sm text-muted-foreground -mt-1">Define como este produto é utilizado quando adicionado a um aluno.</p>
+                {[
+                  {
+                    value: "principal",
+                    emoji: "🎯",
+                    title: "Plano Principal",
+                    desc: "Plano primário do aluno. Apenas um ativo por vez.",
+                  },
+                  {
+                    value: "extension",
+                    emoji: "📅",
+                    title: "Extensão de Plano",
+                    desc: "Adiciona dias ao plano atual do aluno (ex: renovação antecipada, bônus).",
+                  },
+                  {
+                    value: "addon",
+                    emoji: "➕",
+                    title: "Produto Adicional",
+                    desc: "Produto paralelo ao plano (ex: plano premium plus, acompanhamento extra).",
+                  },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPlanCategory(opt.value as any)}
+                    className={cn(
+                      "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                      planCategory === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                    )}
+                  >
+                    <span className="text-2xl">{opt.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground">{opt.title}</p>
+                      <p className="text-sm text-muted-foreground">{opt.desc}</p>
+                    </div>
+                    {planCategory === opt.value && <Check className="w-5 h-5 text-primary shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -389,6 +451,58 @@ const ProductEditorPage = () => {
         )}
 
         {step === 8 && (
+          <div className="max-w-lg space-y-5">
+            <h2 className="text-lg font-semibold">Integração com Plataforma</h2>
+            <p className="text-sm text-muted-foreground -mt-1">
+              Configure a integração com plataformas de pagamento para que vendas automáticas ativem consultorias.
+            </p>
+
+            <div>
+              <label className="text-sm font-medium text-foreground">Plataforma</label>
+              <div className="grid gap-2 mt-2">
+                {PLATFORM_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setPlatform(opt.value)}
+                    className={cn(
+                      "flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
+                      platform === opt.value ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    <span className="font-medium">{opt.label}</span>
+                    {platform === opt.value && <Check className="w-4 h-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {platform !== "manual" && (
+              <div>
+                <label className="text-sm font-medium text-foreground">
+                  ID do Produto na {PLATFORM_OPTIONS.find(p => p.value === platform)?.label}
+                </label>
+                <Input
+                  className="mt-1"
+                  placeholder="Ex: HOT-12345 ou PROD_abc123"
+                  value={externalProductId}
+                  onChange={(e) => setExternalProductId(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Este ID será usado para identificar o produto no webhook da plataforma.
+                </p>
+              </div>
+            )}
+
+            {platform === "manual" && (
+              <div className="rounded-lg bg-muted/50 border border-border p-4 text-sm text-muted-foreground">
+                Sem integração automática. Vendas e ativações são gerenciadas manualmente no CRM.
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 9 && (
           <div className="max-w-lg space-y-4">
             <h2 className="text-lg font-semibold">Oferta de Upsell</h2>
             <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4 text-sm text-yellow-400">
@@ -402,7 +516,6 @@ const ProductEditorPage = () => {
               </div>
             </label>
 
-            {/* Aviso */}
             <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4 text-sm text-yellow-400 mt-6">
               As alterações realizadas neste produto não afetarão os clientes já adicionados. Modificações entram em vigor apenas para novas vendas.
             </div>
