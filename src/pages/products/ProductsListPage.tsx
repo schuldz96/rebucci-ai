@@ -281,7 +281,7 @@ const ProductsListPage = () => {
 
                 {/* Ações */}
                 <div className="flex items-center gap-1 relative">
-                  <Button size="sm" variant="outline" className="h-7 text-xs px-2.5" onClick={() => navigate(`/products/${plan.id}`)}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs px-2.5" onClick={() => navigate(`/products/${plan.id}/edit`)}>
                     <Edit2 className="w-3 h-3 mr-1" />Editar
                   </Button>
                   <button
