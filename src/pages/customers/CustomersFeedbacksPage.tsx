@@ -68,7 +68,8 @@ const FeedbackRow = ({ fb, onMark }: { fb: ApptFeedback; onMark: (id: string) =>
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex items-center gap-4 px-5 py-4 border-b border-border hover:bg-muted/20 transition-colors group"
+      className="flex items-center gap-4 px-5 py-4 border-b border-border hover:bg-muted/20 transition-colors group cursor-pointer"
+      onClick={() => navigate(`/customers/feedbacks/${fb.id}`)}
     >
       {/* Avatar */}
       <div
@@ -84,7 +85,7 @@ const FeedbackRow = ({ fb, onMark }: { fb: ApptFeedback; onMark: (id: string) =>
       {/* Nome + Plano + Data */}
       <div className="w-64 shrink-0">
         <button
-          onClick={() => customer && navigate(`/customers/${customer.id}`)}
+          onClick={(e) => { e.stopPropagation(); customer && navigate(`/customers/${customer.id}`); }}
           className="text-sm font-semibold text-foreground hover:text-primary hover:underline transition-colors truncate block max-w-full text-left"
         >
           {customer?.name ?? "—"}
