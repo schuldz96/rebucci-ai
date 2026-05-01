@@ -179,6 +179,19 @@ const AnamnesisFormPage = () => {
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
 
+  // O CSS global define overflow:hidden no body/#root para o layout do CRM.
+  // Esta página pública precisa de scroll normal.
+  useEffect(() => {
+    const root = document.getElementById("root");
+    const prev = root?.style.overflow ?? "";
+    if (root) root.style.overflow = "auto";
+    document.body.style.overflow = "auto";
+    return () => {
+      if (root) root.style.overflow = prev;
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       if (!token) { setStatus("invalid"); return; }
@@ -309,7 +322,7 @@ const AnamnesisFormPage = () => {
   const progress = Math.round((answered / questions.length) * 100);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50" style={{ minHeight: "100vh", overflowY: "auto", position: "relative" }}>
       {/* Header fixo */}
       <div className="sticky top-0 z-10 bg-violet-600 px-4 pt-8 pb-5 shadow-sm">
         <div className="max-w-2xl mx-auto">
