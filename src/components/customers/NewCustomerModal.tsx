@@ -204,7 +204,10 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
                   onChange={(e) => {
                     const p = plans.find(x => x.id === e.target.value);
                     set("plan_id", e.target.value);
-                    if (p) set("duration", String(p.duration_days));
+                    if (p) {
+                      set("duration", String(p.duration_days));
+                      set("value", String(p.price));
+                    }
                   }}
                   required
                 >
