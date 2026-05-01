@@ -49,8 +49,8 @@ const EngagementRow = ({
   return (
     <div className={cn(
       "rounded-xl border transition-all",
-      isTop3 && rank === 1
-        ? "bg-amber-50 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30"
+      rank === 1
+        ? "bg-amber-500/10 border-amber-500/30"
         : "bg-card border-border hover:border-primary/30",
     )}>
       {/* Linha principal compacta */}
@@ -58,7 +58,7 @@ const EngagementRow = ({
         {/* Posição */}
         <span className={cn(
           "w-5 text-center text-sm font-bold shrink-0",
-          rank === 1 ? "text-amber-500" : rank === 2 ? "text-gray-400" : rank === 3 ? "text-amber-700" : "text-muted-foreground",
+          rank === 1 ? "text-amber-400" : rank === 2 ? "text-slate-400" : rank === 3 ? "text-orange-400" : "text-muted-foreground",
         )}>
           {rank}
         </span>
@@ -82,7 +82,7 @@ const EngagementRow = ({
           {item.trend === "up"     && <TrendingUp   className="w-3.5 h-3.5 text-green-400" />}
           {item.trend === "down"   && <TrendingDown  className="w-3.5 h-3.5 text-red-400" />}
           {item.trend === "stable" && <Minus         className="w-3.5 h-3.5 text-muted-foreground" />}
-          <span className={cn("text-sm font-bold tabular-nums", rank === 1 ? "text-amber-500" : "text-green-400")}>
+          <span className={cn("text-sm font-bold tabular-nums", rank === 1 ? "text-amber-400" : "text-green-400")}>
             {item.xp.toLocaleString("pt-BR")}
           </span>
           <span className="text-xs text-muted-foreground">XP</span>
@@ -114,7 +114,7 @@ const EngagementRow = ({
       {expanded && (
         <div className={cn(
           "flex items-center border-t px-4 py-3 gap-1",
-          rank === 1 ? "border-amber-200/60 dark:border-amber-500/20" : "border-border/50",
+          rank === 1 ? "border-amber-500/20" : "border-border/50",
         )}>
           {item.categories.map((cat) => (
             <div key={cat.label} className="flex-1 text-center">
