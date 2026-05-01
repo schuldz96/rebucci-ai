@@ -175,11 +175,12 @@ const CustomersFeedbacksPage = () => {
 
     if (!apts?.length) { setFeedbacks([]); setLoading(false); return; }
 
-    // Busca dados dos customers em paralelo
+    // Busca dados dos customers filtrando pelo coach (necessário para RLS)
     const customerIds = [...new Set(apts.map(a => a.customer_id).filter(Boolean))];
     const { data: customers } = await supabase
       .from("customers")
       .select("id, name, photo_url")
+      .eq("coach_id", user.id)
       .in("id", customerIds);
 
     const customerMap = Object.fromEntries((customers ?? []).map(c => [c.id, c]));
