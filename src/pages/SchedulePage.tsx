@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabase";
 import {
   format, parseISO, isSameDay, startOfMonth, endOfMonth,
   eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths,
-  addDays, isSameMonth,
+  addDays, addWeeks, subWeeks, isSameMonth, isWithinInterval,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -345,17 +345,30 @@ const SchedulePage = () => {
         {/* Nav */}
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => {
+              if (view === "month") setCurrentDate(subMonths(currentDate, 1));
+              else if (view === "week") { const d = subWeeks(currentDate, 1); setCurrentDate(d); setSelectedDay(d); }
+              else { const d = addDays(selectedDay, -1); setSelectedDay(d); setCurrentDate(d); }
+            }}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <Button variant="outline" size="sm" onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}>
               Hoje
             </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => {
+              if (view === "month") setCurrentDate(addMonths(currentDate, 1));
+              else if (view === "week") { const d = addWeeks(currentDate, 1); setCurrentDate(d); setSelectedDay(d); }
+              else { const d = addDays(selectedDay, 1); setSelectedDay(d); setCurrentDate(d); }
+            }}>
               <ChevronRight className="w-4 h-4" />
             </Button>
             <span className="text-base font-semibold text-foreground ml-2 capitalize">
-              {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+              {view === "month"
+                ? format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })
+                : view === "week"
+                ? `${format(startOfWeek(currentDate, { weekStartsOn: 0 }), "d MMM", { locale: ptBR })} – ${format(endOfWeek(currentDate, { weekStartsOn: 0 }), "d MMM yyyy", { locale: ptBR })}`
+                : format(selectedDay, "d 'de' MMMM yyyy", { locale: ptBR })
+              }
             </span>
           </div>
 
@@ -446,14 +459,141 @@ const SchedulePage = () => {
             </div>
           )}
 
-          {view !== "month" && (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center">
-                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Visão de {view === "week" ? "semana" : "dia"} em implementação</p>
+          {view === "week" && (() => {
+            const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+            const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+            const HOURS = Array.from({ length: 24 }, (_, i) => i);
+            return (
+              <div className="flex flex-col h-full">
+                {/* Cabeçalho dias */}
+                <div className="grid grid-cols-[48px_repeat(7,1fr)] border-b border-border shrink-0">
+                  <div />
+                  {weekDays.map((d, i) => (
+                    <div
+                      key={i}
+                      onClick={() => { setSelectedDay(d); setView("day"); }}
+                      className={cn(
+                        "text-center py-2 cursor-pointer hover:bg-muted/30 transition-colors",
+                        isSameDay(d, today) && "text-primary"
+                      )}
+                    >
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase">{WEEKDAYS[i]}</p>
+                      <p className={cn(
+                        "text-sm font-bold mt-0.5 w-7 h-7 flex items-center justify-center rounded-full mx-auto",
+                        isSameDay(d, today) ? "bg-primary text-primary-foreground" : "text-foreground"
+                      )}>
+                        {format(d, "d")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {/* Grade de horas */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid grid-cols-[48px_repeat(7,1fr)]">
+                    {HOURS.map((h) => (
+                      <>
+                        <div key={`h-${h}`} className="text-[10px] text-muted-foreground text-right pr-2 pt-0.5 border-t border-border/40 h-14 shrink-0">
+                          {h > 0 ? `${String(h).padStart(2, "0")}:00` : ""}
+                        </div>
+                        {weekDays.map((d, di) => {
+                          const slotAppts = appointments.filter((a) => {
+                            if (!isSameDay(parseISO(a.date), d)) return false;
+                            const apptH = a.time ? parseInt(a.time.slice(0, 2)) : -1;
+                            return apptH === h;
+                          });
+                          return (
+                            <div
+                              key={`${h}-${di}`}
+                              onClick={() => setSelectedDay(d)}
+                              className={cn(
+                                "border-t border-l border-border/40 h-14 p-0.5 relative cursor-pointer hover:bg-muted/10 transition-colors",
+                                isSameDay(d, selectedDay) && "bg-primary/5"
+                              )}
+                            >
+                              {slotAppts.map((a) => (
+                                <div
+                                  key={a.id}
+                                  className={cn(
+                                    "text-[10px] px-1 py-0.5 rounded text-white font-medium truncate",
+                                    TYPE_COLOR[a.type],
+                                    (a.status === "completed" || a.status === "done") && "opacity-50"
+                                  )}
+                                  title={a.title}
+                                >
+                                  {a.time?.slice(0, 5)} {a.title}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
+          {view === "day" && (() => {
+            const HOURS = Array.from({ length: 24 }, (_, i) => i);
+            const dayAppts = getAppointmentsForDay(selectedDay);
+            return (
+              <div className="flex flex-col h-full">
+                {/* Cabeçalho */}
+                <div className="shrink-0 px-4 py-3 border-b border-border text-center">
+                  <p className={cn("text-sm font-bold", isSameDay(selectedDay, today) && "text-primary")}>
+                    {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                  </p>
+                </div>
+                {/* Grade de horas */}
+                <div className="flex-1 overflow-y-auto">
+                  {HOURS.map((h) => {
+                    const slotAppts = dayAppts.filter((a) => {
+                      const apptH = a.time ? parseInt(a.time.slice(0, 2)) : -1;
+                      return apptH === h;
+                    });
+                    return (
+                      <div key={h} className="flex border-t border-border/40 min-h-[56px]">
+                        <div className="w-16 shrink-0 text-[11px] text-muted-foreground text-right pr-3 pt-1">
+                          {h > 0 ? `${String(h).padStart(2, "0")}:00` : ""}
+                        </div>
+                        <div className="flex-1 p-1 space-y-1">
+                          {slotAppts.map((a) => (
+                            <div
+                              key={a.id}
+                              className={cn(
+                                "rounded-lg px-3 py-2 text-white text-sm font-medium flex items-center justify-between gap-2",
+                                TYPE_COLOR[a.type],
+                                (a.status === "completed" || a.status === "done") && "opacity-50"
+                              )}
+                            >
+                              <div className="min-w-0">
+                                <p className={cn("font-semibold truncate", (a.status === "completed" || a.status === "done") && "line-through")}>
+                                  {a.time?.slice(0, 5)} · {a.title}
+                                </p>
+                                {a.customer_name && (
+                                  <p className="text-xs opacity-80 truncate">{a.customer_name}</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => toggleDone(a)}
+                                className="shrink-0 opacity-80 hover:opacity-100"
+                              >
+                                {(a.status === "completed" || a.status === "done")
+                                  ? <CheckCircle2 className="w-4 h-4" />
+                                  : <Circle className="w-4 h-4" />
+                                }
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Painel lateral — dia selecionado */}
