@@ -296,20 +296,6 @@ const SchedulingTab = ({ customerId, coachId }: { customerId: string; coachId: s
 
 // ─── Tab: Anamnese ────────────────────────────────────────────────────────────
 
-const ANAMNESIS_QUESTIONS = [
-  { key: "objetivo", label: "Objetivo principal", type: "text" },
-  { key: "historico_medico", label: "Histórico médico relevante", type: "textarea" },
-  { key: "lesoes", label: "Lesões ou restrições físicas", type: "textarea" },
-  { key: "medicamentos", label: "Usa algum medicamento?", type: "text" },
-  { key: "nivel_atividade", label: "Nível de atividade atual", type: "select", options: ["Sedentário", "Leve", "Moderado", "Intenso"] },
-  { key: "frequencia_treino", label: "Quantas vezes por semana treina?", type: "text" },
-  { key: "alimentacao", label: "Descreva sua alimentação atual", type: "textarea" },
-  { key: "agua_diaria", label: "Litros de água por dia", type: "text" },
-  { key: "sono", label: "Horas de sono por noite", type: "text" },
-  { key: "stress", label: "Nível de estresse (1-10)", type: "text" },
-  { key: "observacoes", label: "Observações adicionais", type: "textarea" },
-];
-
 const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: string }) => {
   const { toast } = useToast();
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -1250,9 +1236,6 @@ const CustomerProfilePage = () => {
 
   const initials = customer.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
   const age = customer.birthdate ? differenceInYears(new Date(), parseISO(customer.birthdate)) : null;
-  const BANNER_COLORS = ["from-blue-600 to-blue-800", "from-violet-600 to-violet-800", "from-teal-600 to-teal-800", "from-rose-600 to-rose-800"];
-  const bannerColor = BANNER_COLORS[customer.name.charCodeAt(0) % BANNER_COLORS.length];
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="shrink-0">
@@ -1262,9 +1245,7 @@ const CustomerProfilePage = () => {
           </button>
         </div>
 
-        <div className={`h-28 bg-gradient-to-r ${bannerColor} relative mx-6 mt-3 rounded-xl`} />
-
-        <div className="px-6 pb-0 -mt-8">
+        <div className="px-6 pb-0 mt-4">
           <div className="flex items-end gap-4">
             <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-2xl font-bold text-primary-foreground border-4 border-background shrink-0">
               {initials}

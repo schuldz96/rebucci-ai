@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
 import { useCustomerStore, Plan } from "@/store/customerStore";
 import { useToast } from "@/hooks/use-toast";
 import { addDays, format } from "date-fns";
+import { supabase } from "@/lib/supabase";
 
 interface Props {
   plans: Plan[];
@@ -19,6 +20,8 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
   const { createCustomer } = useCustomerStore();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const emailTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const today = format(new Date(), "yyyy-MM-dd");
 
@@ -39,6 +42,23 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
 
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
+  useEffect(() => {
+    const email = form.email.trim();
+    if (!email || !user) { setEmailStatus("idle"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setEmailStatus("idle"); return; }
+
+    setEmailStatus("checking");
+    if (emailTimer.current) clearTimeout(emailTimer.current);
+    emailTimer.current = setTimeout(async () => {
+      const { count } = await supabase
+        .from("customers")
+        .select("id", { count: "exact", head: true })
+        .eq("coach_id", user.id)
+        .eq("email", email);
+      setEmailStatus((count ?? 0) > 0 ? "taken" : "available");
+    }, 500);
+  }, [form.email, user]);
+
   const endDate = () => {
     const d = parseInt(form.duration) || 90;
     return format(addDays(new Date(form.start_date), d), "yyyy-MM-dd");
@@ -47,6 +67,8 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { toast({ title: "Nome é obrigatório", variant: "destructive" }); return; }
+    if (emailStatus === "taken") { toast({ title: "Este e-mail já está cadastrado", variant: "destructive" }); return; }
+    if (emailStatus === "checking") { toast({ title: "Aguarde a validação do e-mail", variant: "destructive" }); return; }
     if (!user) return;
 
     setSaving(true);
@@ -109,7 +131,19 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium text-foreground">E-mail</label>
-                  <Input className="mt-1" type="email" placeholder="email@exemplo.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                  <div className="relative mt-1">
+                    <Input
+                      type="email"
+                      placeholder="email@exemplo.com"
+                      value={form.email}
+                      onChange={(e) => set("email", e.target.value)}
+                      className={emailStatus === "taken" ? "border-destructive pr-8" : emailStatus === "available" ? "border-green-500 pr-8" : "pr-8"}
+                    />
+                    {emailStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                    {emailStatus === "taken" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-destructive" />}
+                    {emailStatus === "available" && <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-green-500" />}
+                  </div>
+                  {emailStatus === "taken" && <p className="text-xs text-destructive mt-1">E-mail já cadastrado</p>}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">WhatsApp</label>
