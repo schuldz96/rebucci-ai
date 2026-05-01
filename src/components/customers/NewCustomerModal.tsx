@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { X, Loader2, AlertCircle, CheckCircle2, PackageOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
@@ -8,6 +8,7 @@ import { useCustomerStore, Plan } from "@/store/customerStore";
 import { useToast } from "@/hooks/use-toast";
 import { addDays, format } from "date-fns";
 import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   plans: Plan[];
@@ -19,6 +20,7 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
   const { user } = useAuthStore();
   const { createCustomer } = useCustomerStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const emailTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,6 +69,7 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { toast({ title: "Nome é obrigatório", variant: "destructive" }); return; }
+    if (!form.plan_id) { toast({ title: "Selecione um plano", variant: "destructive" }); return; }
     if (emailStatus === "taken") { toast({ title: "Este e-mail já está cadastrado", variant: "destructive" }); return; }
     if (emailStatus === "checking") { toast({ title: "Aguarde a validação do e-mail", variant: "destructive" }); return; }
     if (!user) return;
@@ -119,7 +122,28 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
             </button>
           </div>
 
-          {/* Form */}
+          {/* Sem planos — bloqueia o formulário */}
+          {plans.length === 0 ? (
+            <div className="px-6 py-10 flex flex-col items-center gap-4 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+                <PackageOpen className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Nenhum plano cadastrado</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Para adicionar um aluno é necessário ter ao menos um plano criado.
+                </p>
+              </div>
+              <div className="flex gap-3 mt-2">
+                <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+                <Button type="button" onClick={() => { onClose(); navigate("/products"); }}>
+                  Criar plano agora
+                </Button>
+              </div>
+            </div>
+          ) : (
+
+          /* Form */
           <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[70vh]">
             <div className="px-6 py-4 space-y-4">
               {/* Dados pessoais */}
@@ -173,13 +197,18 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
               {/* Consultoria */}
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Consultoria</p>
               <div>
-                <label className="text-sm font-medium text-foreground">Plano</label>
-                <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={form.plan_id} onChange={(e) => {
-                  const p = plans.find(x => x.id === e.target.value);
-                  set("plan_id", e.target.value);
-                  if (p) set("duration", String(p.duration_days));
-                }}>
-                  <option value="">Sem plano específico</option>
+                <label className="text-sm font-medium text-foreground">Plano *</label>
+                <select
+                  className={`mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm ${!form.plan_id ? "border-input text-muted-foreground" : "border-input"}`}
+                  value={form.plan_id}
+                  onChange={(e) => {
+                    const p = plans.find(x => x.id === e.target.value);
+                    set("plan_id", e.target.value);
+                    if (p) set("duration", String(p.duration_days));
+                  }}
+                  required
+                >
+                  <option value="">Selecione um plano</option>
                   {plans.map((p) => (
                     <option key={p.id} value={p.id}>{p.name} — R$ {p.price.toFixed(2)}</option>
                   ))}
@@ -222,6 +251,7 @@ const NewCustomerModal = ({ plans, onClose, onCreated }: Props) => {
               </Button>
             </div>
           </form>
+          )} {/* fim do else plans.length > 0 */}
         </motion.div>
       </motion.div>
     </AnimatePresence>
