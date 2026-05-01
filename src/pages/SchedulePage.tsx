@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -491,8 +491,8 @@ const SchedulePage = () => {
                 <div className="flex-1 overflow-y-auto">
                   <div className="grid grid-cols-[48px_repeat(7,1fr)]">
                     {HOURS.map((h) => (
-                      <>
-                        <div key={`h-${h}`} className="text-[10px] text-muted-foreground text-right pr-2 pt-0.5 border-t border-border/40 h-14 shrink-0">
+                      <React.Fragment key={h}>
+                        <div className="text-[10px] text-muted-foreground text-right pr-2 pt-0.5 border-t border-border/40 h-14 shrink-0">
                           {h > 0 ? `${String(h).padStart(2, "0")}:00` : ""}
                         </div>
                         {weekDays.map((d, di) => {
@@ -526,7 +526,7 @@ const SchedulePage = () => {
                             </div>
                           );
                         })}
-                      </>
+                      </React.Fragment>
                     ))}
                   </div>
                 </div>
