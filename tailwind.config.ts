@@ -13,6 +13,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        heading: ["Onest", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -74,9 +75,10 @@ export default {
       borderRadius: {
         "2xl": "1rem",
         xl: "0.75rem",
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius)",          /* cards: 8px */
+        md: "var(--radius-input)",    /* inputs: 6px */
+        sm: "var(--radius-btn)",      /* botões: 4px */
+        full: "var(--radius-pill)",
       },
       keyframes: {
         "accordion-down": {
