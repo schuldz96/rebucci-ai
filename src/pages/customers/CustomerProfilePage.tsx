@@ -4,7 +4,7 @@ import {
   ArrowLeft, TrendingUp, Calendar, ClipboardList, Star, Salad, Dumbbell,
   Activity, FlaskConical, MessageCircle, Camera, StickyNote,
   Check, Eye, Mail, CalendarDays, MessageSquare, Pin, Loader2,
-  Plus, Trash2, Weight, Droplets, Percent, Edit2, X, Link, Upload,
+  Plus, Trash2, Weight, Droplets, Percent, Edit2, X, Link, Upload, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -399,7 +399,35 @@ const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: st
     toast({ title: "Link copiado!", description: "Envie para o aluno via WhatsApp ou e-mail." });
   };
 
+  const hasConfig = questions.length > 0;
+
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
+
+  // Sem configuração → bloqueia e orienta
+  if (!hasConfig) {
+    return (
+      <div className="max-w-md">
+        <h3 className="font-semibold text-foreground mb-1">Anamnese</h3>
+        <div className="mt-4 rounded-xl border border-dashed border-orange-400/40 bg-orange-400/5 p-6 flex flex-col items-center gap-3 text-center">
+          <ClipboardList className="w-10 h-10 text-orange-400/60" />
+          <div>
+            <p className="font-medium text-foreground">Nenhum formulário configurado</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Antes de enviar a anamnese ao aluno, você precisa configurar quais perguntas serão incluídas.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            className="gap-2 mt-1"
+            onClick={() => window.location.href = "/settings/anamnese"}
+          >
+            <ClipboardList className="w-4 h-4" />
+            Configurar anamnese
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-lg">
@@ -414,12 +442,12 @@ const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: st
           )}
         </div>
         <Button size="sm" variant="outline" className="gap-2" onClick={sendLink} disabled={sendingLink}>
-          {sendingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>}
+          {sendingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link className="w-3.5 h-3.5" />}
           Copiar link
         </Button>
       </div>
 
-      {/* Respostas */}
+      {/* Respostas preenchidas */}
       {anamnesisId && questions.length > 0 ? (
         <div className="space-y-3">
           {questions.map((q) => answers[q.id] ? (
@@ -429,12 +457,25 @@ const AnamnesisTab = ({ customerId, coachId }: { customerId: string; coachId: st
             </div>
           ) : null)}
         </div>
-      ) : !anamnesisId ? (
-        <div className="bg-muted/30 border border-dashed border-border rounded-xl p-6 text-center text-sm text-muted-foreground">
-          <p>Nenhuma resposta registrada.</p>
-          <p className="text-xs mt-1">Clique em "Copiar link" para enviar o formulário ao aluno.</p>
+      ) : (
+        /* Preview das perguntas que o aluno vai receber */
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            Preview — {questions.length} perguntas serão enviadas ao aluno
+          </p>
+          <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+            {questions.map((q, i) => (
+              <div key={q.id} className="px-4 py-2.5 bg-muted/10 flex items-start gap-3">
+                <span className="text-xs text-muted-foreground/50 mt-0.5 shrink-0 w-4">{i + 1}.</span>
+                <p className="text-sm text-foreground">{q.label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Clique em "Copiar link" para enviar este formulário ao aluno via WhatsApp ou e-mail.
+          </p>
         </div>
-      ) : null}
+      )}
     </div>
   );
 };

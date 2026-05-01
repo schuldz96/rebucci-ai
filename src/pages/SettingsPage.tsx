@@ -5,8 +5,9 @@ import {
   MessageSquare, Wifi, Brain, Save, Zap, RefreshCw,
   Eye, EyeOff, Search, Users, Link2, Copy, Check, Loader2, Pencil, X,
   Plus, Trash2, Shield, Tag, ChevronDown, Building2, Facebook, Kanban, GripVertical, Key,
-  ScrollText, ChevronUp, ChevronRight, Database,
+  ScrollText, ChevronUp, ChevronRight, Database, ClipboardList,
 } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 import { usePipelineStore } from "@/store/pipelineStore";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -15,7 +16,7 @@ import { evolutionApi, type EvoInstance } from "@/lib/evolutionApi";
 const SUPABASE_URL = "https://urrbpxrtdzurfdsucukb.supabase.co";
 const inputCls = "w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
-type SettingsSection = "general" | "users" | "pipelines" | "properties" | "tokens" | "evolution" | "meta" | "prime";
+type SettingsSection = "general" | "users" | "pipelines" | "properties" | "tokens" | "evolution" | "meta" | "prime" | "anamnesis";
 type EvoTab = "config" | "instances" | "rag" | "logs";
 type UserTab = "users" | "teams";
 type ModalType = null | "user" | "team" | "perm" | "preset";
@@ -26,10 +27,10 @@ interface PermissionSet { id: string; name: string; description: string | null; 
 interface Preset { id: string; name: string; type: string; content: string | null; }
 
 const SECTION_MAP: Record<string, SettingsSection> = {
-  geral: "general", usuarios: "users", pipelines: "pipelines", propriedades: "properties", tokens: "tokens", evolution: "evolution", meta: "meta", prime: "prime",
+  geral: "general", usuarios: "users", pipelines: "pipelines", propriedades: "properties", tokens: "tokens", evolution: "evolution", meta: "meta", prime: "prime", anamnese: "anamnesis",
 };
 const SECTION_SLUG: Record<SettingsSection, string> = {
-  general: "geral", users: "usuarios", pipelines: "pipelines", properties: "propriedades", tokens: "tokens", evolution: "evolution", meta: "meta", prime: "prime",
+  general: "geral", users: "usuarios", pipelines: "pipelines", properties: "propriedades", tokens: "tokens", evolution: "evolution", meta: "meta", prime: "prime", anamnesis: "anamnese",
 };
 
 const menuSections = [
@@ -44,6 +45,9 @@ const menuSections = [
     { id: "evolution" as const, label: "EvolutionAPI", icon: Link2 },
     { id: "meta" as const, label: "Meta API", icon: Facebook },
     { id: "prime" as const, label: "Prime", icon: Zap },
+  ]},
+  { title: "Coaching", items: [
+    { id: "anamnesis" as const, label: "Anamnese", icon: ClipboardList },
   ]},
 ];
 
@@ -441,6 +445,224 @@ const PipelinesSection = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ─── Anamnesis Section ────────────────────────────────────────────────────────
+
+const CATEGORY_LABELS: Record<string, string> = {
+  habVida: "Hábitos de Vida",
+  habSono: "Hábitos de Sono",
+  saude: "Saúde",
+  atividadeFisica: "Atividade Física",
+  objetivos: "Objetivos",
+};
+
+const CATEGORY_QUESTIONS: Record<string, { label: string; type: string }[]> = {
+  habVida: [
+    { label: "Possui alguma restrição alimentar?", type: "textarea" },
+    { label: "Qual o horário habitual das suas refeições?", type: "text" },
+    { label: "Descreva um dia típico de suas refeições", type: "textarea" },
+    { label: "Ingere bebida alcoólica?", type: "text" },
+    { label: "É fumante?", type: "text" },
+  ],
+  habSono: [
+    { label: "Quantas horas dorme por noite?", type: "text" },
+    { label: "Qualidade do sono (1-10)", type: "text" },
+    { label: "Tem dificuldade para dormir?", type: "text" },
+  ],
+  saude: [
+    { label: "Possui alguma doença diagnosticada?", type: "textarea" },
+    { label: "Usa algum medicamento?", type: "text" },
+    { label: "Tem lesões ou limitações físicas?", type: "textarea" },
+  ],
+  atividadeFisica: [
+    { label: "Pratica atividade física atualmente?", type: "text" },
+    { label: "Qual modalidade?", type: "text" },
+    { label: "Quantas vezes por semana treina?", type: "text" },
+  ],
+  objetivos: [
+    { label: "Qual é o seu objetivo principal?", type: "textarea" },
+    { label: "Peso desejado (kg)", type: "text" },
+  ],
+};
+
+const AnamnesisSection = () => {
+  const { user } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [selectedCats, setSelectedCats] = useState<string[]>(["habVida", "habSono", "saude", "atividadeFisica"]);
+  const [customQuestions, setCustomQuestions] = useState<{ id: string; label: string; type: string }[]>([]);
+  const [newQuestion, setNewQuestion] = useState("");
+  const [addingQ, setAddingQ] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("coach_settings").select("*").eq("coach_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) {
+        setSettingsId(data.id);
+        setSelectedCats(data.anamnesis_categories ?? ["habVida", "habSono", "saude", "atividadeFisica"]);
+      }
+      setLoading(false);
+    });
+    supabase.from("anamnesis_questions").select("*").eq("coach_id", user.id).eq("active", true).order("sort_order").then(({ data }) => {
+      setCustomQuestions((data ?? []).map((q: any) => ({ id: q.id, label: q.label, type: q.type })));
+    });
+  }, [user]);
+
+  const toggleCat = (cat: string) => {
+    setSelectedCats((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    if (settingsId) {
+      await supabase.from("coach_settings").update({ anamnesis_categories: selectedCats, anamnesis_mode: "default" }).eq("id", settingsId);
+    } else {
+      const { data } = await supabase.from("coach_settings").insert({ coach_id: user.id, anamnesis_categories: selectedCats, anamnesis_mode: "default" }).select().single();
+      if (data) setSettingsId(data.id);
+    }
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleAddQuestion = async () => {
+    if (!newQuestion.trim() || !user) return;
+    setAddingQ(true);
+    const { data } = await supabase.from("anamnesis_questions").insert({
+      coach_id: user.id, label: newQuestion.trim(), type: "textarea", active: true, sort_order: customQuestions.length,
+    }).select().single();
+    if (data) setCustomQuestions((prev) => [...prev, { id: data.id, label: data.label, type: data.type }]);
+    setNewQuestion("");
+    setAddingQ(false);
+  };
+
+  const handleRemoveQuestion = async (id: string) => {
+    await supabase.from("anamnesis_questions").update({ active: false }).eq("id", id);
+    setCustomQuestions((prev) => prev.filter((q) => q.id !== id));
+  };
+
+  const totalQuestions = selectedCats.reduce((sum, cat) => sum + (CATEGORY_QUESTIONS[cat]?.length ?? 0), 0) + customQuestions.length;
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
+
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">Configuração de Anamnese</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Defina quais categorias de perguntas serão enviadas ao aluno. O formulário terá <strong>{totalQuestions} perguntas</strong> no total.
+        </p>
+      </div>
+
+      {/* Categorias padrão */}
+      <div>
+        <p className="text-sm font-semibold text-foreground mb-3">Categorias de perguntas</p>
+        <div className="space-y-2">
+          {Object.entries(CATEGORY_LABELS).map(([cat, label]) => {
+            const active = selectedCats.includes(cat);
+            const count = CATEGORY_QUESTIONS[cat]?.length ?? 0;
+            return (
+              <div
+                key={cat}
+                onClick={() => toggleCat(cat)}
+                className={cn(
+                  "flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition-colors",
+                  active ? "border-primary/50 bg-primary/5" : "border-border hover:border-border/80 bg-muted/20"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                    active ? "border-primary bg-primary" : "border-muted-foreground/40"
+                  )}>
+                    {active && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                  </div>
+                  <span className="text-sm font-medium text-foreground">{label}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{count} perguntas</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Perguntas personalizadas */}
+      <div>
+        <p className="text-sm font-semibold text-foreground mb-1">Perguntas personalizadas</p>
+        <p className="text-xs text-muted-foreground mb-3">Adicione perguntas específicas do seu método de coaching.</p>
+
+        <div className="space-y-2 mb-3">
+          {customQuestions.length === 0 && (
+            <p className="text-sm text-muted-foreground py-3 text-center border border-dashed border-border rounded-xl">
+              Nenhuma pergunta personalizada ainda.
+            </p>
+          )}
+          {customQuestions.map((q) => (
+            <div key={q.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-muted/20">
+              <span className="flex-1 text-sm text-foreground">{q.label}</span>
+              <button onClick={() => handleRemoveQuestion(q.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Ex: Tem algum objetivo específico para os próximos 3 meses?"
+            value={newQuestion}
+            onChange={(e) => setNewQuestion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddQuestion()}
+            className={cn(inputCls, "flex-1")}
+          />
+          <button
+            onClick={handleAddQuestion}
+            disabled={addingQ || !newQuestion.trim()}
+            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {addingQ ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Adicionar
+          </button>
+        </div>
+      </div>
+
+      {/* Preview */}
+      {totalQuestions > 0 && (
+        <div>
+          <p className="text-sm font-semibold text-foreground mb-3">Preview do formulário</p>
+          <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+            {selectedCats.flatMap((cat) =>
+              (CATEGORY_QUESTIONS[cat] ?? []).map((q, i) => (
+                <div key={`${cat}_${i}`} className="px-4 py-2.5 bg-muted/10">
+                  <p className="text-xs text-muted-foreground">{CATEGORY_LABELS[cat]}</p>
+                  <p className="text-sm text-foreground">{q.label}</p>
+                </div>
+              ))
+            )}
+            {customQuestions.map((q) => (
+              <div key={q.id} className="px-4 py-2.5 bg-primary/5">
+                <p className="text-xs text-primary">Personalizada</p>
+                <p className="text-sm text-foreground">{q.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || selectedCats.length === 0}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+      >
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+        {saved ? "Salvo!" : "Salvar configuração"}
+      </button>
     </div>
   );
 };
@@ -1402,6 +1624,9 @@ const SettingsPage = () => {
 
         {/* ═══════ PROPRIEDADES ═══════ */}
         {section === "properties" && <PropertiesSection />}
+
+        {/* ═══════ ANAMNESE ═══════ */}
+        {section === "anamnesis" && <AnamnesisSection />}
 
         {/* ═══════ PRIME ═══════ */}
         {section === "prime" && (
