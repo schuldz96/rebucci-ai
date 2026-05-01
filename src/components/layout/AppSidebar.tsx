@@ -106,22 +106,22 @@ const coachingNav: NavGroup[] = [
     path: "/apps",
   },
   {
+    label: "Notificações",
+    icon: Bell,
+    path: "/notifications/all",
+  },
+  {
+    label: "Suporte",
+    icon: HelpCircle,
+    path: "/support",
+  },
+  {
     label: "Minha Conta",
     icon: UserCircle,
     children: [
       { label: "Configurações", path: "/account/settings" },
       { label: "Assinatura", path: "/account/subscription" },
     ],
-  },
-  {
-    label: "Notificações",
-    icon: Bell,
-    path: "/notifications/all",
-  },
-{
-    label: "Suporte",
-    icon: HelpCircle,
-    path: "/support",
   },
 ];
 
