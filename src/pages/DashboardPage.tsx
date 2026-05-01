@@ -31,6 +31,7 @@ interface RecentFeedback {
   scheduledFor: string | null;
   hasPhotos: boolean;
   customerId: string;
+  title?: string;
 }
 
 interface ExpiringConsultoria {
@@ -122,9 +123,10 @@ const DashboardPage = () => {
         .eq("coach_id", coachId).eq("status", "active")
         .gte("end_date", today).lte("end_date", in30),
 
-      // Feedbacks pendentes/respondidos
-      supabase.from("feedbacks").select("status", { count: "exact" })
-        .eq("coach_id", coachId).in("status", ["pending", "partial", "answered"]),
+      // Feedbacks pendentes = agendamentos tipo feedback ainda não concluídos
+      supabase.from("appointments").select("id, status", { count: "exact" })
+        .eq("coach_id", coachId).eq("type", "feedback")
+        .in("status", ["scheduled", "pending"]),
 
       // Receita do mês
       supabase.from("transactions").select("amount")
@@ -135,12 +137,13 @@ const DashboardPage = () => {
       supabase.from("consultorias").select("value")
         .eq("coach_id", coachId).eq("status", "active").eq("payment_status", "pending"),
 
-      // Feedbacks recentes (últimos 10)
-      supabase.from("feedbacks")
-        .select("id, status, answered_at, scheduled_for, has_photos, customer_id, customers(name)")
-        .eq("coach_id", coachId)
-        .in("status", ["pending", "partial", "answered"])
-        .order("created_at", { ascending: false })
+      // Próximos feedbacks agendados (appointments tipo feedback, não concluídos)
+      supabase.from("appointments")
+        .select("id, title, scheduled_at, status, customer_id, customers(name)")
+        .eq("coach_id", coachId).eq("type", "feedback")
+        .in("status", ["scheduled", "pending"])
+        .gte("scheduled_at", `${today}T00:00:00`)
+        .order("scheduled_at", { ascending: true })
         .limit(8),
 
       // Consultorias vencendo em breve
@@ -161,10 +164,10 @@ const DashboardPage = () => {
         .order("scheduled_at", { ascending: true }),
     ]);
 
-    // Feedbacks por status
+    // Feedbacks: agendamentos tipo feedback
     const allFb = feedbacksRes.data ?? [];
-    const pending = allFb.filter((f) => f.status === "pending" || f.status === "partial").length;
-    const answered = allFb.filter((f) => f.status === "answered").length;
+    const pending = allFb.filter((f) => f.status === "scheduled" || f.status === "pending").length;
+    const answered = allFb.filter((f) => f.status === "completed" || f.status === "done").length;
 
     // Receita
     const receita = (revenueRes.data ?? []).reduce((sum, t) => sum + (t.amount ?? 0), 0);
@@ -185,10 +188,11 @@ const DashboardPage = () => {
         id: f.id,
         customerName: (f.customers as any)?.name ?? "—",
         status: f.status,
-        answeredAt: f.answered_at,
-        scheduledFor: f.scheduled_for,
-        hasPhotos: f.has_photos,
+        answeredAt: null,
+        scheduledFor: f.scheduled_at ?? null,
+        hasPhotos: false,
         customerId: f.customer_id,
+        title: f.title,
       }))
     );
 
@@ -456,7 +460,7 @@ const DashboardPage = () => {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* ── Feedbacks recentes ── */}
+              {/* ── Próximos feedbacks agendados ── */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -466,18 +470,18 @@ const DashboardPage = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-foreground flex items-center gap-2">
                     <MessageCircleWarning className="w-4 h-4 text-primary" />
-                    Feedbacks Recentes
+                    Feedbacks Pendentes
                   </h2>
                   <button
-                    onClick={() => navigate("/customers/feedbacks")}
+                    onClick={() => navigate("/agenda")}
                     className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
                   >
-                    Ver todos <ArrowRight className="w-3 h-3" />
+                    Ver agenda <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
 
                 {recentFeedbacks.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-6 text-center">Nenhum feedback pendente.</p>
+                  <p className="text-sm text-muted-foreground py-6 text-center">Nenhum feedback agendado.</p>
                 ) : (
                   <div className="space-y-1">
                     {recentFeedbacks.map((fb) => (
@@ -490,18 +494,14 @@ const DashboardPage = () => {
                           {fb.customerName.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{fb.customerName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {fb.answeredAt
-                              ? `Respondido ${format(parseISO(fb.answeredAt), "dd/MM HH:mm", { locale: ptBR })}`
-                              : fb.scheduledFor
-                              ? `Previsto ${format(parseISO(fb.scheduledFor), "dd/MM", { locale: ptBR })}`
-                              : "Aguardando"}
-                          </p>
+                          <p className="text-sm font-medium text-foreground truncate">{fb.title ?? fb.customerName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{fb.customerName}</p>
                         </div>
-                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", STATUS_COLOR[fb.status])}>
-                          {STATUS_LABEL[fb.status]}
-                        </span>
+                        {fb.scheduledFor && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {format(parseISO(fb.scheduledFor), "dd/MM HH:mm", { locale: ptBR })}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
