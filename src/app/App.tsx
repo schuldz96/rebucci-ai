@@ -23,6 +23,7 @@ import CustomersListPage from "@/pages/customers/CustomersListPage";
 import CustomersEngagementPage from "@/pages/customers/CustomersEngagementPage";
 import CustomersDropoutsPage from "@/pages/customers/CustomersDropoutsPage";
 import CustomerProfilePage from "@/pages/customers/CustomerProfilePage";
+import ConsultoriaProfilePage from "@/pages/customers/ConsultoriaProfilePage";
 
 // Coaching — Agenda
 import SchedulePage from "@/pages/SchedulePage";
@@ -104,6 +105,7 @@ const AppRoutes = () => {
 
         {/* Clientes (coaching) */}
         <Route path="/customers/actives" element={<CustomersActivePage />} />
+        <Route path="/customers/actives/:consultoriaId" element={<ConsultoriaProfilePage />} />
         <Route path="/customers/feedbacks" element={<CustomersFeedbacksPage />} />
         <Route path="/customers/list" element={<CustomersListPage />} />
         <Route path="/customers/engagement" element={<CustomersEngagementPage />} />

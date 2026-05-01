@@ -326,7 +326,7 @@ const CustomersActivePage = () => {
               <CustomerCard
                 key={c.id}
                 c={c}
-                onClick={() => navigate(`/customers/${c.customer_id}`)}
+                onClick={() => navigate(`/customers/actives/${c.id}`)}
               />
             ))}
           </div>
@@ -348,7 +348,7 @@ const CustomersActivePage = () => {
                   <CustomerRow
                     key={c.id}
                     c={c}
-                    onClick={() => navigate(`/customers/${c.customer_id}`)}
+                    onClick={() => navigate(`/customers/actives/${c.id}`)}
                   />
                 ))}
               </tbody>
