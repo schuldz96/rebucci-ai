@@ -17,8 +17,6 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  ShoppingCart,
-  Network,
   BookOpen,
   Upload,
   UsersRound,
@@ -72,11 +70,7 @@ const coachingNav: NavGroup[] = [
   {
     label: "Produtos",
     icon: Package,
-    children: [
-      { label: "Meus Produtos", path: "/products/list" },
-      { label: "Carrinho Abandonado", path: "/products/cart-recovery" },
-      { label: "Afiliados", path: "/products/affiliates" },
-    ],
+    path: "/products/list",
   },
   {
     label: "Clientes",
@@ -154,10 +148,7 @@ const subIconMap: Record<string, React.ElementType> = {
   "/customers/list": List,
   "/customers/engagement": BarChart3,
   "/customers/dropouts": UserMinus,
-  "/products/list": Package,
-  "/products/cart-recovery": ShoppingCart,
-  "/products/affiliates": Network,
-  "/library/workout": Dumbbell,
+"/library/workout": Dumbbell,
   "/library/diet": Salad,
   "/tools/import/customers": Upload,
   "/tools/import/protocols": Upload,
